@@ -1,0 +1,119 @@
+---
+const pathname: string = Astro.url.pathname;
+
+type NavLink = { href: string; label: string; icon: string };
+
+const links: NavLink[] = [
+  { href: "/", label: "Home", icon: "⌂" },
+  { href: "/planner", label: "Planner", icon: "◎" },
+  { href: "/timeline", label: "Timeline", icon: "⟡" },
+  { href: "/settings", label: "Settings", icon: "⚙" },
+];
+
+const isActive = (href: string): boolean =>
+  href === "/" ? pathname === "/" : pathname.startsWith(href);
+---
+
+<nav class="dock" aria-label="Life OS navigation">
+  <!-- Expand / collapse -->
+  <button
+    class="dock-btn"
+    id="dockToggle"
+    aria-expanded="false"
+    aria-controls="dockPanel"
+    title="Open navigation"
+  >
+    <span class="dock-logo" aria-hidden="true">⦿</span>
+    <span class="sr-only">Open navigation</span>
+  </button>
+
+  <!-- Panel -->
+  <div class="dock-panel" id="dockPanel" hidden>
+    <div class="dock-title">
+      <div class="dock-title-left">
+        <div class="dock-badge" aria-hidden="true">Life OS</div>
+        <div class="dock-sub">Quick navigation</div>
+      </div>
+
+      <button class="dock-close" id="dockClose" title="Close navigation">
+        ✕
+      </button>
+    </div>
+
+    <div class="dock-ring" role="list">
+      {links.map((l, i) => (
+        <a
+          href={l.href}
+          class={"dock-item " + (isActive(l.href) ? "is-active" : "")}
+          role="listitem"
+          style={`--i:${i}`}
+          aria-current={isActive(l.href) ? "page" : undefined}
+        >
+          <span class="dock-ico" aria-hidden="true">{l.icon}</span>
+          <span class="dock-label">{l.label}</span>
+        </a>
+      ))}
+    </div>
+
+    <div class="dock-actions">
+      <button class="dock-action" id="resetLocal" type="button" title="Reset saved data">
+        Reset data
+      </button>
+
+      <a class="dock-action ghost" href="/planner" title="Jump to Planner">
+        Open Planner
+      </a>
+    </div>
+  </div>
+
+  <script is:inline>
+    const toggle = document.getElementById("dockToggle");
+    const panel  = document.getElementById("dockPanel");
+    const close  = document.getElementById("dockClose");
+    const reset  = document.getElementById("resetLocal");
+
+    function openDock(){
+      panel.hidden = false;
+      toggle.setAttribute("aria-expanded","true");
+      document.documentElement.classList.add("dock-open");
+      // focus first link for keyboard users
+      const firstLink = panel.querySelector("a, button");
+      firstLink && firstLink.focus();
+    }
+    function closeDock(){
+      panel.hidden = true;
+      toggle.setAttribute("aria-expanded","false");
+      document.documentElement.classList.remove("dock-open");
+      toggle.focus();
+    }
+
+    toggle?.addEventListener("click", () => {
+      const expanded = toggle.getAttribute("aria-expanded") === "true";
+      expanded ? closeDock() : openDock();
+    });
+
+    close?.addEventListener("click", closeDock);
+
+    // Click outside to close
+    document.addEventListener("pointerdown", (e) => {
+      if (!panel || panel.hidden) return;
+      if (panel.contains(e.target) || toggle.contains(e.target)) return;
+      closeDock();
+    });
+
+    // ESC to close
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && panel && !panel.hidden) closeDock();
+    });
+
+    // “Reset data” (uses your storage key)
+    reset?.addEventListener("click", () => {
+      try {
+        localStorage.removeItem("life_os_v1");
+        alert("Life OS data cleared ✅");
+      } catch (err) {
+        alert("Could not clear data.");
+      }
+    });
+  </script>
+</nav>

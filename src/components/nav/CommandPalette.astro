@@ -1,0 +1,172 @@
+---
+const pathname: string = Astro.url.pathname;
+
+type NavItem = { href: string; title: string; desc: string; emoji: string; keywords: string };
+
+const items: NavItem[] = [
+  { href: "/", title: "Home", desc: "Dashboard & overview", emoji: "🏠", keywords: "home dashboard overview" },
+  { href: "/planner", title: "Planner", desc: "Budget, savings, goals", emoji: "💰", keywords: "planner budget savings goals" },
+  { href: "/timeline", title: "Timeline", desc: "2027 vs 2028 scenarios", emoji: "📅", keywords: "timeline scenarios compare" },
+  { href: "/settings", title: "Settings", desc: "Preferences & defaults", emoji: "⚙️", keywords: "settings preferences" },
+];
+
+const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
+---
+
+<div class="cp">
+  <!-- Floating pill trigger -->
+  <button class="cp-pill" id="cpOpen" type="button" aria-haspopup="dialog" aria-controls="cpDialog">
+    <span class="cp-pill-ico" aria-hidden="true">⌘</span>
+    <span class="cp-pill-text">K — Navigate</span>
+    <span class="cp-pill-hint" aria-hidden="true">Ctrl/⌘ K</span>
+  </button>
+
+  <!-- Modal -->
+  <div class="cp-backdrop" id="cpBackdrop" hidden></div>
+
+  <div class="cp-dialog" id="cpDialog" role="dialog" aria-modal="true" aria-label="Command Palette" hidden>
+    <div class="cp-header">
+      <div class="cp-title">
+        <span class="cp-badge" aria-hidden="true">Life OS</span>
+        <span class="cp-title-text">Command Palette</span>
+      </div>
+      <button class="cp-close" id="cpClose" type="button" aria-label="Close">✕</button>
+    </div>
+
+    <label class="cp-search">
+      <span class="sr-only">Search</span>
+      <input id="cpInput" type="text" placeholder="Type to search… (e.g. planner, settings, timeline)" autocomplete="off" />
+    </label>
+
+    <div class="cp-list" id="cpList" role="listbox" aria-label="Navigation results">
+      {items.map((it, idx) => (
+        <a
+          href={it.href}
+          class={"cp-item " + (isActive(it.href) ? "is-active" : "")}
+          data-index={idx}
+          data-title={it.title.toLowerCase()}
+          data-keywords={(it.title + " " + it.keywords + " " + it.desc).toLowerCase()}
+          role="option"
+          aria-selected="false"
+        >
+          <span class="cp-emoji" aria-hidden="true">{it.emoji}</span>
+          <span class="cp-meta">
+            <span class="cp-name">{it.title}</span>
+            <span class="cp-desc">{it.desc}</span>
+          </span>
+          <span class="cp-go" aria-hidden="true">↵</span>
+        </a>
+      ))}
+    </div>
+
+    <div class="cp-footer">
+      <span>↑ ↓ to navigate</span>
+      <span>Enter to open</span>
+      <span>Esc to close</span>
+    </div>
+  </div>
+
+  <script is:inline>
+    const openBtn = document.getElementById("cpOpen");
+    const closeBtn = document.getElementById("cpClose");
+    const dialog = document.getElementById("cpDialog");
+    const backdrop = document.getElementById("cpBackdrop");
+    const input = document.getElementById("cpInput");
+    const list = document.getElementById("cpList");
+
+    let activeIndex = 0;
+
+    function getItems() {
+      return Array.from(list.querySelectorAll(".cp-item")).filter(el => !el.hasAttribute("data-hidden"));
+    }
+
+    function setActive(idx) {
+      const visible = getItems();
+      visible.forEach((el) => el.setAttribute("aria-selected", "false"));
+      if (!visible.length) return;
+      activeIndex = Math.max(0, Math.min(idx, visible.length - 1));
+      visible[activeIndex].setAttribute("aria-selected", "true");
+      visible[activeIndex].scrollIntoView({ block: "nearest" });
+    }
+
+    function openPalette() {
+      dialog.hidden = false;
+      backdrop.hidden = false;
+      document.documentElement.classList.add("cp-open");
+      setTimeout(() => input && input.focus(), 0);
+      setActive(0);
+    }
+
+    function closePalette() {
+      dialog.hidden = true;
+      backdrop.hidden = true;
+      document.documentElement.classList.remove("cp-open");
+      openBtn && openBtn.focus();
+    }
+
+    function filter(query) {
+      const q = (query || "").toLowerCase().trim();
+      const all = Array.from(list.querySelectorAll(".cp-item"));
+      all.forEach((el) => {
+        const hay = el.getAttribute("data-keywords") || "";
+        if (!q || hay.includes(q)) {
+          el.removeAttribute("data-hidden");
+          el.style.display = "";
+        } else {
+          el.setAttribute("data-hidden", "true");
+          el.style.display = "none";
+        }
+      });
+      setActive(0);
+    }
+
+    openBtn?.addEventListener("click", openPalette);
+    closeBtn?.addEventListener("click", closePalette);
+    backdrop?.addEventListener("click", closePalette);
+
+    document.addEventListener("keydown", (e) => {
+      const isMac = navigator.platform.toLowerCase().includes("mac");
+      const modK = (isMac && e.metaKey && e.key.toLowerCase() === "k") || (!isMac && e.ctrlKey && e.key.toLowerCase() === "k");
+
+      if (modK) {
+        e.preventDefault();
+        dialog.hidden ? openPalette() : closePalette();
+        return;
+      }
+
+      if (!dialog || dialog.hidden) return;
+
+      if (e.key === "Escape") {
+        e.preventDefault();
+        closePalette();
+      }
+
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setActive(activeIndex + 1);
+      }
+
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setActive(activeIndex - 1);
+      }
+
+      if (e.key === "Enter") {
+        const visible = getItems();
+        const el = visible[activeIndex];
+        if (el && el.href) window.location.href = el.href;
+      }
+    });
+
+    input?.addEventListener("input", (e) => filter(e.target.value));
+
+    // click selects
+    list?.addEventListener("mousemove", (e) => {
+      const item = e.target.closest(".cp-item");
+      if (!item) return;
+      const visible = getItems();
+      const idx = visible.indexOf(item);
+      if (idx >= 0) setActive(idx);
+    });
+  </script>
+</div>
