@@ -1,18 +1,21 @@
 ---
 import AppShell from "../components/layout/AppShell.astro";
+import DashboardTasksWidget from "../components/dashboard/DashboardTasksWidget";
 import "../styles/globals.css";
 ---
 
 <AppShell title="Life OS • Australian Life Planner">
+  <DashboardTasksWidget client:load />
   <section class="hero">
     <div class="container">
       <h1>Life OS</h1>
       <p class="subtitle">
-        Your Australian Life Planner for money, goals and clarity.
+        Donvale IT Department Life Planner for tasks, goals and clarity.
       </p>
 
       <div class="cta-row">
         <a href="/planner" class="btn primary">Open Planner</a>
+        <a href="/tasks" class="btn danger">Open Tasks</a>
         <a href="/settings" class="btn ghost">Settings</a>
       </div>
     </div>
@@ -26,7 +29,7 @@ import "../styles/globals.css";
 
     <div class="feature-card">
       <h3>🏡 House Deposit Tracker</h3>
-      <p>Model your path to a $450k–$500k home based on real savings.</p>
+      <p>Model your path to a $450k-$500k home based on real savings.</p>
     </div>
 
     <div class="feature-card">

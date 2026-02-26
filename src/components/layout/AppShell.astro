@@ -1,6 +1,8 @@
 ---
-const { title = "Life OS" } = Astro.props;
 import "../../styles/globals.css";
+import Header from "../layout/Header.astro";
+
+const { title = "Life OS" } = Astro.props;
 ---
 
 <html lang="en">
@@ -11,7 +13,10 @@ import "../../styles/globals.css";
   </head>
 
   <body>
-    <main>
+    <main class="container">
+      {title && (
+        <Header title={title} />
+      )}
       <slot />
     </main>
   </body>
