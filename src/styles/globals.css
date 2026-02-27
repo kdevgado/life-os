@@ -1,17 +1,89 @@
+/* =========================
+   Default Theme = DUNA
+   ========================= */
 :root{
-  --bg: #0b1020;
-  --panel: rgba(255,255,255,.08);
-  --panel-2: rgba(255,255,255,.12);
-  --text: rgba(255,255,255,.92);
-  --muted: rgba(255,255,255,.68);
-  --border: rgba(255,255,255,.14);
-  --shadow: 0 12px 40px rgba(0,0,0,.35);
+  --nav-h: 84px;
+
+  /* ===== DUNA (default) ===== */
+  --bg0: #fbf7f2;         /* warm paper */
+  --bg1: #f3efe9;
+
+  /* soft spotlights */
+  --mesh1: rgba(255, 158, 120, .22);
+  --mesh2: rgba(255, 255, 255, .55);
+  --mesh3: rgba(120, 190, 255, .18);
+
+  /* text */
+  --text: rgba(17, 16, 20, .92);
+  --muted: rgba(17, 16, 20, .62);
+
+  /* surfaces */
+  --panel: rgba(255,255,255,.55);
+  --panel-2: rgba(255,255,255,.70);
+  --border: rgba(18, 16, 20, .10);
+  --shadow: 0 12px 40px rgba(18, 16, 20, .10);
   --radius: 18px;
 
+  /* header glass (duna-like) */
+  --nav-bg: rgba(255,255,255,.58);
+  --nav-border: rgba(18, 16, 20, .10);
+  --nav-shadow: 0 14px 40px rgba(18,16,20,.10);
+  --nav-blur: 18px;
+
+  /* controls */
+  --field-bg: rgba(255,255,255,.65);
+
+  /* your accent gradients can stay */
   --grad1: #7c3aed;
   --grad2: #22c55e;
   --grad3: #06b6d4;
   --grad4: #f97316;
+
+  /* Nav scroll states */
+  --nav-blur: 18px;
+
+  /* Top: lighter */
+  --nav-bg-top: rgba(255,255,255,.42);
+  --nav-border-top: rgba(18,16,20,.10);
+  --nav-shadow-top: 0 10px 34px rgba(18,16,20,.08);
+
+  /* Scrolled: more solid */
+  --nav-bg-scrolled: rgba(255,255,255,.78);
+  --nav-border-scrolled: rgba(18,16,20,.14);
+  --nav-shadow-scrolled: 0 16px 55px rgba(18,16,20,.14);
+}
+
+/* ===== NEBULA (optional dark theme) ===== */
+:root[data-theme="nebula"]{
+  --bg0: #070a14;
+  --bg1: #0b1020;
+
+  --mesh1: rgba(124,58,237,.35);
+  --mesh2: rgba(34,197,94,.28);
+  --mesh3: rgba(6,182,212,.25);
+
+  --text: rgba(255,255,255,.92);
+  --muted: rgba(255,255,255,.68);
+
+  --panel: rgba(255,255,255,.08);
+  --panel-2: rgba(255,255,255,.12);
+  --border: rgba(255,255,255,.14);
+  --shadow: 0 12px 40px rgba(0,0,0,.35);
+
+  --nav-bg: rgba(0,0,0,.38);
+  --nav-border: rgba(255,255,255,.18);
+  --nav-shadow: 0 18px 60px rgba(0,0,0,.55);
+  --nav-blur: 14px;
+
+  --field-bg: rgba(0,0,0,.25);
+  
+  --nav-bg-top: rgba(0,0,0,.26);
+  --nav-bg-scrolled: rgba(0,0,0,.52);
+  --nav-shadow-top: 0 14px 40px rgba(0,0,0,.40);
+  --nav-shadow-scrolled: 0 18px 70px rgba(0,0,0,.60);
+
+  --nav-border-top: rgba(255,255,255,.14);
+  --nav-border-scrolled: rgba(255,255,255,.22);
 }
 
 html,body{height:100%}
@@ -19,11 +91,12 @@ body{
   margin:0;
   color:var(--text);
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+
   background:
-    radial-gradient(1000px 500px at 10% 10%, rgba(124,58,237,.35), transparent 60%),
-    radial-gradient(900px 600px at 90% 20%, rgba(34,197,94,.28), transparent 55%),
-    radial-gradient(900px 700px at 40% 95%, rgba(6,182,212,.25), transparent 55%),
-    linear-gradient(180deg, #070a14, var(--bg));
+    radial-gradient(900px 520px at 12% 10%, var(--mesh1), transparent 60%),
+    radial-gradient(900px 650px at 88% 18%, var(--mesh2), transparent 55%),
+    radial-gradient(900px 750px at 50% 96%, var(--mesh3), transparent 55%),
+    linear-gradient(180deg, var(--bg0), var(--bg1));
 }
 
 .container{max-width:1100px;margin:0 auto;padding:2rem 1.25rem;padding: calc(84px + 2rem) 1.25rem 2rem; /* top includes navbar space */}
@@ -54,9 +127,9 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   margin-top: .4rem;
   padding: .95rem .85rem;
   border-radius: 14px;
-  border: 1px solid var(--border);
-  background: rgba(0,0,0,.25);
+  background: var(--field-bg);
   color: var(--text);
+  border: 1px solid var(--border);
   outline: none;
 }
 
@@ -158,10 +231,18 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
   padding: 10px 12px;
   border-radius: 999px;
-  border: 1px solid rgba(255,255,255,.18);
-  background: rgba(0,0,0,.38);
-  backdrop-filter: blur(14px);
-  box-shadow: 0 18px 60px rgba(0,0,0,.55);
+
+  border: 1px solid var(--nav-border-top);
+  background: var(--nav-bg-top);
+  backdrop-filter: blur(var(--nav-blur)) saturate(1.25);
+  box-shadow: var(--nav-shadow-top);
+  transition: background .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+
+html.nav-scrolled .topnav{
+  border-color: var(--nav-border-scrolled);
+  background: var(--nav-bg-scrolled);
+  box-shadow: var(--nav-shadow-scrolled);
 }
 
 .topnav-brand{
@@ -192,8 +273,8 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   padding: 10px 12px;
   cursor: pointer;
 
-  border: 1px solid rgba(255,255,255,.16);
-  background: rgba(255,255,255,.06);
+  border: 1px solid color-mix(in oklab, var(--text) 12%, transparent);
+  background: color-mix(in oklab, var(--text) 5%, transparent);
   color: var(--text);
   transition: transform .12s ease, border-color .12s ease, background .12s ease;
 }
@@ -228,8 +309,8 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   flex: 0 0 auto;
   padding: .25rem .55rem;
   border-radius: 999px;
-  border: 1px solid rgba(255,255,255,.14);
-  background: rgba(0,0,0,.22);
+  border: 1px solid color-mix(in oklab, var(--text) 12%, transparent);
+  background: color-mix(in oklab, var(--text) 5%, transparent);
   color: var(--muted);
   font-size: .82rem;
   font-weight: 800;
@@ -243,7 +324,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 }
 .topnav-link{
   text-decoration:none;
-  color: rgba(255,255,255,.78);
+  color: color-mix(in oklab, var(--text) 70%, transparent);
   font-weight: 750;
   padding: 8px 10px;
   border-radius: 999px;
@@ -252,13 +333,13 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   transition: background .12s ease, border-color .12s ease;
 }
 .topnav-link:hover{
-  background: rgba(255,255,255,.06);
-  border-color: rgba(255,255,255,.12);
+  background: color-mix(in oklab, var(--text) 6%, transparent);
+  border-color: color-mix(in oklab, var(--text) 12%, transparent);
 }
 .topnav-link.is-active{
   color: var(--text);
-  background: rgba(255,255,255,.10);
-  border-color: rgba(255,255,255,.18);
+  background: color-mix(in oklab, var(--text) 10%, transparent);
+  border-color: color-mix(in oklab, var(--text) 16%, transparent);
 }
 
 
@@ -598,6 +679,46 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 .topnav-search:hover::before{ opacity: .55; }
 
 /* =========================
+   Settings UI
+   ========================= */
+.settings{
+  max-width: 760px;
+  margin: 0 auto;
+  padding: calc(var(--nav-h) + 2rem) 1.25rem 3rem;
+}
+
+.settings-card{
+  background: linear-gradient(180deg, var(--panel), color-mix(in oklab, var(--panel) 60%, transparent));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(12px);
+  padding: 1.25rem;
+}
+
+.settings-row{
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid color-mix(in oklab, var(--text) 10%, transparent);
+}
+.settings-row:last-child{ border-bottom: 0; }
+
+.settings-label strong{ font-weight: 850; color: var(--text); }
+.settings-label span{ color: var(--muted); font-size: .92rem; }
+
+.settings-select{
+  min-width: 240px;
+  padding: .85rem 1rem;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--field-bg);
+  color: var(--text);
+}
+
+/* =========================
    LIFE OS UI SYSTEM
 ========================= */
 
@@ -826,8 +947,9 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   padding: .2rem .2rem;
   border: none;
   border-radius: 10px;
-  background: transparent;
+  background: var(--field-bg);
   color: var(--text);
+  border: 1px solid var(--border);
 }
 
 /* Add button press feel */

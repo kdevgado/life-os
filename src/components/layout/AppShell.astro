@@ -10,6 +10,14 @@ const { title = "Life OS" } = Astro.props;
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
+
+    <script is:inline>
+      try {
+        const t = localStorage.getItem("lifeos_theme") || "duna";
+        if (t === "duna") document.documentElement.removeAttribute("data-theme");
+        else document.documentElement.setAttribute("data-theme", t);
+      } catch {}
+    </script>
   </head>
 
   <body>
@@ -19,5 +27,36 @@ const { title = "Life OS" } = Astro.props;
       )}
       <slot />
     </main>
+
+    <script type="module">
+      import { applyThemeOnLoad } from "/src/scripts/theme.ts";
+      applyThemeOnLoad();
+    </script>
+
+    <script is:inline>
+      (function () {
+        try {
+          const root = document.documentElement;
+
+          // pick the actual scrolling element
+          const scroller =
+            document.querySelector("main") ||
+            document.scrollingElement ||
+            document.documentElement;
+
+          const onScroll = () => {
+            const y = scroller.scrollTop ?? window.scrollY ?? 0;
+            if (y > 6) root.classList.add("nav-scrolled");
+            else root.classList.remove("nav-scrolled");
+          };
+
+          // listen to BOTH, in case your app scrolls window sometimes and main other times
+          window.addEventListener("scroll", onScroll, { passive: true });
+          scroller.addEventListener?.("scroll", onScroll, { passive: true });
+
+          onScroll();
+        } catch {}
+      })();
+    </script>
   </body>
 </html>
