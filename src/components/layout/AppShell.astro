@@ -13,20 +13,24 @@ const { title = "Life OS" } = Astro.props;
 
     <script is:inline>
       try {
-        const t = localStorage.getItem("lifeos_theme") || "duna";
-        if (t === "duna") document.documentElement.removeAttribute("data-theme");
-        else document.documentElement.setAttribute("data-theme", t);
+        const raw = localStorage.getItem("lifeos_theme") || "duna";
+        const t = String(raw).trim().toLowerCase();
+        document.documentElement.setAttribute("data-theme", t === "nebula" ? "nebula" : "duna");
       } catch {}
     </script>
   </head>
 
   <body>
+    <div class="theme-hero-bg" aria-hidden="true">
+      <div class="nebula-twinkle" aria-hidden="true"></div>
+    </div>
     <main class="container">
       {title && (
         <Header title={title} />
       )}
       <slot />
     </main>
+    
 
     <script type="module">
       import { applyThemeOnLoad } from "/src/scripts/theme.ts";

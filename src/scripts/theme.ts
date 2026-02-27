@@ -1,16 +1,26 @@
+// /src/scripts/theme.ts
 const KEY = "lifeos_theme";
+export type Theme = "duna" | "nebula";
 
-export function getTheme(): string {
-  return localStorage.getItem(KEY) || "duna";
+export function getTheme(): Theme {
+  const t = (localStorage.getItem(KEY) || "duna") as Theme;
+  return t === "nebula" ? "nebula" : "duna";
+}
+
+export function applyTheme(theme: Theme) {
+  document.documentElement.setAttribute("data-theme", theme);
+
+  // optional: let other scripts react instantly
+  window.dispatchEvent(new CustomEvent("lifeos:theme", { detail: { theme } }));
 }
 
 export function setTheme(theme: string) {
-  localStorage.setItem(KEY, theme);
+  const t: Theme = theme === "nebula" ? "nebula" : "duna";
+  localStorage.setItem(KEY, t);
+  applyTheme(t);
+}
 
-  // default is duna (no attribute)
-  if (theme === "duna") {
-    document.documentElement.removeAttribute("data-theme");
-  } else {
-    document.documentElement.setAttribute("data-theme", theme);
-  }
+// run on load (important when navigating pages)
+if (typeof window !== "undefined") {
+  applyTheme(getTheme());
 }

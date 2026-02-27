@@ -51,6 +51,8 @@
   --nav-bg-scrolled: rgba(255,255,255,.78);
   --nav-border-scrolled: rgba(18,16,20,.14);
   --nav-shadow-scrolled: 0 16px 55px rgba(18,16,20,.14);
+
+  --nav-h: 76px; 
 }
 
 /* ===== NEBULA (optional dark theme) ===== */
@@ -84,6 +86,8 @@
 
   --nav-border-top: rgba(255,255,255,.14);
   --nav-border-scrolled: rgba(255,255,255,.22);
+
+  --nav-h: 84px; 
 }
 
 html,body{height:100%}
@@ -99,7 +103,259 @@ body{
     linear-gradient(180deg, var(--bg0), var(--bg1));
 }
 
-.container{max-width:1100px;margin:0 auto;padding:2rem 1.25rem;padding: calc(84px + 2rem) 1.25rem 2rem; /* top includes navbar space */}
+/* =========================================================
+   DUNA header (match duna.com vibe: minimal, clean, glassy)
+   ========================================================= */
+.duna-nav{
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(1100px, calc(100vw - 28px));
+  z-index: 999;
+
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+
+  padding: 10px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--nav-border-top);
+  background: var(--nav-bg-top);
+  backdrop-filter: blur(var(--nav-blur)) saturate(1.2);
+  box-shadow: var(--nav-shadow-top);
+  transition: background .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+
+html.nav-scrolled .duna-nav{
+  border-color: var(--nav-border-scrolled);
+  background: var(--nav-bg-scrolled);
+  box-shadow: var(--nav-shadow-scrolled);
+}
+
+.duna-brand{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  text-decoration:none;
+  color: var(--text);
+  font-weight: 850;
+  letter-spacing: .15px;
+  padding: 8px 10px;
+  border-radius: 999px;
+}
+
+.duna-mark{
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255,255,255,.9), rgba(255,255,255,.25) 45%, transparent 70%),
+    linear-gradient(135deg, var(--grad1), var(--grad3));
+  box-shadow: 0 8px 18px rgba(0,0,0,.10);
+}
+
+.duna-links{
+  display:flex;
+  justify-content:center;
+  gap: 6px;
+}
+
+.duna-link{
+  text-decoration:none;
+  color: var(--muted);
+  font-weight: 650;
+  font-size: .92rem;
+  padding: 10px 12px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+
+.duna-link:hover{
+  color: var(--text);
+  background: rgba(255,255,255,.35);
+  border-color: rgba(18,16,20,.08);
+}
+
+.duna-link.is-active{
+  color: var(--text);
+  background: rgba(255,255,255,.55);
+  border-color: rgba(18,16,20,.10);
+}
+
+.duna-actions{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+}
+
+.duna-cta{
+  text-decoration:none;
+  color: #fff;
+  font-weight: 750;
+  font-size: .92rem;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--grad1), var(--grad3));
+  box-shadow: 0 14px 30px rgba(0,0,0,.12);
+  border: 1px solid rgba(255,255,255,.30);
+}
+
+.duna-burger{
+  display:none;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,.45);
+  backdrop-filter: blur(10px);
+  cursor:pointer;
+}
+
+.duna-burger span{
+  display:block;
+  width: 18px;
+  height: 2px;
+  margin: 0 auto;
+  background: var(--text);
+  border-radius: 999px;
+}
+
+.duna-burger span + span{margin-top: 6px; opacity: .75}
+
+.duna-mobile{
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  right: 0;
+  padding: 10px;
+  border-radius: 18px;
+  border: 1px solid var(--nav-border-scrolled);
+  background: var(--nav-bg-scrolled);
+  box-shadow: var(--nav-shadow-scrolled);
+  backdrop-filter: blur(var(--nav-blur)) saturate(1.2);
+}
+
+.duna-m-link{
+  display:flex;
+  gap: 10px;
+  align-items:center;
+  text-decoration:none;
+  color: var(--text);
+  padding: 12px 12px;
+  border-radius: 14px;
+  border: 1px solid transparent;
+}
+
+.duna-m-link:hover{background: rgba(255,255,255,.40); border-color: rgba(18,16,20,.08)}
+.duna-m-link.is-active{background: rgba(255,255,255,.55); border-color: rgba(18,16,20,.10)}
+
+.duna-m-emoji{width: 22px; text-align:center}
+
+.duna-m-cta{
+  display:block;
+  margin-top: 8px;
+  text-align:center;
+  text-decoration:none;
+  color:#fff;
+  font-weight: 750;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--grad1), var(--grad3));
+  border: 1px solid rgba(255,255,255,.30);
+}
+
+@media (max-width: 860px){
+  .duna-links{display:none}
+  .duna-cta{display:none}
+  .duna-burger{display:inline-grid; place-items:center}
+}
+
+/* =========================================================
+   THEME HERO BACKGROUND (Duna + Nebula)
+   ========================================================= */
+
+.theme-hero-bg {
+  display: none;
+}
+
+/* --------------------
+   DUNA HERO
+-------------------- */
+html[data-theme="duna"] body {
+  background: #fff;
+  position: relative;
+}
+
+html[data-theme="duna"] .theme-hero-bg {
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: clamp(520px, 85vh, 900px);
+  z-index: -1;
+  pointer-events: none;
+
+  background: url("/images/duna-sky.jpg") top center / cover no-repeat;
+}
+
+html[data-theme="duna"] .theme-hero-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  background: linear-gradient(
+    to bottom,
+    rgba(255,255,255,0) 0%,
+    rgba(255,255,255,0) 45%,
+    rgba(255,255,255,.85) 75%,
+    rgba(255,255,255,1) 100%
+  );
+}
+
+/* --------------------
+   NEBULA HERO
+-------------------- */
+html[data-theme="nebula"] body {
+  background: #0b1020; /* your dark base */
+  position: relative;
+}
+
+html[data-theme="nebula"] .theme-hero-bg {
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: clamp(600px, 90vh, 1000px);
+  z-index: -1;
+  pointer-events: none;
+
+  background: url("/images/nebula-space.jpg") center top / cover no-repeat;
+}
+
+html[data-theme="nebula"] .theme-hero-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  background: linear-gradient(
+    to bottom,
+    rgba(11,16,32,0) 0%,
+    rgba(11,16,32,0) 50%,
+    rgba(11,16,32,.8) 80%,
+    rgba(11,16,32,1) 100%
+  );
+}
+
+.container{
+  max-width:1100px;
+  margin:0 auto;
+  padding: calc(var(--nav-h) + 2rem) 1.25rem 2rem;
+}
 .page-header h1{margin:.25rem 0;font-size:2rem;letter-spacing:.2px}
 .muted{color:var(--muted)}
 .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:1rem;margin-top:1rem}
@@ -677,6 +933,24 @@ html.nav-scrolled .topnav{
 }
 
 .topnav-search:hover::before{ opacity: .55; }
+
+/* Command palette hidden by default */
+.command-palette,
+#commandPalette,
+[data-command-palette] {
+  display: none;
+}
+/* Hide CP opener by default (Duna) */
+.cp-pill { display: none; }
+
+/* Show ONLY in Nebula */
+:root[data-theme="nebula"] .cp-pill { display: flex; }
+/* Only show in Nebula theme */
+html[data-theme="nebula"] .command-palette,
+html[data-theme="nebula"] #commandPalette,
+html[data-theme="nebula"] [data-command-palette] {
+  display: block;
+}
 
 /* =========================
    Settings UI

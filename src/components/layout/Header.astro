@@ -15,31 +15,97 @@ const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.s
 ---
 
 <div class="cp">
-  <!-- Floating pill trigger -->
-  <header class="topnav">
-    <a class="topnav-brand" href="/">
-        <span class="topnav-dot" aria-hidden="true"></span>
-        <span>Life OS</span>
+  <!-- ===== DUNA HEADER (default theme) ===== -->
+  <header class="duna-nav" aria-label="Primary navigation">
+    <a class="duna-brand" href="/" aria-label="Life OS home">
+      <span class="duna-mark" aria-hidden="true"></span>
+      <span class="duna-word">Life OS</span>
     </a>
 
-    <!-- This looks like a search input but opens the palette -->
-    <button class="topnav-search" id="cpOpen" type="button" aria-haspopup="dialog" aria-controls="cpDialog">
-        <span class="topnav-search-ico" aria-hidden="true">⌘</span>
-        <span class="topnav-search-text">Search or jump to…</span>
-        <span class="topnav-search-hint" aria-hidden="true">Ctrl/⌘ K</span>
-    </button>
-
-    <nav class="topnav-links" aria-label="Primary">
-        {items.map((it) => (
-        <a class={"topnav-link " + (isActive(it.href) ? "is-active" : "")} href={it.href}>
-            {it.title}
+    <nav class="duna-links" aria-label="Primary">
+      {items.map((it) => (
+        <a class={"duna-link " + (isActive(it.href) ? "is-active" : "")} href={it.href}>
+          {it.title}
         </a>
-        ))}
+      ))}
     </nav>
-    </header>
+
+    <div class="duna-actions">
+      <a class="duna-cta" href="/tasks">Open Tasks</a>
+      <button
+        class="duna-burger"
+        id="dunaBurger"
+        type="button"
+        aria-label="Open menu"
+        aria-expanded="false"
+        aria-controls="dunaMobile"
+      >
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+      </button>
+    </div>
+
+    <div class="duna-mobile" id="dunaMobile" hidden>
+      {items.map((it) => (
+        <a class={"duna-m-link " + (isActive(it.href) ? "is-active" : "")} href={it.href}>
+          <span class="duna-m-emoji" aria-hidden="true">{it.emoji}</span>
+          <span>{it.title}</span>
+        </a>
+      ))}
+      <a class="duna-m-cta" href="/planner">Open Planner</a>
+    </div>
+
+    <script is:inline>
+      (function () {
+        try {
+          const btn = document.getElementById("dunaBurger");
+          const panel = document.getElementById("dunaMobile");
+          if (!btn || !panel) return;
+
+          const close = () => {
+            btn.setAttribute("aria-expanded", "false");
+            document.documentElement.classList.remove("duna-open");
+            panel.hidden = true;
+          };
+
+          const open = () => {
+            btn.setAttribute("aria-expanded", "true");
+            document.documentElement.classList.add("duna-open");
+            panel.hidden = false;
+          };
+
+          btn.addEventListener("click", () => {
+            const isOpen = btn.getAttribute("aria-expanded") === "true";
+            isOpen ? close() : open();
+          });
+
+          document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape") close();
+          });
+
+          panel.addEventListener("click", (e) => {
+            const a = e.target.closest("a");
+            if (a) close();
+          });
+        } catch {}
+      })();
+    </script>
+  </header>
 
   <!-- Modal -->
   <div class="cp-backdrop" id="cpBackdrop" hidden></div>
+  <!-- Nebula-only Command Palette opener -->
+  <button
+    class="cp-pill"
+    id="cpOpen"
+    type="button"
+    aria-haspopup="dialog"
+    aria-controls="cpDialog"
+  >
+    <span class="cp-pill-ico" aria-hidden="true">⌘</span>
+    <span class="cp-pill-text">Command Palette</span>
+    <span class="cp-pill-hint" aria-hidden="true">Ctrl K</span>
+  </button>
 
   <div class="cp-dialog" id="cpDialog" role="dialog" aria-modal="true" aria-label="Command Palette" hidden>
     <div class="cp-header">
