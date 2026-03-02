@@ -24,3 +24,7 @@ export function setTheme(theme: string) {
 if (typeof window !== "undefined") {
   applyTheme(getTheme());
 }
+
+export function applyThemeOnLoad() {
+  applyTheme(getTheme());
+}
