@@ -21,22 +21,38 @@ import AppShell from "../components/layout/AppShell.astro";
         </div>
     </section>
 
-  <script type="module">
-    import { getTheme, setTheme } from "/src/scripts/theme.ts";
+  <script is:inline>
+    (function () {
+        try {
+        const KEY = "lifeos_theme";
 
-    const sel = document.getElementById("themeSelect");
-    sel.value = getTheme();
-    sel.addEventListener("change", (e) => setTheme(e.target.value));
+        const sel = document.getElementById("themeSelect");
+        if (sel) {
+            // init select from storage
+            const t = (localStorage.getItem(KEY) || "duna").toLowerCase();
+            sel.value = t === "nebula" ? "nebula" : "duna";
 
-    const NAV_KEY = "lifeos_nav_scroll";
-    const navSel = document.getElementById("navScrollSelect");
+            // apply immediately on change
+            sel.addEventListener("change", () => {
+            const v = sel.value === "nebula" ? "nebula" : "duna";
+            localStorage.setItem(KEY, v);
+            document.documentElement.setAttribute("data-theme", v);
+            });
+        }
 
-    navSel.value = localStorage.getItem(NAV_KEY) || "on";
-
-    navSel.addEventListener("change", (e) => {
-    localStorage.setItem(NAV_KEY, e.target.value);
-    // instant effect
-    if (e.target.value === "off") document.documentElement.classList.remove("nav-scrolled");
-    });
-  </script>
+        // nav scroll select (only if it exists)
+        const NAV_KEY = "lifeos_nav_scroll";
+        const navSel = document.getElementById("navScrollSelect");
+        if (navSel) {
+            navSel.value = localStorage.getItem(NAV_KEY) || "on";
+            navSel.addEventListener("change", () => {
+            localStorage.setItem(NAV_KEY, navSel.value);
+            if (navSel.value === "off") document.documentElement.classList.remove("nav-scrolled");
+            });
+        }
+        } catch (e) {
+        console.warn("settings script failed", e);
+        }
+    })();
+    </script>
 </AppShell>
