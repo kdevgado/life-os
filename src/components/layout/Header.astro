@@ -12,6 +12,8 @@ const items: NavItem[] = [
 ];
 
 const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
+
+import AuthButton from "../login/AuthButton";
 ---
 
 <div class="cp">
@@ -32,6 +34,9 @@ const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.s
 
     <div class="duna-actions">
       <a class="duna-cta" href="/tasks">Open Tasks</a>
+
+      <AuthButton client:load />
+
       <button
         class="duna-burger"
         id="dunaBurger"

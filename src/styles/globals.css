@@ -225,6 +225,19 @@ html.nav-scrolled .duna-nav{
 
 .duna-burger span + span{margin-top: 6px; opacity: .75}
 
+.duna-auth{
+  border:1px solid var(--border);
+  background: rgba(255,255,255,.08);
+  color: var(--text);
+  padding: .55rem .85rem;
+  border-radius: 999px;
+  cursor:pointer;
+  font-weight: 600;
+}
+.duna-auth:hover{
+  background: rgba(255,255,255,.14);
+}
+
 .duna-mobile{
   position: absolute;
   top: calc(100% + 10px);
