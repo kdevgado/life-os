@@ -4,6 +4,7 @@ import { createTask, deleteTask, loadTasks, updateTask } from "../../lib/tasksSt
 import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
+import { getJwt } from "../../lib/identity";
 
 type View = "today" | "week" | "all";
 type Priority = 1 | 2 | 3;
@@ -35,9 +36,58 @@ export default function TasksApp() {
   const [justAddedId, setJustAddedId] = useState<string | null>(null);
   const addBtnRef = useRef<HTMLButtonElement | null>(null);
 
+  const [authed, setAuthed] = useState(false);
   useEffect(() => {
-    setTasks(loadTasks());
+    (async () => {
+      const jwt = await getJwt();
+      setAuthed(!!jwt);
+
+      if (!jwt) {
+        setTasks(loadTasks());
+        return;
+      }
+
+      const res = await fetch("/.netlify/functions/tasks", {
+        headers: { Authorization: `Bearer ${jwt}` },
+      });
+
+      setTasks(res.ok ? ((await res.json()) as Task[]) : loadTasks());
+    })();
   }, []);
+
+  const hydratedRef = useRef(false);
+  const saveTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    // skip autosave until we’ve loaded initial data
+    if (!hydratedRef.current) {
+      hydratedRef.current = true;
+      return;
+    }
+
+    // debounce
+    if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
+
+    saveTimerRef.current = window.setTimeout(async () => {
+      const jwt = await getJwt();
+
+      // logged out -> keep local storage as your current store does
+      if (!jwt) return;
+
+      await fetch("/.netlify/functions/tasks", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${jwt}`,
+        },
+        body: JSON.stringify(tasks),
+      });
+    }, 700);
+
+    return () => {
+      if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
+    };
+  }, [tasks]);
 
   const filtered = useMemo(() => {
     const today = isoDate(new Date());
@@ -57,34 +107,53 @@ export default function TasksApp() {
 
   const canAdd = title.trim().length > 0;
 
+  function makeTask(title: string, due?: string, priority: Priority = 3): Task {
+    const now = new Date().toISOString();
+    return {
+      id: crypto.randomUUID(),
+      title,
+      status: "todo",
+      priority,
+      dueDate: due,
+      createdAt: now,
+      updatedAt: now,
+    };
+  }
+
   function onAdd() {
     const trimmed = title.trim();
     if (!trimmed) return;
 
-    const newTask = createTask({
-      title: trimmed,
-      dueDate: dueDate || isoDate(new Date()),
-      priority: priority ?? 3,
-      status: "todo",
-    });
+    const due = dueDate || isoDate(new Date());
 
-    setTasks([newTask, ...tasks]);
+    const newTask = authed
+      ? makeTask(trimmed, due, priority ?? 3)
+      : createTask({ title: trimmed, dueDate: due, priority: priority ?? 3, status: "todo" });
+
+    setTasks((prev) => [newTask, ...prev]);
     setTitle("");
     setJustAddedId(newTask.id);
 
-    // keep your requested defaults ready for the next task
     setDueDate(isoDate(new Date()));
     setPriority(3);
 
-    // clear the “new” highlight after a moment
     window.setTimeout(() => setJustAddedId(null), 650);
   }
 
   function onToggleDone(task: Task) {
     const nextStatus = task.status === "done" ? "todo" : "done";
+
+    if (authed) {
+      const now = new Date().toISOString();
+      setTasks((prev) =>
+        prev.map((t) => (t.id === task.id ? { ...t, status: nextStatus, updatedAt: now } : t))
+      );
+      return;
+    }
+
     const updated = updateTask(task.id, { status: nextStatus });
     if (!updated) return;
-    setTasks(tasks.map((t) => (t.id === task.id ? updated : t)));
+    setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
   }
 
   function inNext7Days(due: string) {
@@ -95,28 +164,40 @@ export default function TasksApp() {
 
   function onSetDue(task: Task, dueDate: string) {
     const nextDue = dueDate || undefined;
+
+    if (authed) {
+      const now = new Date().toISOString();
+      setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, dueDate: nextDue, updatedAt: now } : t)));
+
+      // your view-switch logic can stay the same
+      if (view === "today" && nextDue && nextDue !== isoDate(new Date())) setView(inNext7Days(nextDue) ? "week" : "all");
+      if (view === "week" && nextDue && !inNext7Days(nextDue)) setView("all");
+      return;
+    }
+
     const updated = updateTask(task.id, { dueDate: nextDue });
     if (!updated) return;
+    setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
 
-    setTasks(tasks.map((t) => (t.id === task.id ? updated : t)));
-
-    if (view === "today" && nextDue && nextDue !== isoDate(new Date())) {
-      setView(inNext7Days(nextDue) ? "week" : "all");
-    }
-    if (view === "week" && nextDue && !inNext7Days(nextDue)) {
-      setView("all");
-    }
+    if (view === "today" && nextDue && nextDue !== isoDate(new Date())) setView(inNext7Days(nextDue) ? "week" : "all");
+    if (view === "week" && nextDue && !inNext7Days(nextDue)) setView("all");
   }
 
   function onSetPriority(task: Task, p: Priority) {
+    if (authed) {
+      const now = new Date().toISOString();
+      setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, priority: p, updatedAt: now } : t)));
+      return;
+    }
+
     const updated = updateTask(task.id, { priority: p });
     if (!updated) return;
-    setTasks(tasks.map((t) => (t.id === task.id ? updated : t)));
+    setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
   }
 
   function onRemove(task: Task) {
-    deleteTask(task.id);
-    setTasks(tasks.filter((t) => t.id !== task.id));
+    if (!authed) deleteTask(task.id);
+    setTasks((prev) => prev.filter((t) => t.id !== task.id));
   }
 
   return (
