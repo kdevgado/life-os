@@ -38,7 +38,8 @@ export function normalizePlannerState(raw: unknown, fallback: PlannerState): Pla
       };
     });
 
-    return { ...fallback, ...s, budgetLines: lines };
+    const goals = Array.isArray(s.goals) ? s.goals : [];
+    return { ...fallback, ...s, budgetLines: lines, goals };
   }
 
   // Legacy migrate from rent/transport/savings
@@ -48,5 +49,6 @@ export function normalizePlannerState(raw: unknown, fallback: PlannerState): Pla
     { id: makeId(), name: "Savings", type: "savings", amount: num(s.savingsMonthly), cadence: "monthly" },
   ];
 
-  return { ...fallback, ...s, budgetLines: migrated };
+  const goals = Array.isArray(s.goals) ? s.goals : [];
+  return { ...fallback, ...s, budgetLines: migrated, goals };
 }

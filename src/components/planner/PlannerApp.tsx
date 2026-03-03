@@ -6,6 +6,7 @@ import { getJwt, onAuthChange } from "../../lib/identity";
 import { normalizePlannerState } from "../../lib/plannerNormalize";
 import BudgetPanel from "./BudgetPanel";
 import { toMonthly } from "../../lib/cadence";
+import GoalsPanel from "./GoalsPanel";
 
 export default function PlannerApp() {
   const ignoreNextSaveRef = useRef(false);
@@ -132,6 +133,8 @@ export default function PlannerApp() {
         </section>
 
         <BudgetPanel state={state} setState={setState} />
+
+        <GoalsPanel state={state} setState={setState} />
 
         <section className="card">
           <h2>Summary</h2>

@@ -9,4 +9,29 @@ export const defaultPlannerState: PlannerState = {
     { id: "savings", name: "Savings", type: "savings", amount: 500, cadence: "monthly" },
   ],
   notes: "",
+
+  goals: [
+  {
+    id: "goal_deposit",
+    title: "House deposit",
+    type: "deposit",
+    targetAmount: 60000,
+    currentAmount: 0,
+    dueDate: "",
+    fundingMode: "budgetLines",
+    budgetLineIds: ["savings"], // points to your Savings budget line id
+    manualContributionMonthly: 0,
+  },
+  {
+    id: "goal_emergency",
+    title: "Emergency fund",
+    type: "emergency",
+    targetAmount: 10000,
+    currentAmount: 0,
+    dueDate: "",
+    fundingMode: "manual",
+    budgetLineIds: [],
+    manualContributionMonthly: 200,
+  },
+],
 };
