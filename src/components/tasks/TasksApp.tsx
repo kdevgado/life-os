@@ -1,10 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Task } from "../../types/task";
 import { createTask, deleteTask, loadTasks, updateTask } from "../../lib/tasksStore";
 import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
-import { getJwt } from "../../lib/identity";
+import { getJwt, onAuthChange } from "../../lib/identity";
 
 type View = "today" | "week" | "all";
 type Priority = 1 | 2 | 3;
@@ -37,8 +37,29 @@ export default function TasksApp() {
   const addBtnRef = useRef<HTMLButtonElement | null>(null);
 
   const [authed, setAuthed] = useState(false);
+  const ignoreNextSaveRef = useRef(false);
+  
+  const reloadTasks = useCallback(async () => {
+    const jwt = await getJwt();
+    setAuthed(!!jwt);
+
+    ignoreNextSaveRef.current = true;
+
+    if (!jwt) {
+      setTasks(loadTasks());
+      return;
+    }
+
+    const res = await fetch("/.netlify/functions/tasks", {
+      headers: { Authorization: `Bearer ${jwt}` },
+    });
+
+    setTasks(res.ok ? ((await res.json()) as Task[]) : loadTasks());
+  }, []);
+
   useEffect(() => {
     (async () => {
+      reloadTasks();
       const jwt = await getJwt();
       setAuthed(!!jwt);
 
@@ -53,12 +74,31 @@ export default function TasksApp() {
 
       setTasks(res.ok ? ((await res.json()) as Task[]) : loadTasks());
     })();
-  }, []);
+  }, [reloadTasks]);
+
+  useEffect(() => {
+    let unsub: (() => void) | null = null;
+
+    (async () => {
+      unsub = await onAuthChange(() => {
+        reloadTasks();
+      });
+    })();
+
+    return () => {
+      if (unsub) unsub();
+    };
+  }, [reloadTasks]);
 
   const hydratedRef = useRef(false);
   const saveTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
+    if (ignoreNextSaveRef.current) {
+      ignoreNextSaveRef.current = false;
+      return;
+    }
+
     // skip autosave until we’ve loaded initial data
     if (!hydratedRef.current) {
       hydratedRef.current = true;

@@ -1,14 +1,45 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { load, save } from "../../lib/storage";
 import { defaultPlannerState } from "../../data/defaults";
 import type { PlannerState } from "../../types/planner";
-import { getJwt } from "../../lib/identity";
+import { getJwt, onAuthChange } from "../../lib/identity";
 
 export default function PlannerApp() {
+  const ignoreNextSaveRef = useRef(false);
   const [state, setState] = useState<PlannerState>(() => defaultPlannerState);
+
+  const reloadPlanner = useCallback(async () => {
+    const jwt = await getJwt();
+
+    ignoreNextSaveRef.current = true;
+
+    if (!jwt) {
+      setState(load(defaultPlannerState));
+      return;
+    }
+
+    const res = await fetch("/.netlify/functions/planner", {
+      headers: { Authorization: `Bearer ${jwt}` },
+    });
+
+    if (!res.ok) {
+      setState(load(defaultPlannerState));
+      return;
+    }
+
+    const remote = await res.json();
+    setState(remote ?? defaultPlannerState);
+  }, []);
 
   useEffect(() => {
     (async () => {
+      reloadPlanner();
       const jwt = await getJwt();
 
       if (!jwt) {
@@ -28,12 +59,31 @@ export default function PlannerApp() {
       const remote = await res.json();
       setState(remote ?? defaultPlannerState);
     })();
-  }, []);
-
-  const hydratedRef = React.useRef(false);
-  const timerRef = React.useRef<number | null>(null);
+  }, [reloadPlanner]);
 
   useEffect(() => {
+    let unsub: (() => void) | null = null;
+
+    (async () => {
+      unsub = await onAuthChange(() => {
+        reloadPlanner();
+      });
+    })();
+
+    return () => {
+      if (unsub) unsub();
+    };
+  }, [reloadPlanner]);
+
+  const hydratedRef = useRef(false);
+  const timerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (ignoreNextSaveRef.current) {
+      ignoreNextSaveRef.current = false;
+      return;
+    }
+    
     if (!hydratedRef.current) {
       hydratedRef.current = true;
       return;
@@ -65,7 +115,8 @@ export default function PlannerApp() {
   }, [state]);
 
   const leftover = useMemo(() => {
-    const spent = state.rentMonthly + state.transportMonthly + state.savingsMonthly;
+    const spent =
+      state.rentMonthly + state.transportMonthly + state.savingsMonthly;
     return state.incomeAfterTaxMonthly - spent;
   }, [state]);
 
@@ -84,14 +135,24 @@ export default function PlannerApp() {
             <input
               type="number"
               value={state.incomeAfterTaxMonthly}
-              onChange={(e) => setState((s) => ({ ...s, incomeAfterTaxMonthly: Number(e.target.value) }))}
+              onChange={(e) =>
+                setState((s) => ({
+                  ...s,
+                  incomeAfterTaxMonthly: Number(e.target.value),
+                }))
+              }
             />
           </label>
           <label>
             Pay cycle
             <select
               value={state.payCycle}
-              onChange={(e) => setState((s) => ({ ...s, payCycle: e.target.value as PlannerState["payCycle"] }))}
+              onChange={(e) =>
+                setState((s) => ({
+                  ...s,
+                  payCycle: e.target.value as PlannerState["payCycle"],
+                }))
+              }
             >
               <option value="weekly">Weekly</option>
               <option value="fortnightly">Fortnightly</option>
@@ -107,7 +168,9 @@ export default function PlannerApp() {
             <input
               type="number"
               value={state.rentMonthly}
-              onChange={(e) => setState((s) => ({ ...s, rentMonthly: Number(e.target.value) }))}
+              onChange={(e) =>
+                setState((s) => ({ ...s, rentMonthly: Number(e.target.value) }))
+              }
             />
           </label>
           <label>
@@ -115,7 +178,12 @@ export default function PlannerApp() {
             <input
               type="number"
               value={state.transportMonthly}
-              onChange={(e) => setState((s) => ({ ...s, transportMonthly: Number(e.target.value) }))}
+              onChange={(e) =>
+                setState((s) => ({
+                  ...s,
+                  transportMonthly: Number(e.target.value),
+                }))
+              }
             />
           </label>
           <label>
@@ -123,7 +191,12 @@ export default function PlannerApp() {
             <input
               type="number"
               value={state.savingsMonthly}
-              onChange={(e) => setState((s) => ({ ...s, savingsMonthly: Number(e.target.value) }))}
+              onChange={(e) =>
+                setState((s) => ({
+                  ...s,
+                  savingsMonthly: Number(e.target.value),
+                }))
+              }
             />
           </label>
         </section>
@@ -131,7 +204,10 @@ export default function PlannerApp() {
         <section className="card">
           <h2>Summary</h2>
           <div className="big">
-            Leftover this month: <strong>{Number.isFinite(leftover) ? leftover.toFixed(0) : "0"}</strong>
+            Leftover this month:{" "}
+            <strong>
+              {Number.isFinite(leftover) ? leftover.toFixed(0) : "0"}
+            </strong>
           </div>
           <p className="muted">Tip: aim leftover ≥ 0 (or adjust savings).</p>
         </section>
