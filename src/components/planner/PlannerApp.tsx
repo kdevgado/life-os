@@ -1,14 +1,11 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { load, save } from "../../lib/storage";
 import { defaultPlannerState } from "../../data/defaults";
 import type { PlannerState } from "../../types/planner";
 import { getJwt, onAuthChange } from "../../lib/identity";
+import { normalizePlannerState } from "../../lib/plannerNormalize";
+import BudgetPanel from "./BudgetPanel";
+import { toMonthly } from "../../lib/cadence";
 
 export default function PlannerApp() {
   const ignoreNextSaveRef = useRef(false);
@@ -16,11 +13,11 @@ export default function PlannerApp() {
 
   const reloadPlanner = useCallback(async () => {
     const jwt = await getJwt();
-
     ignoreNextSaveRef.current = true;
 
     if (!jwt) {
-      setState(load(defaultPlannerState));
+      const local = load(defaultPlannerState);
+      setState(normalizePlannerState(local, defaultPlannerState));
       return;
     }
 
@@ -29,47 +26,24 @@ export default function PlannerApp() {
     });
 
     if (!res.ok) {
-      setState(load(defaultPlannerState));
+      const local = load(defaultPlannerState);
+      setState(normalizePlannerState(local, defaultPlannerState));
       return;
     }
 
     const remote = await res.json();
-    setState(remote ?? defaultPlannerState);
+    setState(normalizePlannerState(remote, defaultPlannerState));
   }, []);
 
   useEffect(() => {
-    (async () => {
-      reloadPlanner();
-      const jwt = await getJwt();
-
-      if (!jwt) {
-        setState(load(defaultPlannerState));
-        return;
-      }
-
-      const res = await fetch("/.netlify/functions/planner", {
-        headers: { Authorization: `Bearer ${jwt}` },
-      });
-
-      if (!res.ok) {
-        setState(load(defaultPlannerState));
-        return;
-      }
-
-      const remote = await res.json();
-      setState(remote ?? defaultPlannerState);
-    })();
+    reloadPlanner();
   }, [reloadPlanner]);
 
   useEffect(() => {
     let unsub: (() => void) | null = null;
-
     (async () => {
-      unsub = await onAuthChange(() => {
-        reloadPlanner();
-      });
+      unsub = await onAuthChange(() => reloadPlanner());
     })();
-
     return () => {
       if (unsub) unsub();
     };
@@ -83,22 +57,18 @@ export default function PlannerApp() {
       ignoreNextSaveRef.current = false;
       return;
     }
-    
     if (!hydratedRef.current) {
       hydratedRef.current = true;
       return;
     }
-
     if (timerRef.current) window.clearTimeout(timerRef.current);
 
     timerRef.current = window.setTimeout(async () => {
       const jwt = await getJwt();
-
       if (!jwt) {
-        save(state); // keep your current local autosave
+        save(state);
         return;
       }
-
       await fetch("/.netlify/functions/planner", {
         method: "POST",
         headers: {
@@ -114,10 +84,12 @@ export default function PlannerApp() {
     };
   }, [state]);
 
-  const leftover = useMemo(() => {
-    const spent =
-      state.rentMonthly + state.transportMonthly + state.savingsMonthly;
-    return state.incomeAfterTaxMonthly - spent;
+  const totals = useMemo(() => {
+    const lines = state.budgetLines ?? [];
+    const expenses = lines.filter(l => l.type === "expense").reduce((a, l) => a + toMonthly(l.amount, l.cadence), 0);
+    const savings  = lines.filter(l => l.type === "savings").reduce((a, l) => a + toMonthly(l.amount, l.cadence), 0);
+    const leftover = (state.incomeAfterTaxMonthly || 0) - expenses - savings;
+    return { expenses, savings, leftover };
   }, [state]);
 
   return (
@@ -136,13 +108,11 @@ export default function PlannerApp() {
               type="number"
               value={state.incomeAfterTaxMonthly}
               onChange={(e) =>
-                setState((s) => ({
-                  ...s,
-                  incomeAfterTaxMonthly: Number(e.target.value),
-                }))
+                setState((s) => ({ ...s, incomeAfterTaxMonthly: Number(e.target.value) }))
               }
             />
           </label>
+
           <label>
             Pay cycle
             <select
@@ -161,55 +131,16 @@ export default function PlannerApp() {
           </label>
         </section>
 
-        <section className="card">
-          <h2>Expenses & savings</h2>
-          <label>
-            Rent (monthly)
-            <input
-              type="number"
-              value={state.rentMonthly}
-              onChange={(e) =>
-                setState((s) => ({ ...s, rentMonthly: Number(e.target.value) }))
-              }
-            />
-          </label>
-          <label>
-            Transport (monthly)
-            <input
-              type="number"
-              value={state.transportMonthly}
-              onChange={(e) =>
-                setState((s) => ({
-                  ...s,
-                  transportMonthly: Number(e.target.value),
-                }))
-              }
-            />
-          </label>
-          <label>
-            Savings (monthly)
-            <input
-              type="number"
-              value={state.savingsMonthly}
-              onChange={(e) =>
-                setState((s) => ({
-                  ...s,
-                  savingsMonthly: Number(e.target.value),
-                }))
-              }
-            />
-          </label>
-        </section>
+        <BudgetPanel state={state} setState={setState} />
 
         <section className="card">
           <h2>Summary</h2>
-          <div className="big">
-            Leftover this month:{" "}
-            <strong>
-              {Number.isFinite(leftover) ? leftover.toFixed(0) : "0"}
-            </strong>
+          <div className="muted">Expenses: {totals.expenses.toFixed(0)}</div>
+          <div className="muted">Savings: {totals.savings.toFixed(0)}</div>
+          <div className="big" style={{ marginTop: 10 }}>
+            Leftover this month: <strong>{Number.isFinite(totals.leftover) ? totals.leftover.toFixed(0) : "0"}</strong>
           </div>
-          <p className="muted">Tip: aim leftover ≥ 0 (or adjust savings).</p>
+          <p className="muted">Tip: aim leftover ≥ 0.</p>
         </section>
       </div>
     </div>

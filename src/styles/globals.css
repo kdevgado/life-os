@@ -371,7 +371,12 @@ html[data-theme="nebula"] .theme-hero-bg::after {
 }
 .page-header h1{margin:.25rem 0;font-size:2rem;letter-spacing:.2px}
 .muted{color:var(--muted)}
-.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:1rem;margin-top:1rem}
+.grid{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 16px;
+  align-items: stretch; /* cards stretch to same row height */
+}
 
 .card{
   grid-column: span 6;
@@ -410,6 +415,90 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 .lo-card select:focus {
   border-color: rgba(6,182,212,.65);
   box-shadow: 0 0 0 4px rgba(6,182,212,.15);
+}
+
+/* Budget row */
+.budget-row{
+  width: 100%;
+  box-sizing: border-box;
+
+  display: grid;
+  grid-template-columns:
+    minmax(260px, 1fr)   /* Name */
+    180px                /* Type */
+    minmax(260px, 360px) /* Amount + cadence */
+    44px;                /* Remove */
+  gap: 12px;
+
+  align-items: start; /* IMPORTANT: top-align columns to match name input row */
+
+  padding: 10px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.04);
+}
+
+.budget-row > *{ min-width: 0; }
+
+.budget-name{
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.budget-type{
+  align-self: start; /* keep type aligned with name input */
+}
+
+.budget-amount{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  min-width: 0;
+}
+
+/* Make controls visually clear + same height */
+.budget-row input,
+.budget-row select{
+  width: 100% !important;
+  box-sizing: border-box;
+  margin-top: 0;
+
+  background: rgba(255,255,255,.10);
+  border: 1px solid rgba(255,255,255,.20);
+  color: var(--text);
+
+  border-radius: 14px;
+  padding: .85rem .95rem;
+  line-height: 1.2;
+}
+
+/* Ensure dropdown text/values are readable */
+.budget-row select option{
+  color: #111;
+  background: #fff;
+}
+:root[data-theme="nebula"] .budget-row select option{
+  color: rgba(255,255,255,.92);
+  background: #0b1020;
+}
+
+/* Focus ring */
+.budget-row input:focus,
+.budget-row select:focus{
+  outline: none;
+  border-color: rgba(255,255,255,.35);
+  box-shadow: 0 0 0 3px rgba(124,58,237,.28);
+}
+
+.budget-remove{ justify-self: end; }
+
+/* Mobile */
+@media (max-width: 820px){
+  .grid{ grid-template-columns: 1fr; } /* cards full width on mobile */
+  .budget-row{ grid-template-columns: 1fr 1fr; }
+  .budget-amount{ grid-column: span 2; }
+  .budget-remove{ grid-column: span 2; }
 }
 
 .big{font-size:1.1rem;margin-top:.4rem}
@@ -830,6 +919,9 @@ html.nav-scrolled .topnav{
     rgba(124,58,237,.0)
   );
   -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
     linear-gradient(#000 0 0) content-box,
     linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
