@@ -93,7 +93,7 @@ export default function PlannerApp() {
   }, [state]);
 
   return (
-    <div className="container">
+    <div className="container planner">
       <header className="page-header">
         <h1>Life OS Planner</h1>
         <p className="muted">Monthly view • Saved automatically</p>
