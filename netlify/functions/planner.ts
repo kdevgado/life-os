@@ -3,18 +3,28 @@ import { getStore } from "@netlify/blobs";
 
 export const handler: Handler = async (event, context) => {
   const user = context.clientContext?.user;
-  if (!user?.sub) return { statusCode: 401, body: "Unauthorized" };
+  if (!user?.sub) {
+    return { statusCode: 401, body: "Unauthorized" };
+  }
 
-  const store = getStore("lifeos");
-  const key = `planner/${user.sub}.json`;
+  const store = getStore({
+    name: "lifeos",
+    siteID: process.env.NETLIFY_SITE_ID!,
+    token: process.env.NETLIFY_AUTH_TOKEN!,
+  });
+
+  const key = `tasks/${user.sub}.json`;
 
   if (event.httpMethod === "GET") {
     const data = await store.get(key, { type: "json" }).catch(() => null);
-    return { statusCode: 200, body: JSON.stringify(data ?? null) };
+    return {
+      statusCode: 200,
+      body: JSON.stringify(data ?? []),
+    };
   }
 
   if (event.httpMethod === "POST") {
-    const body = event.body ? JSON.parse(event.body) : null;
+    const body = event.body ? JSON.parse(event.body) : [];
     await store.setJSON(key, body);
     return { statusCode: 200, body: JSON.stringify({ ok: true }) };
   }
