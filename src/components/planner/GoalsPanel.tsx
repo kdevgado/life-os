@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import type { PlannerState, Goal, GoalType } from "../../types/planner";
-import { goalContributionMonthly, monthsToHitGoal, addMonths, requiredMonthlyToHitBy } from "../../lib/goals";
+import { goalContributionMonthlyWithFHSS, goalContributionMonthly, monthsToHitGoal, addMonths, requiredMonthlyToHitBy } from "../../lib/goals";
 
 const makeId = () =>
   (globalThis.crypto?.randomUUID?.() ?? `id_${Math.random().toString(16).slice(2)}`);
@@ -73,7 +73,7 @@ export default function GoalsPanel({ state, setState }: Props) {
 
       <div style={{ display: "grid", gap: 14, marginTop: 12 }}>
         {goals.map((g) => {
-          const contrib = goalContributionMonthly(g, state);
+          const contrib = goalContributionMonthlyWithFHSS(g, state);
           const months = monthsToHitGoal(g, contrib);
           const doneDate =
             months === null ? null : addMonths(new Date(), months).toLocaleDateString(undefined, { year: "numeric", month: "short" });
@@ -220,6 +220,18 @@ export default function GoalsPanel({ state, setState }: Props) {
                   <div className="muted" style={{ marginTop: 6 }}>
                     To hit by due date: ~{req.toFixed(0)} / month
                   </div>
+                )}
+
+                {state.fhss?.enabled && g.type === "deposit" && (
+                <div className="muted" style={{ marginTop: 6 }}>
+                    Deposit power (incl. FHSS): {contrib.toFixed(0)} / month
+                </div>
+                )}
+
+                {state.fhss?.enabled && g.type === "deposit" && (
+                <div className="muted" style={{ fontSize: 13 }}>
+                    Includes FHSS: {(Number(state.fhss.salarySacrificeMonthly) + Number(state.fhss.personalContribMonthly)).toFixed(0)} / month
+                </div>
                 )}
               </div>
             </div>

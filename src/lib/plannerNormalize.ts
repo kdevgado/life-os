@@ -38,9 +38,21 @@ export function normalizePlannerState(raw: unknown, fallback: PlannerState): Pla
       };
     });
 
+    const fhssFallback = {
+    enabled: false,
+    salarySacrificeMonthly: 0,
+    personalContribMonthly: 0,
+    eligibleCapPerFY: 15000,
+    financialYearStartMonth: 6,
+    estEligibleThisFY: 0,
+    };
+
+    const fhss = s.fhss ? { ...fhssFallback, ...s.fhss } : fhssFallback;
+
     const goals = Array.isArray(s.goals) ? s.goals : [];
-    return { ...fallback, ...s, budgetLines: lines, goals };
+    return { ...fallback, ...s, budgetLines: lines, goals, fhss };
   }
+  
 
   // Legacy migrate from rent/transport/savings
   const migrated: BudgetLine[] = [
@@ -49,6 +61,17 @@ export function normalizePlannerState(raw: unknown, fallback: PlannerState): Pla
     { id: makeId(), name: "Savings", type: "savings", amount: num(s.savingsMonthly), cadence: "monthly" },
   ];
 
+  const fhssFallback = {
+    enabled: false,
+    salarySacrificeMonthly: 0,
+    personalContribMonthly: 0,
+    eligibleCapPerFY: 15000,
+    financialYearStartMonth: 6,
+    estEligibleThisFY: 0,
+    };
+
+    const fhss = s.fhss ? { ...fhssFallback, ...s.fhss } : fhssFallback;
+
   const goals = Array.isArray(s.goals) ? s.goals : [];
-  return { ...fallback, ...s, budgetLines: migrated, goals };
+  return { ...fallback, ...s, budgetLines: migrated, goals, fhss };
 }

@@ -7,6 +7,7 @@ import { normalizePlannerState } from "../../lib/plannerNormalize";
 import BudgetPanel from "./BudgetPanel";
 import { toMonthly } from "../../lib/cadence";
 import GoalsPanel from "./GoalsPanel";
+import FHSSPanel from "./FHSSPanel";
 
 export default function PlannerApp() {
   const ignoreNextSaveRef = useRef(false);
@@ -135,6 +136,8 @@ export default function PlannerApp() {
         <BudgetPanel state={state} setState={setState} />
 
         <GoalsPanel state={state} setState={setState} />
+
+        <FHSSPanel state={state} setState={setState} />
 
         <section className="card">
           <h2>Summary</h2>

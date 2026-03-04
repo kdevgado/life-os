@@ -48,3 +48,20 @@ export function requiredMonthlyToHitBy(goal: Goal, dueISO?: string): number | nu
 
   return remaining / m;
 }
+
+/** New helper: include FHSS for deposit goals when enabled */
+export function goalContributionMonthlyWithFHSS(goal: Goal, state: PlannerState): number {
+  const base = goalContributionMonthly(goal, state);
+
+  const fhssEnabled = !!state.fhss?.enabled;
+  if (!fhssEnabled) return base;
+
+  // Only apply FHSS to deposit goals
+  if (goal.type !== "deposit") return base;
+
+  const salary = Math.max(0, n(state.fhss.salarySacrificeMonthly));
+  const personal = Math.max(0, n(state.fhss.personalContribMonthly));
+  const fhssMonthly = salary + personal;
+
+  return base + fhssMonthly;
+}

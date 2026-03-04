@@ -29,12 +29,30 @@ export type Goal = {
   manualContributionMonthly: number;
 };
 
+export type FHSSState = {
+  enabled: boolean;
+
+  // user inputs (monthly)
+  salarySacrificeMonthly: number;
+  personalContribMonthly: number;
+
+  // FY cap settings (simple defaults; you can refine later)
+  eligibleCapPerFY: number; // e.g. 15000
+  financialYearStartMonth: number; // 0=Jan ... 6=Jul (Australia FY starts July)
+
+  // progress tracking
+  estEligibleThisFY: number; // computed or manually tracked (we’ll compute from monthly)
+};
+
 export type PlannerState = {
   payCycle: PayCycle;
   incomeAfterTaxMonthly: number;
   budgetLines: BudgetLine[];
   goals: Goal[];
   notes: string;
+
+  // Future feature: FHSS (First Home Super Saver Scheme) support
+  fhss: FHSSState;
 
   // legacy fields (migration only)
   rentMonthly?: number;
