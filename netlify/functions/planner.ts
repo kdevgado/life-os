@@ -13,7 +13,7 @@ export const handler: Handler = async (event, context) => {
     token: process.env.NETLIFY_AUTH_TOKEN!,
   });
 
-  const key = `tasks/${user.sub}.json`;
+  const key = `planner/${user.sub}.json`;
 
   if (event.httpMethod === "GET") {
     const data = await store.get(key, { type: "json" }).catch(() => null);
