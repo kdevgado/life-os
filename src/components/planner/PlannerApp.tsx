@@ -135,9 +135,9 @@ export default function PlannerApp() {
 
         <BudgetPanel state={state} setState={setState} />
 
-        <GoalsPanel state={state} setState={setState} />
-
         <FHSSPanel state={state} setState={setState} />
+
+        <GoalsPanel state={state} setState={setState} />
 
         <section className="card">
           <h2>Summary</h2>

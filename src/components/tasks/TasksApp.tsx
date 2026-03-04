@@ -38,23 +38,46 @@ export default function TasksApp() {
 
   const [authed, setAuthed] = useState(false);
   const ignoreNextSaveRef = useRef(false);
+
+  // ✅ error handling for load
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   
   const reloadTasks = useCallback(async () => {
-    const jwt = await getJwt();
-    setAuthed(!!jwt);
+    setLoading(true);
+    setLoadError(null);
 
-    ignoreNextSaveRef.current = true;
+    try {
+      const jwt = await getJwt();
+      setAuthed(!!jwt);
 
-    if (!jwt) {
-      setTasks(loadTasks());
-      return;
+      ignoreNextSaveRef.current = true;
+
+      if (!jwt) {
+        setTasks(loadTasks());
+        setLoading(false);
+        return;
+      }
+
+      const res = await fetch("/.netlify/functions/tasks", {
+        headers: { Authorization: `Bearer ${jwt}` },
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        setLoadError(`Tasks failed to load (${res.status}): ${text}`);
+        // ✅ Keep existing tasks visible instead of clearing
+        setLoading(false);
+        return;
+      }
+
+      const remote = (await res.json()) as Task[];
+      setTasks(Array.isArray(remote) ? remote : []);
+      setLoading(false);
+    } catch (e: any) {
+      setLoadError(e?.message ?? "Tasks failed to load");
+      setLoading(false);
     }
-
-    const res = await fetch("/.netlify/functions/tasks", {
-      headers: { Authorization: `Bearer ${jwt}` },
-    });
-
-    setTasks(res.ok ? ((await res.json()) as Task[]) : loadTasks());
   }, []);
 
   useEffect(() => {
@@ -242,6 +265,16 @@ export default function TasksApp() {
 
   return (
     <div className="lo-page lo-tasks lo-stack">
+      {loading && <div className="muted">Loading tasks…</div>}
+        {loadError && (
+          <div className="error">
+            {loadError}
+            <button className="linkBtn" onClick={reloadTasks}>Retry</button>
+          </div>
+        )}
+      {!loading && !loadError && tasks.length === 0 && (
+        <div className="muted">No tasks yet — add your first one.</div>
+      )}
       <Card className="toolbar-card">
         <div className="lo-toolbar">
           <Button variant={view === "today" ? "primary" : "ghost"} onClick={() => setView("today")}>
