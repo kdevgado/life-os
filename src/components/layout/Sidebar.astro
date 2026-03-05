@@ -8,10 +8,11 @@ const items: NavItem[] = [
   { href: "/planner", title: "Planner", emoji: "💰" },
   { href: "/timeline", title: "Timeline", emoji: "📅" },
   { href: "/projects", title: "Projects", emoji: "🧩" },
-  { href: "/settings", title: "Settings", emoji: "⚙️" },
+  { href: "/settings", title: "Spaces", emoji: "🪐" },
 ];
 
-const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
+const isActive = (href: string) =>
+  href === "/" ? pathname === "/" : pathname.startsWith(href);
 ---
 
 <aside class="iw-side" aria-label="Sidebar">
@@ -21,12 +22,19 @@ const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.s
   </a>
 
   <nav class="iw-nav" aria-label="Primary">
-    {items.map((it) => (
-      <a class={"iw-nav-item " + (isActive(it.href) ? "is-active" : "")} href={it.href}>
-        <span class="iw-emoji" aria-hidden="true">{it.emoji}</span>
-        <span class="iw-title">{it.title}</span>
-      </a>
-    ))}
+    {
+      items.map((it) => (
+        <a
+          class={"iw-nav-item " + (isActive(it.href) ? "is-active" : "")}
+          href={it.href}
+        >
+          <span class="iw-emoji" aria-hidden="true">
+            {it.emoji}
+          </span>
+          <span class="iw-title">{it.title}</span>
+        </a>
+      ))
+    }
   </nav>
 
   <div class="iw-side-bottom">

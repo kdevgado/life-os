@@ -8,15 +8,13 @@ function isVideo(path: string) {
 
 export default function ImmersiveBackground({ src }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [picked, setPicked] = useState<string>("");
-
-  // read saved wallpaper once on client
-  useEffect(() => {
+  const [picked, setPicked] = useState<string>(() => {
     try {
-      const saved = localStorage.getItem("lifeos_wallpaper") || "";
-      if (saved) setPicked(saved);
-    } catch {}
-  }, []);
+        return localStorage.getItem("lifeos_wallpaper") || "";
+    } catch {
+        return "";
+    }
+    });
 
   const wallpaper = useMemo(() => {
         if (src) return src;
