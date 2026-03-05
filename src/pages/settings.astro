@@ -1,5 +1,6 @@
 ---
 import AppShell from "../components/layout/AppShell.astro";
+import WallpaperPicker from "../components/dashboard/WallpaperPicker";
 ---
 
 <AppShell title="Settings • Life OS">
@@ -19,6 +20,7 @@ import AppShell from "../components/layout/AppShell.astro";
             </select>
             </div>
         </div>
+        <WallpaperPicker client:load />
     </section>
 
   <script is:inline>

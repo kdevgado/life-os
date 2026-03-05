@@ -1,6 +1,8 @@
 ---
 import "../../styles/globals.css";
-import Header from "../layout/Header.astro";
+import Sidebar from "./Sidebar.astro";
+import ImmersiveBackground from "./ImmersiveBackground";
+import WidgetRail from "./WidgetRail";
 
 const { title = "Life OS" } = Astro.props;
 ---
@@ -20,41 +22,23 @@ const { title = "Life OS" } = Astro.props;
     </script>
   </head>
 
-  <body>
-    <div class="theme-hero-bg" aria-hidden="true">
-      <div class="nebula-twinkle" aria-hidden="true"></div>
+  <body class="iw-app">
+    <ImmersiveBackground client:load />
+
+    <div class="iw-shell">
+      <Sidebar />
+
+      <main class="iw-main" aria-label="Workspace">
+        <header class="iw-topbar">
+          <div class="iw-page-title">{title}</div>
+        </header>
+
+        <section class="iw-content">
+          <slot />
+        </section>
+      </main>
+
+      <WidgetRail client:load />
     </div>
-    <main class="container">
-      {title && (
-        <Header title={title} />
-      )}
-      <slot />
-    </main>
-
-    <script is:inline>
-      (function () {
-        try {
-          const root = document.documentElement;
-
-          // pick the actual scrolling element
-          const scroller =
-            document.querySelector("main") ||
-            document.scrollingElement ||
-            document.documentElement;
-
-          const onScroll = () => {
-            const y = scroller.scrollTop ?? window.scrollY ?? 0;
-            if (y > 6) root.classList.add("nav-scrolled");
-            else root.classList.remove("nav-scrolled");
-          };
-
-          // listen to BOTH, in case your app scrolls window sometimes and main other times
-          window.addEventListener("scroll", onScroll, { passive: true });
-          scroller.addEventListener?.("scroll", onScroll, { passive: true });
-
-          onScroll();
-        } catch {}
-      })();
-    </script>
   </body>
 </html>

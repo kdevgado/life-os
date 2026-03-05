@@ -1,0 +1,35 @@
+---
+const pathname: string = Astro.url.pathname;
+
+type NavItem = { href: string; title: string; emoji: string };
+const items: NavItem[] = [
+  { href: "/", title: "Home", emoji: "🏠" },
+  { href: "/tasks", title: "Tasks", emoji: "✅" },
+  { href: "/planner", title: "Planner", emoji: "💰" },
+  { href: "/timeline", title: "Timeline", emoji: "📅" },
+  { href: "/projects", title: "Projects", emoji: "🧩" },
+  { href: "/settings", title: "Settings", emoji: "⚙️" },
+];
+
+const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
+---
+
+<aside class="iw-side" aria-label="Sidebar">
+  <a class="iw-brand" href="/">
+    <span class="iw-mark" aria-hidden="true"></span>
+    <span class="iw-word">Life OS</span>
+  </a>
+
+  <nav class="iw-nav" aria-label="Primary">
+    {items.map((it) => (
+      <a class={"iw-nav-item " + (isActive(it.href) ? "is-active" : "")} href={it.href}>
+        <span class="iw-emoji" aria-hidden="true">{it.emoji}</span>
+        <span class="iw-title">{it.title}</span>
+      </a>
+    ))}
+  </nav>
+
+  <div class="iw-side-bottom">
+    <a class="iw-quick" href="/tasks">+ Quick task</a>
+  </div>
+</aside>
