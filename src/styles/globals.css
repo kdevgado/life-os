@@ -1021,12 +1021,31 @@ select option {
   overflow: hidden; /* background stays fixed, workspace scrolls */
 }
 
-/* Full-screen background */
+html, body { background: transparent !important; }
+body.iw-app { background: transparent !important; }
+
 .iw-bg{
   position: fixed;
   inset: 0;
-  z-index: 0;
-  pointer-events: none;
+  z-index: -1;
+  overflow: hidden;
+}
+
+.iw-bg__image{
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.iw-bg__video{
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: none;
 }
 
 .iw-wallpaper{
