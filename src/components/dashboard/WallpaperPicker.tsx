@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 
 type Option = {
   label: string;
-  value: string; // path under /public
+  value: string;
 };
 
 const DEFAULTS: Option[] = [
@@ -30,7 +30,6 @@ export default function WallpaperPicker() {
     setValue(next);
     try {
       localStorage.setItem("lifeos_wallpaper", next);
-      // optional: force refresh so background updates even if component isn't on screen
       window.dispatchEvent(new Event("lifeos:wallpaper"));
     } catch {}
   };
@@ -45,23 +44,15 @@ export default function WallpaperPicker() {
   };
 
   return (
-    <div className="iw-widget">
+    <div className="iw-widget wallpaper-picker">
       <div className="iw-widget-title">Wallpaper</div>
       <div className="iw-subtle">Choose your background (independent from theme).</div>
 
-      <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+      <div className="wallpaper-picker__stack">
         <select
+          className="lo-spaces__section"
           value={value}
           onChange={(e) => save(e.target.value)}
-          style={{
-            width: "100%",
-            padding: "10px 12px",
-            borderRadius: 14,
-            border: "1px solid rgba(255,255,255,.14)",
-            background: "rgba(255,255,255,.12)",
-            color: "inherit",
-            outline: "none",
-          }}
         >
           {DEFAULTS.map((o) => (
             <option key={o.value} value={o.value}>
@@ -70,51 +61,30 @@ export default function WallpaperPicker() {
           ))}
         </select>
 
-        <div
-          style={{
-            borderRadius: 16,
-            overflow: "hidden",
-            border: "1px solid rgba(255,255,255,.14)",
-            background: "rgba(0,0,0,.12)",
-            height: 160,
-          }}
-          aria-label="Wallpaper preview"
-        >
+        <div className="wallpaper-picker__preview" aria-label="Wallpaper preview">
           {!isVideo && (
             <div
-              style={{
-                width: "100%",
-                height: "100%",
-                backgroundImage: `url(${value})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-              }}
+              className="wallpaper-picker__image"
+              style={{ backgroundImage: `url(${value})` }}
             />
           )}
 
           {isVideo && (
             <video
+              className="wallpaper-picker__video"
               src={value}
               autoPlay
               muted
               loop
               playsInline
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
             />
           )}
         </div>
 
         <button
+          type="button"
+          className="lo-btn wallpaper-picker__reset"
           onClick={reset}
-          style={{
-            padding: "10px 12px",
-            borderRadius: 14,
-            border: "1px solid rgba(255,255,255,.14)",
-            background: "rgba(255,255,255,.10)",
-            color: "inherit",
-            fontWeight: 700,
-            cursor: "pointer",
-          }}
         >
           Reset to default
         </button>

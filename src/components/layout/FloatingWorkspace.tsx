@@ -62,7 +62,7 @@ function minSizeFor(key: Exclude<PanelKey, null>) {
     case "timer":
       return { w: 300, h: 260 };
     case "tasks":
-      return { w: 600, h: 520 };
+      return { w: 560, h: 520 };
     case "planner":
       return { w: 700, h: 620 };
   }

@@ -1082,6 +1082,46 @@ body.iw-app { background: transparent !important; }
   to   { transform: scale(1.09) translate3d(0.8%, 0.5%, 0); }
 }
 
+.wallpaper-picker__stack{
+  margin-top: 10px;
+  display: grid;
+  gap: 10px;
+}
+
+.wallpaper-picker__select{
+  width: 100%;
+  outline: none;
+}
+
+.wallpaper-picker__preview{
+  height: 160px;
+  overflow: hidden;
+  border-radius: 16px;
+  border: 1px solid var(--shell-border, var(--border));
+  background: var(--shell-surface-soft, var(--panel));
+}
+
+.wallpaper-picker__image,
+.wallpaper-picker__video{
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.wallpaper-picker__image{
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.wallpaper-picker__video{
+  object-fit: cover;
+}
+
+.wallpaper-picker__reset{
+  justify-self: start;
+}
+
 /* Floating desktop layout */
 .lo-page-slot { display:none; } /* keep pages empty visually */
 
