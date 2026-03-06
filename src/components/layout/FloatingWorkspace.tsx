@@ -374,17 +374,18 @@ function TimerPanel() {
   );
 }
 
-// TODO - Sounds Panel
+// Sounds Panel
 function SoundsPanel() {
   const sounds = [
-    { id: "rain", label: "Rain", src: "/sounds/rain.mp3" },
-    { id: "cafe", label: "Cafe", src: "/sounds/cafe.mp3" },
-    { id: "waves", label: "Waves", src: "/sounds/waves.mp3" },
+    { id: "rain", label: "Rain", src: "/audio/gentle-rain.mp3" },
+    { id: "cafe", label: "Cafe", src: "/audio/cafe.mp3" },
+    { id: "fireplace", label: "Fireplace", src: "/audio/fireplace.mp3" },
   ];
 
   return (
     <div className="lo-sounds">
-      <p className="lo-muted">Drop MP3s in <code>public/sounds</code> and they’ll work.</p>
+      <p className="lo-muted">Audio files are loaded from <code>public/audio</code>.</p>
+
       {sounds.map((s) => (
         <div key={s.id} className="lo-sounds__item">
           <div className="lo-sounds__label">{s.label}</div>
@@ -520,8 +521,8 @@ export default function FloatingWorkspace() {
       </div>
 
       {/* Left floating dock */}
-      <nav className="lo-dock" aria-label="Dock">
-        <div className="lo-dock__group">
+      <div className="lo-docks" aria-label="Dock groups">
+        <nav className="lo-dock lo-dock--top" aria-label="Workspace tools">
             {topGroup.map((it) => {
             const active = wins.some((w) => w.key === it.key);
             return (
@@ -536,7 +537,7 @@ export default function FloatingWorkspace() {
 
                     setWins((prev) => {
                     const existing = prev.find((w) => w.key === key);
-                    if (existing) return prev.filter((w) => w.key !== key); // toggle close
+                    if (existing) return prev.filter((w) => w.key !== key);
 
                     const size = defaultSizeFor(key);
                     const nextZ = zTop + 1;
@@ -560,11 +561,9 @@ export default function FloatingWorkspace() {
                 </button>
             );
             })}
-        </div>
+        </nav>
 
-        <div className="lo-dock__divider" />
-
-        <div className="lo-dock__group">
+        <nav className="lo-dock lo-dock--bottom" aria-label="Productivity tools">
             {bottomGroup.map((it) => {
             const active = wins.some((w) => w.key === it.key);
             return (
@@ -579,7 +578,7 @@ export default function FloatingWorkspace() {
 
                     setWins((prev) => {
                     const existing = prev.find((w) => w.key === key);
-                    if (existing) return prev.filter((w) => w.key !== key); // toggle close
+                    if (existing) return prev.filter((w) => w.key !== key);
 
                     const size = defaultSizeFor(key);
                     const nextZ = zTop + 1;
@@ -603,8 +602,8 @@ export default function FloatingWorkspace() {
                 </button>
             );
             })}
-        </div>
         </nav>
+        </div>
 
       {wins.map((w) => (
         <WindowShell

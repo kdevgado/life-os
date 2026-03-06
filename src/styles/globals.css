@@ -1111,36 +1111,72 @@ body.iw-app { background: transparent !important; }
 }
 
 /* Left dock like lifeat.io */
-/* was centered; change to top */
-.lo-dock{
+.lo-docks{
   position: fixed;
   left: 14px;
-  top: 86px;          /* below top-right login */
-  transform: none;    /* remove translateY */
+  top: 86px;
   z-index: 40;
 
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.lo-dock{
   display: flex;
   flex-direction: column;
   gap: 10px;
 
   padding: 10px;
-  border-radius: 16px;
+  border-radius: 18px;
 
   background: rgba(10, 12, 18, 0.55);
   border: 1px solid rgba(255,255,255,0.12);
   backdrop-filter: blur(10px);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.18);
 }
 
-.lo-dock__group{
-  display:flex;
-  flex-direction: column;
+.lo-dock--top{}
+.lo-dock--bottom{}
+
+.lo-dock__btn{
+  appearance: none;
+  border: 0;
+  cursor: pointer;
+  background: transparent;
+  color: inherit;
+
+  display: flex;
+  align-items: center;
   gap: 10px;
+
+  padding: 10px 12px;
+  border-radius: 12px;
+
+  transition: transform .12s ease, background .12s ease;
 }
 
-.lo-dock__divider{
-  height: 1px;
-  background: rgba(255,255,255,0.14);
-  margin: 8px 6px;
+.lo-dock__btn:hover{
+  background: rgba(255,255,255,0.10);
+  transform: translateX(2px);
+}
+
+.lo-dock__btn.is-active{
+  background: rgba(255,255,255,0.16);
+}
+
+.lo-dock__icon{
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+}
+
+.lo-dock__label{
+  font-size: 13px;
+  opacity: 0.9;
+  white-space: nowrap;
 }
 
 .lo-dock__btn{
