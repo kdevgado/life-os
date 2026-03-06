@@ -1111,11 +1111,12 @@ body.iw-app { background: transparent !important; }
 }
 
 /* Left dock like lifeat.io */
+/* was centered; change to top */
 .lo-dock{
   position: fixed;
   left: 14px;
-  top: 10%;
-  transform: translateY(-50%);
+  top: 86px;          /* below top-right login */
+  transform: none;    /* remove translateY */
   z-index: 40;
 
   display: flex;
@@ -1128,6 +1129,18 @@ body.iw-app { background: transparent !important; }
   background: rgba(10, 12, 18, 0.55);
   border: 1px solid rgba(255,255,255,0.12);
   backdrop-filter: blur(10px);
+}
+
+.lo-dock__group{
+  display:flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lo-dock__divider{
+  height: 1px;
+  background: rgba(255,255,255,0.14);
+  margin: 8px 6px;
 }
 
 .lo-dock__btn{
@@ -1332,4 +1345,77 @@ body.iw-app { background: transparent !important; }
   border-right: 2px solid rgba(255,255,255,0.45);
   border-bottom: 2px solid rgba(255,255,255,0.45);
   border-bottom-right-radius: 2px;
+}
+
+.lo-btn{
+  border: 1px solid rgba(255,255,255,0.16);
+  background: rgba(0,0,0,0.28);
+  color: inherit;
+  border-radius: 12px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.lo-btn:hover{ background: rgba(255,255,255,0.10); }
+
+.lo-chip{
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.08);
+  color: inherit;
+  border-radius: 999px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.lo-muted{ opacity: .75; font-size: 13px; }
+
+.lo-timer{ display:grid; gap: 12px; }
+.lo-timer__time{
+  font-size: 44px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+.lo-timer__row{ display:flex; gap: 10px; flex-wrap: wrap; }
+
+.lo-sounds{ display:grid; gap: 12px; }
+.lo-sounds__item{
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.10);
+  display:grid;
+  gap: 8px;
+}
+.lo-sounds__label{ font-weight: 650; }
+
+.lo-cal{ display:grid; gap: 12px; }
+.lo-cal__top{
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.lo-cal__title{ font-weight: 700; }
+.lo-cal__grid{
+  display:grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+.lo-cal__cell{
+  padding: 10px 0;
+  text-align:center;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.lo-cal__dowcell{
+  background: transparent;
+  border: 0;
+  opacity: .75;
+  font-size: 12px;
+  padding: 4px 0;
+}
+.lo-cal__cell.is-today{
+  background: rgba(255,255,255,0.14);
+  border-color: rgba(255,255,255,0.18);
 }
