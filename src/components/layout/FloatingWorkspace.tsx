@@ -334,23 +334,21 @@ export default function FloatingWorkspace() {
                 const y = Math.round(r.top - 10);
 
                 setWins((prev) => {
-                  const existing = prev.find((w) => w.key === key);
-                  if (existing) {
-                    // already open -> focus it
+                    const existing = prev.find((w) => w.key === key);
+
+                    // If already open -> CLOSE (toggle off)
+                    if (existing) {
+                    return prev.filter((w) => w.key !== key);
+                    }
+
+                    // Otherwise open new
+                    const size = defaultSizeFor(key);
                     const nextZ = zTop + 1;
                     setZTop(nextZ);
-                    return prev.map((w) =>
-                      w.key === key ? { ...w, z: nextZ } : w,
-                    );
-                  }
 
-                  // open new
-                  const nextZ = zTop + 1;
-                  setZTop(nextZ);
-                  const size = defaultSizeFor(key);
-                  return [...prev, { key, x, y, z: nextZ, w: size.w, h: size.h }];
+                    return [...prev, { key, x, y, z: nextZ, w: size.w, h: size.h }];
                 });
-              }}
+                }}
               aria-label={it.label}
               title={it.label}
               type="button"
