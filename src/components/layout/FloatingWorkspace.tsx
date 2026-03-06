@@ -235,6 +235,76 @@ function SpacesPanel() {
   );
 }
 
+function intersects(a: { x: number; y: number; w: number; h: number }, b: { x: number; y: number; w: number; h: number }) {
+  return !(
+    a.x + a.w <= b.x ||
+    b.x + b.w <= a.x ||
+    a.y + a.h <= b.y ||
+    b.y + b.h <= a.y
+  );
+}
+
+function findNonOverlappingPos(args: {
+  preferred: { x: number; y: number };
+  size: { w: number; h: number };
+  existing: { x: number; y: number; w: number; h: number }[];
+}) {
+  const { preferred, size, existing } = args;
+
+  // Reserve left space for dock + padding
+  const leftSafe = 92;
+  const topSafe = 80;
+  const pad = 18;
+
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+
+  const maxX = vw - size.w - 24;
+  const maxY = vh - size.h - 24;
+
+  // Candidate positions: a grid starting near preferred
+  const stepX = Math.max(40, Math.round(size.w * 0.4));
+  const stepY = Math.max(40, Math.round(size.h * 0.35));
+
+  const startX = clamp(preferred.x, leftSafe, maxX);
+  const startY = clamp(preferred.y, topSafe, maxY);
+
+  const candidates: { x: number; y: number }[] = [];
+
+  // 1) try preferred first
+  candidates.push({ x: startX, y: startY });
+
+  // 2) scan a grid to the right/down then wrap
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 10; col++) {
+      const x = clamp(startX + col * stepX, leftSafe, maxX);
+      const y = clamp(startY + row * stepY, topSafe, maxY);
+      candidates.push({ x, y });
+    }
+  }
+
+  // 3) full-screen grid fallback (top-left to bottom-right)
+  for (let y = topSafe; y <= maxY; y += stepY) {
+    for (let x = leftSafe; x <= maxX; x += stepX) {
+      candidates.push({ x, y });
+    }
+  }
+
+  // Choose first candidate that doesn't overlap any existing window (with padding)
+  for (const c of candidates) {
+    const rect = { x: c.x - pad, y: c.y - pad, w: size.w + pad * 2, h: size.h + pad * 2 };
+    const ok = existing.every((ex) => !intersects(rect, ex));
+    if (ok) return c;
+  }
+
+  // Final fallback: cascade a bit
+  const n = existing.length;
+  return {
+    x: clamp(leftSafe + 40 + (n * 24) % 240, leftSafe, maxX),
+    y: clamp(topSafe + 30 + (n * 20) % 220, topSafe, maxY),
+  };
+}
+
 export default function FloatingWorkspace() {
   type Win = {
     key: Exclude<PanelKey, null>;
@@ -334,19 +404,22 @@ export default function FloatingWorkspace() {
                 const y = Math.round(r.top - 10);
 
                 setWins((prev) => {
-                    const existing = prev.find((w) => w.key === key);
+                const existing = prev.find((w) => w.key === key);
 
-                    // If already open -> CLOSE (toggle off)
-                    if (existing) {
-                    return prev.filter((w) => w.key !== key);
-                    }
+                // Toggle close if already open
+                if (existing) return prev.filter((w) => w.key !== key);
 
-                    // Otherwise open new
-                    const size = defaultSizeFor(key);
-                    const nextZ = zTop + 1;
-                    setZTop(nextZ);
+                const size = defaultSizeFor(key);
+                const nextZ = zTop + 1;
+                setZTop(nextZ);
 
-                    return [...prev, { key, x, y, z: nextZ, w: size.w, h: size.h }];
+                const placed = findNonOverlappingPos({
+                    preferred: { x, y },
+                    size,
+                    existing: prev.map((w) => ({ x: w.x, y: w.y, w: w.w, h: w.h })),
+                    });
+
+                    return [...prev, { key, x: placed.x, y: placed.y, z: nextZ, w: size.w, h: size.h }];
                 });
                 }}
               aria-label={it.label}
