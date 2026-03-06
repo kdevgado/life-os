@@ -12,6 +12,9 @@
     "packageJson": {
       "dependencies": [
         "npm:@astrojs/react@^4.4.2",
+        "npm:@netlify/blobs@^10.7.0",
+        "npm:@netlify/functions@^5.1.2",
+        "npm:@types/node@^25.3.3",
         "npm:@types/react-dom@^19.2.3",
         "npm:@types/react@^19.2.14",
         "npm:astro@^5.17.1",

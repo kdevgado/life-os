@@ -1369,3 +1369,246 @@ body.iw-app { background: transparent !important; }
   .dock{ left: 10px; top: 60px; }
   .dock-btn{ width: 60px; height: 60px; }
 }
+
+/* Floating desktop layout */
+.lo-page-slot { display:none; } /* keep pages empty visually */
+
+/* login button container */
+.lo-auth{
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 80;
+}
+
+/* login button */
+.lo-auth button{
+  appearance: none;
+  border: 1px solid rgba(255,255,255,0.18);
+
+  padding: 8px 16px;
+  border-radius: 999px;
+
+  font-size: 13px;
+  font-weight: 500;
+
+  color: white;
+  background: rgba(0,0,0,0.35);
+
+  backdrop-filter: blur(12px);
+
+  cursor: pointer;
+
+  transition:
+    background .15s ease,
+    transform .12s ease,
+    border .15s ease;
+}
+
+/* hover */
+.lo-auth button:hover{
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.28);
+  transform: translateY(-1px);
+}
+
+/* active */
+.lo-auth button:active{
+  transform: translateY(0);
+}
+
+/* Left dock like lifeat.io */
+.lo-dock{
+  position: fixed;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 40;
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  padding: 10px;
+  border-radius: 16px;
+
+  background: rgba(10, 12, 18, 0.55);
+  border: 1px solid rgba(255,255,255,0.12);
+  backdrop-filter: blur(10px);
+}
+
+.lo-dock__btn{
+  appearance: none;
+  border: 0;
+  cursor: pointer;
+  background: transparent;
+  color: inherit;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 10px 12px;
+  border-radius: 12px;
+
+  transition: transform .12s ease, background .12s ease;
+}
+
+.lo-dock__btn:hover{
+  background: rgba(255,255,255,0.10);
+  transform: translateX(2px);
+}
+
+.lo-dock__btn.is-active{
+  background: rgba(255,255,255,0.16);
+}
+
+.lo-dock__icon{
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+}
+
+.lo-dock__label{
+  font-size: 13px;
+  opacity: 0.9;
+  white-space: nowrap;
+}
+
+/* Floating window */
+.lo-window{
+  position: fixed;
+  top: 90px;
+  left: 92px;
+  right: 26px;
+  max-width: 980px;
+  height: calc(100vh - 140px);
+
+  z-index: 45;
+
+  border-radius: 18px;
+  overflow: hidden;
+
+  background: rgba(15, 18, 28, 0.55);
+  border: 1px solid rgba(255,255,255,0.14);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+}
+
+.lo-window__bar{
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.10);
+}
+
+.lo-window__title{
+  font-weight: 650;
+  font-size: 14px;
+  opacity: 0.95;
+}
+
+.lo-window__close{
+  border: 0;
+  cursor: pointer;
+  background: rgba(255,255,255,0.10);
+  color: inherit;
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+.lo-window__close:hover{
+  background: rgba(255,255,255,0.16);
+}
+
+.lo-window__body{
+  height: calc(100% - 49px);
+  overflow: auto;
+  padding: 14px;
+}
+
+/* Simple settings panel styling inside window */
+.lo-spaces{
+  display: grid;
+  gap: 14px;
+}
+
+.lo-spaces__section{
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.10);
+}
+
+.lo-spaces__label{
+  display:grid;
+  gap: 4px;
+}
+
+.lo-spaces__label span{
+  opacity: 0.75;
+  font-size: 12px;
+}
+
+.lo-spaces__select{
+  background: rgba(0,0,0,0.35);
+  color: inherit;
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.lo-placeholder{
+  padding: 16px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.10);
+}
+
+.lo-window__bar--draggable{
+  cursor: grab;
+  user-select: none;
+  touch-action: none; /* important for dragging on touch */
+}
+
+.lo-window__bar--draggable:active{
+  cursor: grabbing;
+}
+
+.lo-window__actions{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+}
+
+.lo-window__close{
+  border: none;
+  background: rgba(255,255,255,0.12);
+
+  width: 28px;
+  height: 28px;
+
+  border-radius: 8px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 16px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: background .12s ease;
+}
+
+.lo-window__close:hover{
+  background: rgba(255,255,255,0.22);
+}
