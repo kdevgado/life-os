@@ -4,52 +4,37 @@ import PlannerApp from "../planner/PlannerApp";
 import WallpaperPicker from "../dashboard/WallpaperPicker";
 import AuthButton from "../login/AuthButton";
 
-type PanelKey = "tasks" | "planner" | "projects" | "timeline" | "spaces" | null;
-
-function clamp(n: number, min: number, max: number) {
-  return Math.max(min, Math.min(max, n));
-}
+type PanelKey = "tasks" | "planner" | "timeline" | "spaces" | null;
 
 function storageKey(panel: string) {
   return `lifeos_window_pos_${panel}`;
 }
 
-function readStoredPos(panel: string): { x: number; y: number } | null {
-  try {
-    const raw = localStorage.getItem(storageKey(panel));
-    if (!raw) return null;
-    const obj = JSON.parse(raw);
-    if (typeof obj?.x === "number" && typeof obj?.y === "number") return obj;
-  } catch {}
-  return null;
-}
-
-function writeStoredPos(panel: string, pos: { x: number; y: number }) {
-  try {
-    localStorage.setItem(storageKey(panel), JSON.stringify(pos));
-  } catch {}
+function clamp(n: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, n));
 }
 
 function WindowShell({
   title,
   panelKey,
-  initialPos,
+  x,
+  y,
+  z,
+  onFocus,
+  onMove,
   onClose,
   children,
 }: {
   title: string;
   panelKey: string;
-  initialPos?: { x: number; y: number } | null;
+  x: number;
+  y: number;
+  z: number;
+  onFocus: () => void;
+  onMove: (x: number, y: number) => void;
   onClose: () => void;
   children: React.ReactNode;
 }) {
-  // Default position if none provided
-  const [pos, setPos] = React.useState<{ x: number; y: number }>(() => {
-    // Priority: stored -> initialPos -> default
-    const stored = readStoredPos(panelKey);
-    return stored ?? initialPos ?? { x: 92, y: 90 };
-  });
-
   const dragRef = React.useRef<{
     startX: number;
     startY: number;
@@ -58,55 +43,44 @@ function WindowShell({
     dragging: boolean;
   } | null>(null);
 
-  const onPointerDown = (e: React.PointerEvent) => {
-    // Only left click / primary
+  const onPointerDownBar = (e: React.PointerEvent) => {
     if (e.button !== 0) return;
+    onFocus();
 
-    // Capture pointer to keep receiving events during drag
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
 
     dragRef.current = {
       startX: e.clientX,
       startY: e.clientY,
-      originX: pos.x,
-      originY: pos.y,
+      originX: x,
+      originY: y,
       dragging: true,
     };
   };
 
-  const onPointerMove = (e: React.PointerEvent) => {
+  const onPointerMoveBar = (e: React.PointerEvent) => {
     const d = dragRef.current;
     if (!d?.dragging) return;
 
     const dx = e.clientX - d.startX;
     const dy = e.clientY - d.startY;
 
-    // Window bounds (rough, but works well)
-    const W = 980; // max width we set in CSS
-    const minX = 70; // don't cover dock
+    const minX = 70;
     const minY = 14;
-    const maxX = window.innerWidth - 40; // clamp lightly; true clamp happens below
-    const maxY = window.innerHeight - 60;
+    const maxX = window.innerWidth - 320;
+    const maxY = window.innerHeight - 120;
 
-    // Use viewport clamping (keep title bar accessible)
-    const x = clamp(d.originX + dx, minX, maxX);
-    const y = clamp(d.originY + dy, minY, maxY);
+    const nx = clamp(d.originX + dx, minX, maxX);
+    const ny = clamp(d.originY + dy, minY, maxY);
 
-    setPos({ x, y });
+    onMove(nx, ny);
   };
 
-  const onPointerUp = () => {
+  const onPointerUpBar = () => {
     const d = dragRef.current;
     if (!d?.dragging) return;
     dragRef.current = { ...d, dragging: false };
-    writeStoredPos(panelKey, pos);
   };
-
-  // Persist when pos changes (debounced-ish by pointer up, but also safe here)
-  React.useEffect(() => {
-    writeStoredPos(panelKey, pos);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pos.x, pos.y]);
 
   return (
     <section
@@ -114,32 +88,36 @@ function WindowShell({
       role="dialog"
       aria-label={title}
       style={{
-        left: pos.x,
-        top: pos.y,
+        left: x,
+        top: y,
         right: "auto",
         transform: "none",
+        zIndex: z,
       }}
+      onPointerDown={() => onFocus()}
     >
       <header
         className="lo-window__bar lo-window__bar--draggable"
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
+        onPointerDown={onPointerDownBar}
+        onPointerMove={onPointerMoveBar}
+        onPointerUp={onPointerUpBar}
       >
         <div className="lo-window__title">{title}</div>
 
         <div className="lo-window__actions">
+          {/* Minimise-style close */}
           <button
             className="lo-window__close"
             aria-label="Close"
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
-                e.stopPropagation();
-                onClose();
+              e.stopPropagation();
+              onClose();
             }}
-            >
+            type="button"
+          >
             –
-            </button>
+          </button>
         </div>
       </header>
 
@@ -159,7 +137,12 @@ function SpacesPanel() {
 
         <select
           className="lo-spaces__select"
-          defaultValue={(localStorage.getItem("lifeos_theme") || "duna").toLowerCase() === "nebula" ? "nebula" : "duna"}
+          defaultValue={
+            (localStorage.getItem("lifeos_theme") || "duna").toLowerCase() ===
+            "nebula"
+              ? "nebula"
+              : "duna"
+          }
           onChange={(e) => {
             const v = e.target.value === "nebula" ? "nebula" : "duna";
             localStorage.setItem("lifeos_theme", v);
@@ -177,32 +160,68 @@ function SpacesPanel() {
 }
 
 export default function FloatingWorkspace() {
-  const [open, setOpen] = useState<PanelKey>(null);
-  const [initialPos, setInitialPos] = useState<{ x: number; y: number } | null>(null);
+  type Win = { key: Exclude<PanelKey, null>; x: number; y: number; z: number };
+
+  const [wins, setWins] = useState<Win[]>(() => {
+    try {
+      const raw = localStorage.getItem("lifeos_windows_v1");
+      return raw ? (JSON.parse(raw) as Win[]) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [zTop, setZTop] = useState<number>(() => {
+    const z = wins.reduce((m, w) => Math.max(m, w.z), 50);
+    return z || 50;
+  });
+
+  React.useEffect(() => {
+    try {
+      localStorage.setItem("lifeos_windows_v1", JSON.stringify(wins));
+    } catch {}
+  }, [wins]);
 
   const items = useMemo(
     () => [
       { key: "tasks" as const, icon: "✅", label: "Tasks" },
       { key: "planner" as const, icon: "💰", label: "Planner" },
-      { key: "projects" as const, icon: "🧩", label: "Projects" },
       { key: "timeline" as const, icon: "📅", label: "Timeline" },
       { key: "spaces" as const, icon: "🪐", label: "Spaces" },
     ],
-    []
+    [],
   );
 
-  const title =
-    open === "tasks"
-      ? "Tasks"
-      : open === "planner"
-      ? "Planner"
-      : open === "projects"
-      ? "Projects"
-      : open === "timeline"
-      ? "Timeline"
-      : open === "spaces"
-      ? "Spaces"
-      : "";
+  function titleFor(k: Win["key"]) {
+    switch (k) {
+      case "tasks":
+        return "Tasks";
+      case "planner":
+        return "Planner";
+      case "timeline":
+        return "Timeline";
+      case "spaces":
+        return "Spaces";
+    }
+  }
+
+  function focusWindow(key: Win["key"]) {
+    setZTop((z) => {
+      const nextZ = z + 1;
+      setWins((prev) =>
+        prev.map((w) => (w.key === key ? { ...w, z: nextZ } : w)),
+      );
+      return nextZ;
+    });
+  }
+
+  function closeWindow(key: Win["key"]) {
+    setWins((prev) => prev.filter((w) => w.key !== key));
+  }
+
+  function moveWindow(key: Win["key"], x: number, y: number) {
+    setWins((prev) => prev.map((w) => (w.key === key ? { ...w, x, y } : w)));
+  }
 
   return (
     <>
@@ -214,22 +233,36 @@ export default function FloatingWorkspace() {
       {/* Left floating dock */}
       <nav className="lo-dock" aria-label="Dock">
         {items.map((it) => {
-          const active = open === it.key;
+          const active = wins.some((w) => w.key === it.key);
           return (
             <button
               key={it.key}
               className={"lo-dock__btn " + (active ? "is-active" : "")}
               onClick={(e) => {
+                const key = it.key as Exclude<PanelKey, null>;
                 const btn = e.currentTarget as HTMLButtonElement;
                 const r = btn.getBoundingClientRect();
 
-                // Place window slightly to the right of dock, aligned to the icon
                 const x = Math.round(r.right + 18);
                 const y = Math.round(r.top - 10);
 
-                setInitialPos({ x, y });
-                setOpen((cur) => (cur === it.key ? null : it.key));
-                }}
+                setWins((prev) => {
+                  const existing = prev.find((w) => w.key === key);
+                  if (existing) {
+                    // already open -> focus it
+                    const nextZ = zTop + 1;
+                    setZTop(nextZ);
+                    return prev.map((w) =>
+                      w.key === key ? { ...w, z: nextZ } : w,
+                    );
+                  }
+
+                  // open new
+                  const nextZ = zTop + 1;
+                  setZTop(nextZ);
+                  return [...prev, { key, x, y, z: nextZ }];
+                });
+              }}
               aria-label={it.label}
               title={it.label}
               type="button"
@@ -243,24 +276,29 @@ export default function FloatingWorkspace() {
         })}
       </nav>
 
-      {open && (
+      {wins.map((w) => (
         <WindowShell
-            title={title}
-            panelKey={open}
-            initialPos={initialPos}
-            onClose={() => setOpen(null)}
+            key={w.key}
+            title={titleFor(w.key)}
+            panelKey={w.key}
+            x={w.x}
+            y={w.y}
+            z={w.z}
+            onFocus={() => focusWindow(w.key)}
+            onMove={(x, y) => moveWindow(w.key, x, y)}
+            onClose={() => closeWindow(w.key)}
         >
-            {open === "tasks" && <TasksApp />}
-            {open === "planner" && <PlannerApp />}
-            {open === "timeline" && (
+            {w.key === "tasks" && <TasksApp />}
+            {w.key === "planner" && <PlannerApp />}
+            {w.key === "timeline" && (
             <div className="lo-placeholder">
                 <h3>Timeline</h3>
                 <p>Coming soon.</p>
             </div>
             )}
-            {open === "spaces" && <SpacesPanel />}
+            {w.key === "spaces" && <SpacesPanel />}
         </WindowShell>
-        )}
+        ))}
     </>
   );
 }
