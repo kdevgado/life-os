@@ -6,13 +6,35 @@ import AuthButton from "../login/AuthButton";
 
 type PanelKey = "tasks" | "planner" | "timeline" | "spaces" | null;
 
-function storageKey(panel: string) {
-  return `lifeos_window_pos_${panel}`;
-}
-
 function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
 }
+
+  function defaultSizeFor(key: Exclude<PanelKey, null>) {
+    switch (key) {
+        case "tasks":
+        return { w: 420, h: 560 };
+        case "planner":
+        return { w: 720, h: 620 };
+        case "timeline":
+        return { w: 520, h: 420 };
+        case "spaces":
+        return { w: 460, h: 520 };
+    }
+    }
+
+    function minSizeFor(key: Exclude<PanelKey, null>) {
+        switch (key) {
+            case "tasks":
+            return { w: 340, h: 360 };
+            case "planner":
+            return { w: 520, h: 420 };
+            case "timeline":
+            return { w: 380, h: 280 };
+            case "spaces":
+            return { w: 360, h: 360 };
+        }
+    }
 
 function WindowShell({
   title,
@@ -20,18 +42,24 @@ function WindowShell({
   x,
   y,
   z,
+  w,
+  h,
   onFocus,
   onMove,
+  onResize,
   onClose,
   children,
 }: {
   title: string;
-  panelKey: string;
+  panelKey: Exclude<PanelKey, null>;
   x: number;
   y: number;
   z: number;
+  w: number;
+  h: number;
   onFocus: () => void;
   onMove: (x: number, y: number) => void;
+  onResize: (w: number, h: number) => void;
   onClose: () => void;
   children: React.ReactNode;
 }) {
@@ -43,10 +71,17 @@ function WindowShell({
     dragging: boolean;
   } | null>(null);
 
+  const resizeRef = React.useRef<{
+    startX: number;
+    startY: number;
+    originW: number;
+    originH: number;
+    resizing: boolean;
+  } | null>(null);
+
   const onPointerDownBar = (e: React.PointerEvent) => {
     if (e.button !== 0) return;
     onFocus();
-
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
 
     dragRef.current = {
@@ -65,13 +100,8 @@ function WindowShell({
     const dx = e.clientX - d.startX;
     const dy = e.clientY - d.startY;
 
-    const minX = 70;
-    const minY = 14;
-    const maxX = window.innerWidth - 320;
-    const maxY = window.innerHeight - 120;
-
-    const nx = clamp(d.originX + dx, minX, maxX);
-    const ny = clamp(d.originY + dy, minY, maxY);
+    const nx = clamp(d.originX + dx, 70, window.innerWidth - 180);
+    const ny = clamp(d.originY + dy, 14, window.innerHeight - 80);
 
     onMove(nx, ny);
   };
@@ -82,6 +112,44 @@ function WindowShell({
     dragRef.current = { ...d, dragging: false };
   };
 
+  const onPointerDownResize = (e: React.PointerEvent) => {
+    if (e.button !== 0) return;
+    e.stopPropagation();
+    onFocus();
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+
+    resizeRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      originW: w,
+      originH: h,
+      resizing: true,
+    };
+  };
+
+  const onPointerMoveResize = (e: React.PointerEvent) => {
+    const r = resizeRef.current;
+    if (!r?.resizing) return;
+
+    const dx = e.clientX - r.startX;
+    const dy = e.clientY - r.startY;
+
+    const min = minSizeFor(panelKey);
+    const maxW = window.innerWidth - x - 24;
+    const maxH = window.innerHeight - y - 24;
+
+    const nextW = clamp(r.originW + dx, min.w, maxW);
+    const nextH = clamp(r.originH + dy, min.h, maxH);
+
+    onResize(nextW, nextH);
+  };
+
+  const onPointerUpResize = () => {
+    const r = resizeRef.current;
+    if (!r?.resizing) return;
+    resizeRef.current = { ...r, resizing: false };
+  };
+
   return (
     <section
       className="lo-window"
@@ -90,6 +158,8 @@ function WindowShell({
       style={{
         left: x,
         top: y,
+        width: w,
+        height: h,
         right: "auto",
         transform: "none",
         zIndex: z,
@@ -105,7 +175,6 @@ function WindowShell({
         <div className="lo-window__title">{title}</div>
 
         <div className="lo-window__actions">
-          {/* Minimise-style close */}
           <button
             className="lo-window__close"
             aria-label="Close"
@@ -122,6 +191,13 @@ function WindowShell({
       </header>
 
       <div className="lo-window__body">{children}</div>
+
+      <div
+        className="lo-window__resize"
+        onPointerDown={onPointerDownResize}
+        onPointerMove={onPointerMoveResize}
+        onPointerUp={onPointerUpResize}
+      />
     </section>
   );
 }
@@ -160,16 +236,23 @@ function SpacesPanel() {
 }
 
 export default function FloatingWorkspace() {
-  type Win = { key: Exclude<PanelKey, null>; x: number; y: number; z: number };
+  type Win = {
+    key: Exclude<PanelKey, null>;
+    x: number;
+    y: number;
+    z: number;
+    w: number;
+    h: number;
+    };
 
   const [wins, setWins] = useState<Win[]>(() => {
     try {
-      const raw = localStorage.getItem("lifeos_windows_v1");
-      return raw ? (JSON.parse(raw) as Win[]) : [];
+        const raw = localStorage.getItem("lifeos_windows_v2");
+        return raw ? (JSON.parse(raw) as Win[]) : [];
     } catch {
-      return [];
+        return [];
     }
-  });
+    });
 
   const [zTop, setZTop] = useState<number>(() => {
     const z = wins.reduce((m, w) => Math.max(m, w.z), 50);
@@ -178,9 +261,9 @@ export default function FloatingWorkspace() {
 
   React.useEffect(() => {
     try {
-      localStorage.setItem("lifeos_windows_v1", JSON.stringify(wins));
+        localStorage.setItem("lifeos_windows_v2", JSON.stringify(wins));
     } catch {}
-  }, [wins]);
+    }, [wins]);
 
   const items = useMemo(
     () => [
@@ -223,6 +306,10 @@ export default function FloatingWorkspace() {
     setWins((prev) => prev.map((w) => (w.key === key ? { ...w, x, y } : w)));
   }
 
+    function resizeWindow(key: Win["key"], w: number, h: number) {
+    setWins((prev) => prev.map((win) => (win.key === key ? { ...win, w, h } : win)));
+    }
+
   return (
     <>
       {/* Top-right login */}
@@ -260,7 +347,8 @@ export default function FloatingWorkspace() {
                   // open new
                   const nextZ = zTop + 1;
                   setZTop(nextZ);
-                  return [...prev, { key, x, y, z: nextZ }];
+                  const size = defaultSizeFor(key);
+                  return [...prev, { key, x, y, z: nextZ, w: size.w, h: size.h }];
                 });
               }}
               aria-label={it.label}
@@ -284,8 +372,11 @@ export default function FloatingWorkspace() {
             x={w.x}
             y={w.y}
             z={w.z}
+            w={w.w}
+            h={w.h}
             onFocus={() => focusWindow(w.key)}
             onMove={(x, y) => moveWindow(w.key, x, y)}
+            onResize={(nw, nh) => resizeWindow(w.key, nw, nh)}
             onClose={() => closeWindow(w.key)}
         >
             {w.key === "tasks" && <TasksApp />}
@@ -302,3 +393,4 @@ export default function FloatingWorkspace() {
     </>
   );
 }
+
