@@ -1110,7 +1110,6 @@ body.iw-app { background: transparent !important; }
   transform: translateY(0);
 }
 
-/* Left dock like lifeat.io */
 .lo-docks{
   position: fixed;
   left: 14px;
@@ -1136,47 +1135,13 @@ body.iw-app { background: transparent !important; }
   box-shadow: 0 12px 30px rgba(0,0,0,0.18);
 }
 
-.lo-dock--top{}
-.lo-dock--bottom{}
-
-.lo-dock__btn{
-  appearance: none;
-  border: 0;
-  cursor: pointer;
-  background: transparent;
-  color: inherit;
-
-  display: flex;
-  align-items: center;
-  gap: 10px;
-
-  padding: 10px 12px;
-  border-radius: 12px;
-
-  transition: transform .12s ease, background .12s ease;
-}
-
-.lo-dock__btn:hover{
-  background: rgba(255,255,255,0.10);
-  transform: translateX(2px);
-}
-
-.lo-dock__btn.is-active{
-  background: rgba(255,255,255,0.16);
-}
-
-.lo-dock__icon{
-  width: 26px;
-  height: 26px;
-  display: grid;
-  place-items: center;
-  font-size: 18px;
-}
-
-.lo-dock__label{
-  font-size: 13px;
-  opacity: 0.9;
-  white-space: nowrap;
+.lo-dock__title{
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  opacity: .6;
+  padding: 2px 6px 6px;
 }
 
 .lo-dock__btn{
@@ -1187,18 +1152,26 @@ body.iw-app { background: transparent !important; }
   color: inherit;
 
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
+  gap: 8px;
 
-  padding: 10px 12px;
-  border-radius: 12px;
+  width: 66px;
+  min-height: 76px;
+  padding: 10px 8px;
 
-  transition: transform .12s ease, background .12s ease;
+  border-radius: 16px;
+
+  transition:
+    transform .12s ease,
+    background .12s ease,
+    border-color .12s ease;
 }
 
 .lo-dock__btn:hover{
   background: rgba(255,255,255,0.10);
-  transform: translateX(2px);
+  transform: translateY(-1px);
 }
 
 .lo-dock__btn.is-active{
@@ -1206,17 +1179,29 @@ body.iw-app { background: transparent !important; }
 }
 
 .lo-dock__icon{
-  width: 26px;
-  height: 26px;
-  display: grid;
-  place-items: center;
-  font-size: 18px;
+  width: 34px;
+  height: 34px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.lo-dock__icon-img{
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  display: block;
+  opacity: 0.95;
 }
 
 .lo-dock__label{
-  font-size: 13px;
-  opacity: 0.9;
-  white-space: nowrap;
+  font-size: 11px;
+  line-height: 1.1;
+  text-align: center;
+  opacity: 0.95;
+  white-space: normal;
 }
 
 /* Floating window */

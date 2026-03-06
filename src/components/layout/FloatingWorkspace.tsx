@@ -267,7 +267,10 @@ function SpacesPanel() {
   );
 }
 
-function intersects(a: { x: number; y: number; w: number; h: number }, b: { x: number; y: number; w: number; h: number }) {
+function intersects(
+  a: { x: number; y: number; w: number; h: number },
+  b: { x: number; y: number; w: number; h: number },
+) {
   return !(
     a.x + a.w <= b.x ||
     b.x + b.w <= a.x ||
@@ -324,7 +327,12 @@ function findNonOverlappingPos(args: {
 
   // Choose first candidate that doesn't overlap any existing window (with padding)
   for (const c of candidates) {
-    const rect = { x: c.x - pad, y: c.y - pad, w: size.w + pad * 2, h: size.h + pad * 2 };
+    const rect = {
+      x: c.x - pad,
+      y: c.y - pad,
+      w: size.w + pad * 2,
+      h: size.h + pad * 2,
+    };
     const ok = existing.every((ex) => !intersects(rect, ex));
     if (ok) return c;
   }
@@ -332,8 +340,8 @@ function findNonOverlappingPos(args: {
   // Final fallback: cascade a bit
   const n = existing.length;
   return {
-    x: clamp(leftSafe + 40 + (n * 24) % 240, leftSafe, maxX),
-    y: clamp(topSafe + 30 + (n * 20) % 220, topSafe, maxY),
+    x: clamp(leftSafe + 40 + ((n * 24) % 240), leftSafe, maxX),
+    y: clamp(topSafe + 30 + ((n * 20) % 220), topSafe, maxY),
   };
 }
 
@@ -355,20 +363,60 @@ function TimerPanel() {
 
   return (
     <div className="lo-timer">
-      <div className="lo-timer__time">{mm}:{ss}</div>
+      <div className="lo-timer__time">
+        {mm}:{ss}
+      </div>
       <div className="lo-timer__row">
         <button className="lo-btn" onClick={() => setRunning((r) => !r)}>
           {running ? "Pause" : "Start"}
         </button>
-        <button className="lo-btn" onClick={() => { setRunning(false); setSeconds(25 * 60); }}>
+        <button
+          className="lo-btn"
+          onClick={() => {
+            setRunning(false);
+            setSeconds(25 * 60);
+          }}
+        >
           Reset
         </button>
       </div>
       <div className="lo-timer__row">
-        <button className="lo-chip" onClick={() => { setRunning(false); setSeconds(5 * 60); }}>5m</button>
-        <button className="lo-chip" onClick={() => { setRunning(false); setSeconds(15 * 60); }}>15m</button>
-        <button className="lo-chip" onClick={() => { setRunning(false); setSeconds(25 * 60); }}>25m</button>
-        <button className="lo-chip" onClick={() => { setRunning(false); setSeconds(50 * 60); }}>50m</button>
+        <button
+          className="lo-chip"
+          onClick={() => {
+            setRunning(false);
+            setSeconds(5 * 60);
+          }}
+        >
+          5m
+        </button>
+        <button
+          className="lo-chip"
+          onClick={() => {
+            setRunning(false);
+            setSeconds(15 * 60);
+          }}
+        >
+          15m
+        </button>
+        <button
+          className="lo-chip"
+          onClick={() => {
+            setRunning(false);
+            setSeconds(25 * 60);
+          }}
+        >
+          25m
+        </button>
+        <button
+          className="lo-chip"
+          onClick={() => {
+            setRunning(false);
+            setSeconds(50 * 60);
+          }}
+        >
+          50m
+        </button>
       </div>
     </div>
   );
@@ -384,7 +432,9 @@ function SoundsPanel() {
 
   return (
     <div className="lo-sounds">
-      <p className="lo-muted">Audio files are loaded from <code>public/audio</code>.</p>
+      <p className="lo-muted">
+        Audio files are loaded from <code>public/audio</code>.
+      </p>
 
       {sounds.map((s) => (
         <div key={s.id} className="lo-sounds__item">
@@ -411,21 +461,36 @@ function CalendarPanel() {
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
   while (cells.length % 7 !== 0) cells.push(null);
 
-  const monthLabel = now.toLocaleString(undefined, { month: "long", year: "numeric" });
+  const monthLabel = now.toLocaleString(undefined, {
+    month: "long",
+    year: "numeric",
+  });
   const today = new Date();
   const isThisMonth = today.getFullYear() === y && today.getMonth() === m;
 
   return (
     <div className="lo-cal">
       <div className="lo-cal__top">
-        <button className="lo-btn" onClick={() => setNow(new Date(y, m - 1, 1))}>Prev</button>
+        <button
+          className="lo-btn"
+          onClick={() => setNow(new Date(y, m - 1, 1))}
+        >
+          Prev
+        </button>
         <div className="lo-cal__title">{monthLabel}</div>
-        <button className="lo-btn" onClick={() => setNow(new Date(y, m + 1, 1))}>Next</button>
+        <button
+          className="lo-btn"
+          onClick={() => setNow(new Date(y, m + 1, 1))}
+        >
+          Next
+        </button>
       </div>
 
       <div className="lo-cal__grid lo-cal__dow">
-        {["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((d) => (
-          <div key={d} className="lo-cal__cell lo-cal__dowcell">{d}</div>
+        {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
+          <div key={d} className="lo-cal__cell lo-cal__dowcell">
+            {d}
+          </div>
         ))}
       </div>
 
@@ -433,7 +498,10 @@ function CalendarPanel() {
         {cells.map((d, i) => {
           const isToday = isThisMonth && d === today.getDate();
           return (
-            <div key={i} className={"lo-cal__cell " + (isToday ? "is-today" : "")}>
+            <div
+              key={i}
+              className={"lo-cal__cell " + (isToday ? "is-today" : "")}
+            >
               {d ?? ""}
             </div>
           );
@@ -451,16 +519,16 @@ export default function FloatingWorkspace() {
     z: number;
     w: number;
     h: number;
-    };
+  };
 
   const [wins, setWins] = useState<Win[]>(() => {
     try {
-        const raw = localStorage.getItem("lifeos_windows_v2");
-        return raw ? (JSON.parse(raw) as Win[]) : [];
+      const raw = localStorage.getItem("lifeos_windows_v2");
+      return raw ? (JSON.parse(raw) as Win[]) : [];
     } catch {
-        return [];
+      return [];
     }
-    });
+  });
 
   const [zTop, setZTop] = useState<number>(() => {
     const z = wins.reduce((m, w) => Math.max(m, w.z), 50);
@@ -469,27 +537,82 @@ export default function FloatingWorkspace() {
 
   React.useEffect(() => {
     try {
-        localStorage.setItem("lifeos_windows_v2", JSON.stringify(wins));
+      localStorage.setItem("lifeos_windows_v2", JSON.stringify(wins));
     } catch {}
-    }, [wins]);
+  }, [wins]);
 
   const topGroup = useMemo(
     () => [
-        { key: "spaces" as const, icon: "🪐", label: "Spaces" },
-        { key: "sounds" as const, icon: "🔊", label: "Sounds" },
-        { key: "calendar" as const, icon: "🗓️", label: "Calendar" },
+      {
+        key: "spaces" as const,
+        label: "Spaces",
+        iconWhite: "/icons/white/spaces.png",
+        iconBlack: "/icons/black/spaces.png",
+      },
+      {
+        key: "sounds" as const,
+        label: "Sounds",
+        iconWhite: "/icons/white/sounds.png",
+        iconBlack: "/icons/black/sounds.png",
+      },
+      {
+        key: "calendar" as const,
+        label: "Calendar",
+        iconWhite: "/icons/white/calendar.png",
+        iconBlack: "/icons/black/calendar.png",
+      },
     ],
-    []
-    );
+    [],
+  );
 
-    const bottomGroup = useMemo(
+  const bottomGroup = useMemo(
     () => [
-        { key: "timer" as const, icon: "⏱️", label: "Timer" },
-        { key: "tasks" as const, icon: "✅", label: "Tasks" },
-        { key: "planner" as const, icon: "💰", label: "Planner" },
+      {
+        key: "timer" as const,
+        label: "Timer",
+        iconWhite: "/icons/white/timer.png",
+        iconBlack: "/icons/black/timer.png",
+      },
+      {
+        key: "tasks" as const,
+        label: "Tasks",
+        iconWhite: "/icons/white/tasks.png",
+        iconBlack: "/icons/black/tasks.png",
+      },
+      {
+        key: "planner" as const,
+        label: "Planner",
+        iconWhite: "/icons/white/planner.png",
+        iconBlack: "/icons/black/planner.png",
+      },
     ],
-    []
-    );
+    [],
+  );
+
+  const [theme, setTheme] = useState<"duna" | "nebula">(() => {
+    if (typeof document === "undefined") return "duna";
+    const t = document.documentElement.getAttribute("data-theme");
+    return t === "nebula" ? "nebula" : "duna";
+  });
+
+  React.useEffect(() => {
+    const root = document.documentElement;
+
+    const syncTheme = () => {
+      const t = root.getAttribute("data-theme");
+      setTheme(t === "nebula" ? "nebula" : "duna");
+    };
+
+    syncTheme();
+
+    const observer = new MutationObserver(syncTheme);
+    observer.observe(root, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   function focusWindow(key: Win["key"]) {
     setZTop((z) => {
@@ -509,9 +632,11 @@ export default function FloatingWorkspace() {
     setWins((prev) => prev.map((w) => (w.key === key ? { ...w, x, y } : w)));
   }
 
-    function resizeWindow(key: Win["key"], w: number, h: number) {
-    setWins((prev) => prev.map((win) => (win.key === key ? { ...win, w, h } : win)));
-    }
+  function resizeWindow(key: Win["key"], w: number, h: number) {
+    setWins((prev) =>
+      prev.map((win) => (win.key === key ? { ...win, w, h } : win)),
+    );
+  }
 
   return (
     <>
@@ -523,19 +648,22 @@ export default function FloatingWorkspace() {
       {/* Left floating dock */}
       <div className="lo-docks" aria-label="Dock groups">
         <nav className="lo-dock lo-dock--top" aria-label="Workspace tools">
-            {topGroup.map((it) => {
+          {topGroup.map((it) => {
             const active = wins.some((w) => w.key === it.key);
             return (
-                <button
+              <button
                 key={it.key}
                 className={"lo-dock__btn " + (active ? "is-active" : "")}
                 onClick={(e) => {
-                    const key = it.key;
-                    const btn = e.currentTarget as HTMLButtonElement;
-                    const r = btn.getBoundingClientRect();
-                    const preferred = { x: Math.round(r.right + 18), y: Math.round(r.top - 10) };
+                  const key = it.key;
+                  const btn = e.currentTarget as HTMLButtonElement;
+                  const r = btn.getBoundingClientRect();
+                  const preferred = {
+                    x: Math.round(r.right + 18),
+                    y: Math.round(r.top - 10),
+                  };
 
-                    setWins((prev) => {
+                  setWins((prev) => {
                     const existing = prev.find((w) => w.key === key);
                     if (existing) return prev.filter((w) => w.key !== key);
 
@@ -544,39 +672,65 @@ export default function FloatingWorkspace() {
                     setZTop(nextZ);
 
                     const placed = findNonOverlappingPos({
-                        preferred,
-                        size,
-                        existing: prev.map((w) => ({ x: w.x, y: w.y, w: w.w, h: w.h })),
+                      preferred,
+                      size,
+                      existing: prev.map((w) => ({
+                        x: w.x,
+                        y: w.y,
+                        w: w.w,
+                        h: w.h,
+                      })),
                     });
 
-                    return [...prev, { key, x: placed.x, y: placed.y, z: nextZ, w: size.w, h: size.h }];
-                    });
+                    return [
+                      ...prev,
+                      {
+                        key,
+                        x: placed.x,
+                        y: placed.y,
+                        z: nextZ,
+                        w: size.w,
+                        h: size.h,
+                      },
+                    ];
+                  });
                 }}
                 aria-label={it.label}
                 title={it.label}
                 type="button"
-                >
-                <span className="lo-dock__icon" aria-hidden="true">{it.icon}</span>
+              >
+                <span className="lo-dock__icon" aria-hidden="true">
+                  <img
+                    src={theme === "nebula" ? it.iconBlack : it.iconWhite}
+                    alt=""
+                    className="lo-dock__icon-img"/>
+                </span>
                 <span className="lo-dock__label">{it.label}</span>
-                </button>
+              </button>
             );
-            })}
+          })}
         </nav>
 
-        <nav className="lo-dock lo-dock--bottom" aria-label="Productivity tools">
-            {bottomGroup.map((it) => {
+        <nav
+          className="lo-dock lo-dock--bottom"
+          aria-label="Productivity tools"
+        >
+          {bottomGroup.map((it) => {
             const active = wins.some((w) => w.key === it.key);
             return (
-                <button
+              <button
                 key={it.key}
                 className={"lo-dock__btn " + (active ? "is-active" : "")}
                 onClick={(e) => {
-                    const key = it.key;
-                    const btn = e.currentTarget as HTMLButtonElement;
-                    const r = btn.getBoundingClientRect();
-                    const preferred = { x: Math.round(r.right + 18), y: Math.round(r.top - 10) };
+                  const key = it.key;
+                  const btn = e.currentTarget as HTMLButtonElement;
+                  const r = btn.getBoundingClientRect();
+                  const preferred = {
+                    x: Math.round(r.right + 18),
+                    y: Math.round(r.top - 10),
+                  };
 
-                    setWins((prev) => {
+                  setWins((prev) => {
                     const existing = prev.find((w) => w.key === key);
                     if (existing) return prev.filter((w) => w.key !== key);
 
@@ -585,50 +739,69 @@ export default function FloatingWorkspace() {
                     setZTop(nextZ);
 
                     const placed = findNonOverlappingPos({
-                        preferred,
-                        size,
-                        existing: prev.map((w) => ({ x: w.x, y: w.y, w: w.w, h: w.h })),
+                      preferred,
+                      size,
+                      existing: prev.map((w) => ({
+                        x: w.x,
+                        y: w.y,
+                        w: w.w,
+                        h: w.h,
+                      })),
                     });
 
-                    return [...prev, { key, x: placed.x, y: placed.y, z: nextZ, w: size.w, h: size.h }];
-                    });
+                    return [
+                      ...prev,
+                      {
+                        key,
+                        x: placed.x,
+                        y: placed.y,
+                        z: nextZ,
+                        w: size.w,
+                        h: size.h,
+                      },
+                    ];
+                  });
                 }}
                 aria-label={it.label}
                 title={it.label}
                 type="button"
-                >
-                <span className="lo-dock__icon" aria-hidden="true">{it.icon}</span>
+              >
+                <span className="lo-dock__icon" aria-hidden="true">
+                  <img
+                    src={theme === "nebula" ? it.iconBlack : it.iconWhite}
+                    alt=""
+                    className="lo-dock__icon-img"/>
+                </span>
                 <span className="lo-dock__label">{it.label}</span>
-                </button>
+              </button>
             );
-            })}
+          })}
         </nav>
-        </div>
+      </div>
 
       {wins.map((w) => (
         <WindowShell
-            key={w.key}
-            title={titleFor(w.key)}
-            panelKey={w.key}
-            x={w.x}
-            y={w.y}
-            z={w.z}
-            w={w.w}
-            h={w.h}
-            onFocus={() => focusWindow(w.key)}
-            onMove={(x, y) => moveWindow(w.key, x, y)}
-            onResize={(nw, nh) => resizeWindow(w.key, nw, nh)}
-            onClose={() => closeWindow(w.key)}
+          key={w.key}
+          title={titleFor(w.key)}
+          panelKey={w.key}
+          x={w.x}
+          y={w.y}
+          z={w.z}
+          w={w.w}
+          h={w.h}
+          onFocus={() => focusWindow(w.key)}
+          onMove={(x, y) => moveWindow(w.key, x, y)}
+          onResize={(nw, nh) => resizeWindow(w.key, nw, nh)}
+          onClose={() => closeWindow(w.key)}
         >
-            {w.key === "tasks" && <TasksApp />}
-            {w.key === "planner" && <PlannerApp />}
-            {w.key === "timer" && <TimerPanel />}
-            {w.key === "sounds" && <SoundsPanel />}
-            {w.key === "calendar" && <CalendarPanel />}
-            {w.key === "spaces" && <SpacesPanel />}
+          {w.key === "tasks" && <TasksApp />}
+          {w.key === "planner" && <PlannerApp />}
+          {w.key === "timer" && <TimerPanel />}
+          {w.key === "sounds" && <SoundsPanel />}
+          {w.key === "calendar" && <CalendarPanel />}
+          {w.key === "spaces" && <SpacesPanel />}
         </WindowShell>
-        ))}
+      ))}
     </>
   );
 }
-
