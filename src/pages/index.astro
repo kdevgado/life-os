@@ -1,6 +1,5 @@
 ---
 import AppShell from "../components/layout/AppShell.astro";
-import DashboardTasksWidget from "../components/dashboard/DashboardTasksWidget";
 import "../styles/globals.css";
 ---
 
@@ -17,30 +16,6 @@ import "../styles/globals.css";
         <a href="/tasks" class="btn danger">Open Tasks</a>
         <a href="/settings" class="btn ghost">Settings</a>
       </div>
-    </div>
-  </section>
-
-  <DashboardTasksWidget client:load />
-
-  <section class="features container">
-    <div class="feature-card">
-      <h3>💰 Budget Clarity</h3>
-      <p>Track income, rent, transport and savings in one simple monthly view.</p>
-    </div>
-
-    <div class="feature-card">
-      <h3>🏡 Goal Deposit Tracker</h3>
-      <p>Model your path to financial stability based on real savings.</p>
-    </div>
-
-    <div class="feature-card">
-      <h3>📅 Pay Cycle Smart</h3>
-      <p>Works for monthly, fortnightly or weekly pay cycles.</p>
-    </div>
-
-    <div class="feature-card">
-      <h3>📊 Financial Summary</h3>
-      <p>Instant leftover calculation and savings forecast.</p>
     </div>
   </section>
 </AppShell>

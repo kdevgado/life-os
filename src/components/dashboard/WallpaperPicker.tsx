@@ -9,6 +9,7 @@ const DEFAULTS: Option[] = [
   { label: "Duna Sky (image)", value: "/images/duna-sky.jpg" },
   { label: "Nebula Space (image)", value: "/images/nebula-space.jpg" },
   { label: "Sunset (video)", value: "/videos/sunset.mp4" },
+  { label: "Rainy Cafe (video)", value: "/videos/rainy-cafe.mp4" },
 ];
 
 export default function WallpaperPicker() {
