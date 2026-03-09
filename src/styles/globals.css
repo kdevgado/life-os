@@ -1510,3 +1510,138 @@ body.iw-app { background: transparent !important; }
   font-size: 12px;
   padding: 4px 0;
 }
+
+/* Notes app: clean, functional, with a touch of softness */
+.lo-notes{
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.lo-notes__tabs{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.lo-notes__tablist{
+  display: flex;
+  gap: 8px;
+  overflow: auto;
+  padding-bottom: 2px;
+}
+
+.lo-notes__tab,
+.lo-notes__newtab{
+  border: 1px solid var(--shell-border);
+  background: var(--shell-surface-soft);
+  color: var(--shell-title);
+  border-radius: 12px;
+  padding: 8px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.lo-notes__tab.is-active{
+  background: var(--shell-btn-hover);
+}
+
+.lo-notes__newtab{
+  min-width: 40px;
+  font-weight: 700;
+}
+
+.lo-notebar{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 14px;
+  background: var(--shell-surface-soft);
+  border: 1px solid var(--shell-border);
+}
+
+.lo-notebar__select{
+  min-width: 140px;
+  border: 1px solid var(--shell-border);
+  background: var(--shell-surface-strong);
+  color: var(--shell-title);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+.lo-notebar__btn{
+  border: 1px solid var(--shell-border);
+  background: var(--shell-surface-strong);
+  color: var(--shell-title);
+  border-radius: 10px;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.lo-notebar__btn.is-active{
+  background: var(--shell-btn-hover);
+}
+
+.lo-notes__meta{
+  display: flex;
+}
+
+.lo-notes__titleinput{
+  width: 100%;
+  border: 1px solid var(--shell-border);
+  background: var(--shell-surface-strong);
+  color: var(--shell-title);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.lo-notes__editor{
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--shell-border);
+  background: var(--shell-surface-soft);
+  border-radius: 16px;
+  padding: 14px;
+}
+
+.lo-notes__content{
+  min-height: 100%;
+}
+
+.lo-notes__content .tiptap{
+  min-height: 100%;
+  outline: none;
+  color: var(--shell-text);
+}
+
+.lo-notes__content .tiptap p{
+  margin: 0 0 12px;
+}
+
+.lo-notes__content .tiptap h1,
+.lo-notes__content .tiptap h2,
+.lo-notes__content .tiptap h3{
+  color: var(--shell-title);
+  margin: 0 0 12px;
+}
+
+.lo-notes__content .tiptap ul{
+  padding-left: 20px;
+  margin: 0 0 12px;
+}
+
+.lo-notebar__btn:hover,
+.lo-notes__tab:hover,
+.lo-notes__newtab:hover{
+  background: var(--shell-btn-hover);
+}
+
+.lo-notes__tabactions{
+  display: flex;
+  gap: 8px;
+}
