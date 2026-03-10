@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { load, save } from "../../lib/storage";
-import { defaultPlannerState } from "../../data/defaults";
-import type { PlannerState } from "../../types/planner";
-import { getJwt, onAuthChange } from "../../lib/identity";
-import { normalizePlannerState } from "../../lib/plannerNormalize";
+import { load, save } from "../../../lib/storage";
+import { defaultPlannerState } from "../../../data/defaults";
+import type { PlannerState } from "../../../types/planner";
+import { getJwt, onAuthChange } from "../../../lib/identity";
+import { normalizePlannerState } from "../../../lib/plannerNormalize";
 import BudgetPanel from "./BudgetPanel";
-import { toMonthly } from "../../lib/cadence";
+import { toMonthly } from "../../../lib/cadence";
 import GoalsPanel from "./GoalsPanel";
 import FHSSPanel from "./FHSSPanel";
 

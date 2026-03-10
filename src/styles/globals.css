@@ -1786,16 +1786,19 @@ body.iw-app { background: transparent !important; }
 .lo-mode-switcher{
   position: fixed;
   top: 18px;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 14px;
+
   z-index: 3000;
+
   display: inline-flex;
   gap: 4px;
   padding: 4px;
+
   border-radius: 999px;
   background: rgba(255,255,255,.72);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
+
   border: 1px solid rgba(255,255,255,.45);
   box-shadow: 0 16px 40px rgba(15, 23, 42, .12);
 }
@@ -1941,18 +1944,23 @@ body.iw-app { background: transparent !important; }
   min-width: 0 !important;
   min-height: 0 !important;
   max-width: min(720px, calc(100vw - 120px));
+
+  resize: none;
 }
 
-/* remove the header bar styling */
 .lo-window--bible .lo-window__bar{
   background: transparent;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
 }
 
 .lo-window--bible .lo-window__body{
   padding: 0;
   background: transparent;
   overflow: visible;
+}
+
+/* disable resize handle for bible panel */
+.lo-window--bible .lo-window__resize{
+  display: none;
 }
 
 /* let content define the size */
@@ -2009,4 +2017,185 @@ body.iw-app { background: transparent !important; }
     transform: translateY(0);
     filter: blur(0);
   }
+}
+
+:root[data-theme="duna"] .lo-window--bible .lo-bible-text-only__verse,
+:root[data-theme="duna"] .lo-window--bible .lo-bible-text-only__ref{
+  color: rgba(255,255,255,0.96);
+}
+
+:root[data-theme="duna"] .lo-window--bible .lo-bible-text-only__verse{
+  text-shadow:
+    0 4px 20px rgba(0,0,0,0.35),
+    0 1px 2px rgba(0,0,0,0.28);
+}
+
+:root[data-theme="duna"] .lo-window--bible .lo-bible-text-only__ref,
+:root[data-theme="duna"] .lo-window--bible .lo-window__title{
+  color: rgba(255,255,255,0.82);
+}
+
+.lo-day-board{
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.lo-day-board__toolbar{
+  display: flex;
+  justify-content: flex-start;
+}
+
+.lo-day-board__controls{
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.lo-day-board__controls button{
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 14px;
+  font: inherit;
+  cursor: pointer;
+  background: rgba(15, 23, 42, .08);
+  color: inherit;
+}
+
+:root[data-theme="nebula"] .lo-day-board__controls button{
+  background: rgba(255,255,255,.08);
+}
+
+.lo-day-board__scroller{
+  display: flex;
+  gap: 18px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 10px;
+  scroll-behavior: smooth;
+}
+
+.lo-day-board__column{
+  flex: 0 0 320px;
+  min-height: 520px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 24px;
+  background: rgba(255,255,255,.62);
+  border: 1px solid rgba(15, 23, 42, .08);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, .06);
+}
+
+:root[data-theme="nebula"] .lo-day-board__column{
+  background: rgba(255,255,255,.04);
+  border-color: rgba(255,255,255,.10);
+  box-shadow: 0 14px 32px rgba(0,0,0,.24);
+}
+
+.lo-day-board__header h3{
+  margin: 0;
+  font-size: 18px;
+}
+
+.lo-day-board__header p{
+  margin: 4px 0 0;
+  font-size: 13px;
+  opacity: .72;
+}
+
+.lo-day-board__composer{
+  display: flex;
+  gap: 8px;
+}
+
+.lo-day-board__composer input{
+  flex: 1;
+  min-width: 0;
+  border: 1px solid rgba(15, 23, 42, .12);
+  background: rgba(255,255,255,.86);
+  color: inherit;
+  border-radius: 14px;
+  padding: 10px 12px;
+  font: inherit;
+}
+
+:root[data-theme="nebula"] .lo-day-board__composer input{
+  background: rgba(255,255,255,.06);
+  border-color: rgba(255,255,255,.12);
+}
+
+.lo-day-board__composer button{
+  border: 0;
+  border-radius: 14px;
+  padding: 10px 14px;
+  font: inherit;
+  cursor: pointer;
+  background: rgba(15, 23, 42, .08);
+  color: inherit;
+}
+
+:root[data-theme="nebula"] .lo-day-board__composer button{
+  background: rgba(255,255,255,.08);
+}
+
+.lo-day-board__tasks{
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.lo-day-board__task{
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(255,255,255,.88);
+  border: 1px solid rgba(15, 23, 42, .08);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, .05);
+}
+
+:root[data-theme="nebula"] .lo-day-board__task{
+  background: rgba(255,255,255,.05);
+  border-color: rgba(255,255,255,.10);
+  box-shadow: 0 10px 24px rgba(0,0,0,.18);
+}
+
+.lo-day-board__task p{
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.lo-day-board__task button{
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, .08);
+  color: inherit;
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+}
+
+:root[data-theme="nebula"] .lo-day-board__task button{
+  background: rgba(255,255,255,.08);
+}
+
+.lo-day-board__empty{
+  border: 1px dashed rgba(15, 23, 42, .16);
+  border-radius: 16px;
+  padding: 16px;
+  font-size: 14px;
+  opacity: .68;
+  text-align: center;
+}
+
+:root[data-theme="nebula"] .lo-day-board__empty{
+  border-color: rgba(255,255,255,.14);
 }

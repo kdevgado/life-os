@@ -1,10 +1,11 @@
 import React from "react";
-import PlannerApp from "../planner/PlannerApp";
+import PlannerApp from "./planner/PlannerApp";
+import BoardView from "./BoardView";
 
 type PlanTab = "board" | "calendar" | "planner";
 
 export default function PlanWorkspace() {
-  const [tab, setTab] = React.useState<PlanTab>("planner");
+  const [tab, setTab] = React.useState<PlanTab>("board");
 
   return (
     <section className="lo-plan" aria-label="Planning workspace">
@@ -15,7 +16,11 @@ export default function PlanWorkspace() {
             <h2 className="lo-plan__title">Plan</h2>
           </div>
 
-          <div className="lo-plan__tabs" role="tablist" aria-label="Planning views">
+          <div
+            className="lo-plan__tabs"
+            role="tablist"
+            aria-label="Planning views"
+          >
             <button
               type="button"
               className={tab === "board" ? "is-active" : ""}
@@ -42,9 +47,8 @@ export default function PlanWorkspace() {
 
         <div className="lo-plan__content">
           {tab === "board" && (
-            <div className="lo-plan__placeholder">
-              <h3>Board view</h3>
-              <p>Add your kanban-style planning board here.</p>
+            <div className="lo-plan__panel">
+              <BoardView />
             </div>
           )}
 

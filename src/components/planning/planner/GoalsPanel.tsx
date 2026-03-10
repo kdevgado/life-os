@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
-import type { PlannerState, Goal, GoalType } from "../../types/planner";
-import { goalContributionMonthlyWithFHSS, goalContributionMonthly, monthsToHitGoal, addMonths, requiredMonthlyToHitBy } from "../../lib/goals";
+import type { PlannerState, Goal, GoalType } from "../../../types/planner";
+import { goalContributionMonthlyWithFHSS, goalContributionMonthly, monthsToHitGoal, addMonths, requiredMonthlyToHitBy } from "../../../lib/goals";
 
 const makeId = () =>
   (globalThis.crypto?.randomUUID?.() ?? `id_${Math.random().toString(16).slice(2)}`);

@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
-import type { PlannerState } from "../../types/planner";
-import { capRemainingThisFY, estimateEligibleThisFY, fhssMonthlyContribution } from "../../lib/fhss";
+import type { PlannerState } from "../../../types/planner";
+import { capRemainingThisFY, estimateEligibleThisFY, fhssMonthlyContribution } from "../../../lib/fhss";
 
 type Props = {
   state: PlannerState;

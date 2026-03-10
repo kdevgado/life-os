@@ -1,6 +1,6 @@
 import React from "react";
-import type { BudgetLine, PlannerState, Cadence } from "../../types/planner";
-import { toMonthly } from "../../lib/cadence";
+import type { BudgetLine, PlannerState, Cadence } from "../../../types/planner";
+import { toMonthly } from "../../../lib/cadence";
 
 type Props = {
   state: PlannerState;
