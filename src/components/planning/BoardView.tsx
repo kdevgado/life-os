@@ -11,9 +11,10 @@ type DayColumn = {
   tasks: DayTask[];
 };
 
-const STORAGE_KEY = "lifeos_plan_day_board";
-const AUTO_EXTEND_DAYS = 7;
-const EDGE_THRESHOLD = 240;
+const STORAGE_KEY = "lifeos_plan_day_board_v2";
+const AUTO_EXTEND_DAYS = 2;
+const EDGE_THRESHOLD = 120;
+const EXTEND_COOLDOWN_MS = 250;
 
 function formatDateKey(date: Date) {
   return date.toISOString().slice(0, 10);
@@ -90,32 +91,42 @@ function buildNextDays(afterDateKey: string, amount: number): DayColumn[] {
   return newDays;
 }
 
+function getTodayKey() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return formatDateKey(today);
+}
+
 export default function BoardView() {
   const scrollRef = React.useRef<HTMLDivElement | null>(null);
   const prependAdjustRef = React.useRef<number>(0);
   const isExtendingLeftRef = React.useRef(false);
   const isExtendingRightRef = React.useRef(false);
-  const hasPositionedInitialViewRef = React.useRef(false);
+  const lastExtendAtRef = React.useRef(0);
 
-  const todayKey = React.useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return formatDateKey(today);
-  }, []);
-
+  const todayKey = React.useMemo(() => getTodayKey(), []);
   const [days, setDays] = React.useState<DayColumn[]>(() => {
-    if (typeof window === "undefined") return createInitialDays();
+    const freshDays = createInitialDays(0, 6);
+
+    if (typeof window === "undefined") return freshDays;
 
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return createInitialDays();
+    if (!raw) return freshDays;
 
     try {
       const parsed = JSON.parse(raw) as DayColumn[];
-      return Array.isArray(parsed) && parsed.length > 0
-        ? parsed
-        : createInitialDays();
+      if (!Array.isArray(parsed)) return freshDays;
+
+      const taskMap = new Map(
+        parsed.map((day) => [day.dateKey, day.tasks ?? []]),
+      );
+
+      return freshDays.map((day) => ({
+        ...day,
+        tasks: taskMap.get(day.dateKey) ?? [],
+      }));
     } catch {
-      return createInitialDays();
+      return freshDays;
     }
   });
 
@@ -125,14 +136,25 @@ export default function BoardView() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(days));
   }, [days]);
 
+  const hasPositionedInitialViewRef = React.useRef(false);
+
   React.useLayoutEffect(() => {
-    if (!prependAdjustRef.current) return;
     const el = scrollRef.current;
     if (!el) return;
+    if (hasPositionedInitialViewRef.current) return;
 
-    el.scrollLeft += prependAdjustRef.current;
-    prependAdjustRef.current = 0;
-  }, [days]);
+    const todayElement = el.querySelector<HTMLElement>(
+      `[data-date-key="${todayKey}"]`,
+    );
+    if (!todayElement) return;
+
+    el.scrollLeft =
+      todayElement.offsetLeft -
+      el.clientWidth / 2 +
+      todayElement.clientWidth / 2;
+
+    hasPositionedInitialViewRef.current = true;
+  }, [todayKey, days]);
 
   function updateDraft(dateKey: string, value: string) {
     setDrafts((prev) => ({
@@ -221,29 +243,6 @@ export default function BoardView() {
     });
   }
 
-  React.useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    if (hasPositionedInitialViewRef.current) return;
-
-    const todayElement = el.querySelector<HTMLElement>(
-      `[data-date-key="${todayKey}"]`,
-    );
-    if (!todayElement) return;
-
-    requestAnimationFrame(() => {
-      todayElement.scrollIntoView({
-        behavior: "auto",
-        inline: "start",
-        block: "nearest",
-      });
-
-      requestAnimationFrame(() => {
-        hasPositionedInitialViewRef.current = true;
-      });
-    });
-  }, [todayKey, days]);
-
   function jumpToToday() {
     const el = scrollRef.current;
     if (!el) return;
@@ -286,7 +285,7 @@ export default function BoardView() {
 
           nextTodayElement?.scrollIntoView({
             behavior: "smooth",
-            inline: "center",
+            inline: "start",
             block: "nearest",
           });
         });
@@ -315,7 +314,7 @@ export default function BoardView() {
 
           nextTodayElement?.scrollIntoView({
             behavior: "smooth",
-            inline: "center",
+            inline: "start",
             block: "nearest",
           });
         });
@@ -324,17 +323,26 @@ export default function BoardView() {
   }
 
   function handleScroll() {
-    if (!hasPositionedInitialViewRef.current) return;
-
     const el = scrollRef.current;
     if (!el) return;
+
+    const now = Date.now();
+    if (now - lastExtendAtRef.current < EXTEND_COOLDOWN_MS) return;
 
     const nearLeft = el.scrollLeft <= EDGE_THRESHOLD;
     const nearRight =
       el.scrollLeft + el.clientWidth >= el.scrollWidth - EDGE_THRESHOLD;
 
-    if (nearLeft) extendLeft();
-    if (nearRight) extendRight();
+    if (nearLeft) {
+      lastExtendAtRef.current = now;
+      extendLeft();
+      return;
+    }
+
+    if (nearRight) {
+      lastExtendAtRef.current = now;
+      extendRight();
+    }
   }
 
   return (
