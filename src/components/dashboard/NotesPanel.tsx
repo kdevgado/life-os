@@ -1,6 +1,7 @@
 import React from "react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import { useClickOutside } from "./useClickOutside";
 
 type NoteTab = {
   id: string;
@@ -58,12 +59,14 @@ function ToolbarButton({
   label,
   active = false,
   onClick,
+  icon,
   children,
 }: {
   label: string;
   active?: boolean;
   onClick: () => void;
-  children: React.ReactNode;
+  icon?: string;
+  children?: React.ReactNode;
 }) {
   return (
     <button
@@ -73,7 +76,11 @@ function ToolbarButton({
       title={label}
       aria-label={label}
     >
-      {children}
+      {icon ? (
+        <img src={icon} alt="" className="lo-notebar__icon" />
+      ) : (
+        children
+      )}
     </button>
   );
 }
@@ -96,8 +103,13 @@ function NotesMenu({
   const [open, setOpen] = React.useState(false);
   const [hoveredId, setHoveredId] = React.useState<string | null>(null);
 
+  const menuRef = useClickOutside<HTMLDivElement>(() => {
+    setOpen(false);
+    setHoveredId(null);
+  }, open);
+
   return (
-    <div className="lo-notes-menu">
+    <div className="lo-notes-menu" ref={menuRef}>
       <button
         type="button"
         className="lo-notes-menu__trigger"
@@ -168,7 +180,9 @@ function NotesMenu({
                       aria-label={`Delete ${note.title}`}
                       onClick={() => {
                         const ok = window.confirm(`Delete "${note.title}"?`);
-                        if (ok) onDeleteNote(note.id);
+                        if (ok) {
+                          onDeleteNote(note.id);
+                        }
                       }}
                     >
                       Delete
@@ -312,64 +326,68 @@ function deleteCurrentNoteById(id: string) {
 
       <div className="lo-notebar">
         <select
-          className="lo-notebar__select"
-          value={textStyle}
-          onChange={(e) => {
+            className="lo-notebar__select"
+            value={textStyle}
+            onChange={(e) => {
             const value = e.target.value;
             if (value === "p") {
-              editor.chain().focus().setParagraph().run();
+                editor.chain().focus().setParagraph().run();
             } else {
-              const level = Number(value.replace("h", "")) as 1 | 2 | 3;
-              editor.chain().focus().setHeading({ level }).run();
+                const level = Number(value.replace("h", "")) as 1 | 2 | 3;
+                editor.chain().focus().setHeading({ level }).run();
             }
-          }}
-          title="Text style"
-          aria-label="Text style"
+            }}
+            title="Text style"
+            aria-label="Text style"
         >
-          <option value="p">Paragraph</option>
-          <option value="h1">Heading 1</option>
-          <option value="h2">Heading 2</option>
-          <option value="h3">Heading 3</option>
+            <option value="p">Paragraph</option>
+            <option value="h1">Heading 1</option>
+            <option value="h2">Heading 2</option>
+            <option value="h3">Heading 3</option>
         </select>
 
         <ToolbarButton
-          label="Bold"
-          active={editor.isActive("bold")}
-          onClick={() => editor.chain().focus().toggleBold().run()}
+            label="Bold"
+            active={editor.isActive("bold")}
+            onClick={() => editor.chain().focus().toggleBold().run()}
         >
-          <strong>B</strong>
+            <strong>B</strong>
         </ToolbarButton>
 
         <ToolbarButton
-          label="Italic"
-          active={editor.isActive("italic")}
-          onClick={() => editor.chain().focus().toggleItalic().run()}
+            label="Italic"
+            active={editor.isActive("italic")}
+            onClick={() => editor.chain().focus().toggleItalic().run()}
         >
-          <em>I</em>
+            <em>I</em>
         </ToolbarButton>
 
         <ToolbarButton
-          label="Bulleted list"
-          active={editor.isActive("bulletList")}
-          onClick={() => editor.chain().focus().toggleBulletList().run()}
-        >
-          • List
-        </ToolbarButton>
+            label="Bulleted list"
+            active={editor.isActive("bulletList")}
+            onClick={() => editor.chain().focus().toggleBulletList().run()}
+            icon="/icons/notes/list.png"
+        />
 
         <ToolbarButton
-          label="Undo"
-          onClick={() => editor.chain().focus().undo().run()}
-        >
-          Undo
-        </ToolbarButton>
+            label="Numbered list"
+            active={editor.isActive("orderedList")}
+            onClick={() => editor.chain().focus().toggleOrderedList().run()}
+            icon="/icons/notes/number-list.png"
+        />
 
         <ToolbarButton
-          label="Redo"
-          onClick={() => editor.chain().focus().redo().run()}
-        >
-          Redo
-        </ToolbarButton>
-      </div>
+            label="Undo"
+            onClick={() => editor.chain().focus().undo().run()}
+            icon="/icons/notes/undo.png"
+        />
+
+        <ToolbarButton
+            label="Redo"
+            onClick={() => editor.chain().focus().redo().run()}
+            icon="/icons/notes/redo.png"
+        />
+        </div>
 
       <div className="lo-notes__meta">
         <input
