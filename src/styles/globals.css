@@ -2073,6 +2073,8 @@ body.iw-app { background: transparent !important; }
   overflow-y: hidden;
   padding-bottom: 10px;
   scroll-behavior: smooth;
+
+  scroll-snap-type: x proximity;
 }
 
 .lo-day-board__column{
@@ -2086,6 +2088,8 @@ body.iw-app { background: transparent !important; }
   background: rgba(255,255,255,.62);
   border: 1px solid rgba(15, 23, 42, .08);
   box-shadow: 0 10px 30px rgba(15, 23, 42, .06);
+
+  scroll-snap-align: start;
 }
 
 :root[data-theme="nebula"] .lo-day-board__column{
@@ -2198,4 +2202,73 @@ body.iw-app { background: transparent !important; }
 
 :root[data-theme="nebula"] .lo-day-board__empty{
   border-color: rgba(255,255,255,.14);
+}
+
+.lo-day-board__column.is-today{
+  outline: 2px solid rgba(59, 130, 246, .35);
+  outline-offset: -2px;
+}
+
+:root[data-theme="nebula"] .lo-day-board__column.is-today{
+  box-shadow:
+    0 0 0 1px rgba(96, 165, 250, .28),
+    0 14px 32px rgba(0,0,0,.24);
+}
+
+/* Scrollbar base */
+
+.lo-day-board__scroller{
+  scrollbar-width: thin;
+  scrollbar-color: rgba(15,23,42,.25) transparent;
+}
+
+/* Chrome / Edge / Safari */
+
+.lo-day-board__scroller::-webkit-scrollbar{
+  height: 10px;
+}
+
+.lo-day-board__scroller::-webkit-scrollbar-track{
+  background: transparent;
+}
+
+.lo-day-board__scroller::-webkit-scrollbar-thumb{
+  background: rgba(15,23,42,.25);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.lo-day-board__scroller::-webkit-scrollbar-thumb:hover{
+  background: rgba(15,23,42,.4);
+}
+
+:root[data-theme="duna"] .lo-day-board__scroller::-webkit-scrollbar-thumb{
+  background: rgba(15,23,42,.25);
+}
+
+:root[data-theme="duna"] .lo-day-board__scroller::-webkit-scrollbar-thumb:hover{
+  background: rgba(15,23,42,.45);
+}
+
+:root[data-theme="nebula"] .lo-day-board__scroller{
+  scrollbar-color: rgba(255,255,255,.25) transparent;
+}
+
+:root[data-theme="nebula"] .lo-day-board__scroller::-webkit-scrollbar-thumb{
+  background: rgba(255,255,255,.25);
+}
+
+:root[data-theme="nebula"] .lo-day-board__scroller::-webkit-scrollbar-thumb:hover{
+  background: rgba(255,255,255,.4);
+}
+
+.lo-day-board__scroller{
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 40px,
+    black calc(100% - 40px),
+    transparent
+  );
 }
