@@ -809,6 +809,7 @@ export default function FloatingWorkspace() {
           onClose={() => closeWindow(w.key)}
         >
           {w.key === "tasks" && <TasksApp />}
+          {w.key === "notes" && <NotesPanel />}
           {w.key === "planner" && <PlannerApp />}
           {w.key === "timer" && <TimerPanel />}
           {w.key === "sounds" && <SoundsPanel />}

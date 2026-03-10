@@ -78,6 +78,112 @@ function ToolbarButton({
   );
 }
 
+function NotesMenu({
+  notes,
+  activeId,
+  onOpenNote,
+  onAddNote,
+  onRenameNote,
+  onDeleteNote,
+}: {
+  notes: NoteTab[];
+  activeId: string;
+  onOpenNote: (id: string) => void;
+  onAddNote: () => void;
+  onRenameNote: (id: string, title: string) => void;
+  onDeleteNote: (id: string) => void;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const [hoveredId, setHoveredId] = React.useState<string | null>(null);
+
+  return (
+    <div className="lo-notes-menu">
+      <button
+        type="button"
+        className="lo-notes-menu__trigger"
+        onClick={() => setOpen((v) => !v)}
+        title="Manage notes"
+        aria-label="Manage notes"
+      >
+        Notes ▾
+      </button>
+
+      {open && (
+        <div className="lo-notes-menu__panel">
+          <button
+            type="button"
+            className="lo-notes-menu__new"
+            onClick={() => {
+              onAddNote();
+              setOpen(false);
+            }}
+            title="New note"
+            aria-label="New note"
+          >
+            + New note
+          </button>
+
+          <div className="lo-notes-menu__list">
+            {notes.map((note) => (
+              <div
+                key={note.id}
+                className={`lo-notes-menu__item ${note.id === activeId ? "is-active" : ""}`}
+                onMouseEnter={() => setHoveredId(note.id)}
+                onMouseLeave={() => setHoveredId((id) => (id === note.id ? null : id))}
+              >
+                <button
+                  type="button"
+                  className="lo-notes-menu__open"
+                  onClick={() => {
+                    onOpenNote(note.id);
+                    setOpen(false);
+                  }}
+                  title={note.title}
+                  aria-label={`Open ${note.title}`}
+                >
+                  <span className="lo-notes-menu__name">{note.title}</span>
+                </button>
+
+                {hoveredId === note.id && (
+                  <div className="lo-notes-menu__actions">
+                    <button
+                      type="button"
+                      className="lo-notes-menu__action"
+                      title="Rename note"
+                      aria-label={`Rename ${note.title}`}
+                      onClick={() => {
+                        const next = window.prompt("Rename note", note.title);
+                        if (next && next.trim()) {
+                          onRenameNote(note.id, next.trim());
+                        }
+                      }}
+                    >
+                      Rename
+                    </button>
+
+                    <button
+                      type="button"
+                      className="lo-notes-menu__action is-danger"
+                      title="Delete note"
+                      aria-label={`Delete ${note.title}`}
+                      onClick={() => {
+                        const ok = window.confirm(`Delete "${note.title}"?`);
+                        if (ok) onDeleteNote(note.id);
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function NotesPanel() {
   const [notes, setNotes] = React.useState<NoteTab[]>([]);
   const [activeId, setActiveId] = React.useState<string>("");
@@ -138,22 +244,31 @@ export default function NotesPanel() {
     setNotes((prev) => prev.map((n) => (n.id === id ? { ...n, title } : n)));
   }
 
-  function deleteCurrentNote() {
-    if (!activeNote) return;
-    if (notes.length === 1) {
-      const fresh = createNote(1);
-      setNotes([fresh]);
-      setActiveId(fresh.id);
-      return;
-    }
+  function deleteNoteById(id: string) {
+  const target = notes.find((n) => n.id === id);
+  if (!target) return;
 
-    const idx = notes.findIndex((n) => n.id === activeNote.id);
-    const nextNotes = notes.filter((n) => n.id !== activeNote.id);
-    const fallback = nextNotes[Math.max(0, idx - 1)] ?? nextNotes[0];
+  if (notes.length === 1) {
+    const fresh = createNote(1);
+    setNotes([fresh]);
+    setActiveId(fresh.id);
+    return;
+  }
 
-    setNotes(nextNotes);
+  const idx = notes.findIndex((n) => n.id === id);
+  const nextNotes = notes.filter((n) => n.id !== id);
+  const fallback = nextNotes[Math.max(0, idx - 1)] ?? nextNotes[0];
+
+  setNotes(nextNotes);
+
+  if (activeId === id) {
     setActiveId(fallback.id);
   }
+}
+
+function deleteCurrentNoteById(id: string) {
+  deleteNoteById(id);
+}
 
   if (!activeNote || !editor) {
     return <div className="lo-notes">Loading notes…</div>;
@@ -185,27 +300,14 @@ export default function NotesPanel() {
           ))}
         </div>
 
-        <div className="lo-notes__tabactions">
-          <button
-            type="button"
-            className="lo-notes__newtab"
-            onClick={addNote}
-            title="New note"
-            aria-label="New note"
-          >
-            +
-          </button>
-
-          <button
-            type="button"
-            className="lo-notes__newtab"
-            onClick={deleteCurrentNote}
-            title="Delete current note"
-            aria-label="Delete current note"
-          >
-            −
-          </button>
-        </div>
+        <NotesMenu
+            notes={notes}
+            activeId={activeId}
+            onOpenNote={(id) => setActiveId(id)}
+            onAddNote={addNote}
+            onRenameNote={renameNote}
+            onDeleteNote={deleteCurrentNoteById}
+            />
       </div>
 
       <div className="lo-notebar">

@@ -1534,8 +1534,7 @@ body.iw-app { background: transparent !important; }
   padding-bottom: 2px;
 }
 
-.lo-notes__tab,
-.lo-notes__newtab{
+.lo-notes__tab{
   border: 1px solid var(--shell-border);
   background: var(--shell-surface-soft);
   color: var(--shell-title);
@@ -1545,13 +1544,122 @@ body.iw-app { background: transparent !important; }
   white-space: nowrap;
 }
 
-.lo-notes__tab.is-active{
+.lo-notes-menu{
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.lo-notes-menu__trigger{
+  border: 1px solid var(--shell-border);
+  background: var(--shell-surface-soft);
+  color: var(--shell-title);
+  border-radius: 12px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.lo-notes-menu__trigger:hover{
   background: var(--shell-btn-hover);
 }
 
-.lo-notes__newtab{
-  min-width: 40px;
-  font-weight: 700;
+.lo-notes-menu__panel{
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 260px;
+  max-height: 320px;
+  overflow: auto;
+  z-index: 20;
+
+  padding: 10px;
+  border-radius: 16px;
+  border: 1px solid var(--shell-border);
+  background: var(--shell-surface-strong);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: var(--shell-shadow);
+}
+
+.lo-notes-menu__new{
+  width: 100%;
+  border: 1px solid var(--shell-border);
+  background: var(--shell-surface-soft);
+  color: var(--shell-title);
+  border-radius: 12px;
+  padding: 10px 12px;
+  text-align: left;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+
+.lo-notes-menu__new:hover{
+  background: var(--shell-btn-hover);
+}
+
+.lo-notes-menu__list{
+  display: grid;
+  gap: 8px;
+}
+
+.lo-notes-menu__item{
+  border: 1px solid var(--shell-border);
+  background: var(--shell-surface-soft);
+  border-radius: 12px;
+  padding: 6px;
+}
+
+.lo-notes-menu__item.is-active{
+  background: var(--shell-btn);
+}
+
+.lo-notes-menu__open{
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--shell-title);
+  text-align: left;
+  padding: 6px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.lo-notes-menu__open:hover{
+  background: rgba(255,255,255,.06);
+}
+
+.lo-notes-menu__name{
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lo-notes-menu__actions{
+  display: flex;
+  gap: 6px;
+  padding: 6px 8px 2px;
+}
+
+.lo-notes-menu__action{
+  border: 1px solid var(--shell-border);
+  background: var(--shell-surface-strong);
+  color: var(--shell-title);
+  border-radius: 10px;
+  padding: 6px 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.lo-notes-menu__action:hover{
+  background: var(--shell-btn-hover);
+}
+
+.lo-notes-menu__action.is-danger:hover{
+  background: rgba(220, 38, 38, 0.14);
+}
+
+.lo-notes__tab.is-active{
+  background: var(--shell-btn-hover);
 }
 
 .lo-notebar{
@@ -1636,8 +1744,7 @@ body.iw-app { background: transparent !important; }
 }
 
 .lo-notebar__btn:hover,
-.lo-notes__tab:hover,
-.lo-notes__newtab:hover{
+.lo-notes__tab:hover{
   background: var(--shell-btn-hover);
 }
 
