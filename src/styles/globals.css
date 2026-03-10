@@ -1928,3 +1928,85 @@ body.iw-app { background: transparent !important; }
   background: rgba(255,255,255,.04);
   border-color: rgba(255,255,255,.10);
 }
+
+/* Transparent Bible verse window */
+.lo-window--bible{
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+
+  width: auto !important;
+  height: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: min(720px, calc(100vw - 120px));
+}
+
+/* remove the header bar styling */
+.lo-window--bible .lo-window__bar{
+  background: transparent;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.lo-window--bible .lo-window__body{
+  padding: 0;
+  background: transparent;
+  overflow: visible;
+}
+
+/* let content define the size */
+.lo-bible-text-only{
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+
+  width: fit-content;
+  max-width: min(720px, calc(100vw - 120px));
+  padding: 0;
+  margin: 0 auto;
+}
+
+.lo-bible-text-only__verse{
+  margin: 0;
+  max-width: 32ch;
+
+  font-size: clamp(24px, 2.6vw, 12px);
+  line-height: 1.6;
+  font-weight: bold;
+  font-size: 1.17em;
+
+  letter-spacing: -0.02em;
+  color: var(--shell-title);
+
+  text-shadow:
+    0 4px 20px rgba(0,0,0,0.35);
+}
+
+.lo-bible-text-only__ref{
+  margin-top: 18px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--shell-muted);
+}
+
+.lo-bible-text-only--auto{
+  animation: loBibleFade 1400ms ease;
+}
+
+@keyframes loBibleFade{
+  from{
+    opacity: 0;
+    transform: translateY(8px);
+    filter: blur(4px);
+  }
+  to{
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
