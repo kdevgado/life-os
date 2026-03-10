@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from "react";
 import TasksApp from "../tasks/TasksApp";
-import PlannerApp from "../planner/PlannerApp";
 import WallpaperPicker from "../dashboard/WallpaperPicker";
 import AuthButton from "../login/AuthButton";
 import NotesPanel from "../dashboard/NotesPanel";
@@ -12,7 +11,6 @@ type PanelKey =
   | "timer"
   | "tasks"
   | "notes"
-  | "planner"
   | null;
 
 function clamp(n: number, min: number, max: number) {
@@ -33,8 +31,6 @@ function titleFor(k: Exclude<PanelKey, null>) {
       return "Tasks";
     case "notes":
       return "Notes";
-    case "planner":
-      return "Planner";
   }
 }
 
@@ -52,8 +48,6 @@ function defaultSizeFor(key: Exclude<PanelKey, null>) {
       return { w: 600, h: 640 };
     case "notes":
       return { w: 460, h: 300 };
-    case "planner":
-      return { w: 820, h: 700 };
   }
 }
 
@@ -71,8 +65,6 @@ function minSizeFor(key: Exclude<PanelKey, null>) {
       return { w: 560, h: 520 };
     case "notes":
       return { w: 460, h: 300 };
-    case "planner":
-      return { w: 700, h: 620 };
   }
 }
 
@@ -593,12 +585,6 @@ export default function FloatingWorkspace() {
         iconWhite: "/icons/white/notes.png",
         iconBlack: "/icons/black/notes.png",
       },
-      {
-        key: "planner" as const,
-        label: "Planner",
-        iconWhite: "/icons/white/planner.png",
-        iconBlack: "/icons/black/planner.png",
-      },
     ],
     [],
   );
@@ -810,7 +796,6 @@ export default function FloatingWorkspace() {
         >
           {w.key === "tasks" && <TasksApp />}
           {w.key === "notes" && <NotesPanel />}
-          {w.key === "planner" && <PlannerApp />}
           {w.key === "timer" && <TimerPanel />}
           {w.key === "sounds" && <SoundsPanel />}
           {w.key === "calendar" && <CalendarPanel />}

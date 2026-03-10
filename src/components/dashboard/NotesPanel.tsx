@@ -22,7 +22,7 @@ function createNote(index: number): NoteTab {
   return {
     id: makeId(),
     title: `Note ${index}`,
-    content: "<h2>New note</h2><p>Start writing here...</p>",
+    content: "<h2>Heading</h2><p>Start typing a note...</p>",
   };
 }
 

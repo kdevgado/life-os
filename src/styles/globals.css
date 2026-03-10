@@ -1781,3 +1781,150 @@ body.iw-app { background: transparent !important; }
 .lo-notebar__btn:hover{
   background: var(--shell-btn-hover);
 }
+
+/* Workspace switcher: centered, floating above the content */
+.lo-mode-switcher{
+  position: fixed;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3000;
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.72);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255,255,255,.45);
+  box-shadow: 0 16px 40px rgba(15, 23, 42, .12);
+}
+
+:root[data-theme="nebula"] .lo-mode-switcher{
+  background: rgba(10,14,24,.72);
+  border-color: rgba(255,255,255,.10);
+  box-shadow: 0 18px 50px rgba(0,0,0,.35);
+}
+
+.lo-mode-switcher__btn{
+  border: 0;
+  background: transparent;
+  color: inherit;
+  border-radius: 999px;
+  padding: 10px 18px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .2s ease, color .2s ease, transform .2s ease;
+}
+
+.lo-mode-switcher__btn.is-active{
+  background: rgba(15, 23, 42, .92);
+  color: white;
+}
+
+:root[data-theme="nebula"] .lo-mode-switcher__btn.is-active{
+  background: rgba(255,255,255,.92);
+  color: #0f172a;
+}
+
+/* Plan page: full-bleed, with a centered “sheet” for content */
+.lo-plan{
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  padding: 84px 24px 24px;
+  overflow: auto;
+}
+
+.lo-plan__shell{
+  min-height: calc(100vh - 108px);
+  border-radius: 28px;
+  padding: 24px;
+  background: rgba(255,255,255,.72);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(15, 23, 42, .08);
+  box-shadow: 0 20px 60px rgba(15, 23, 42, .10);
+}
+
+:root[data-theme="nebula"] .lo-plan__shell{
+  background: rgba(10,14,24,.68);
+  border-color: rgba(255,255,255,.10);
+  box-shadow: 0 20px 60px rgba(0,0,0,.34);
+}
+
+.lo-plan__header{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.lo-plan__eyebrow{
+  margin: 0 0 4px;
+  font-size: 12px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  opacity: .65;
+}
+
+.lo-plan__title{
+  margin: 0;
+  font-size: clamp(28px, 4vw, 44px);
+  line-height: 1;
+}
+
+.lo-plan__tabs{
+  display: inline-flex;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, .06);
+}
+
+:root[data-theme="nebula"] .lo-plan__tabs{
+  background: rgba(255,255,255,.08);
+}
+
+.lo-plan__tabs button{
+  border: 0;
+  background: transparent;
+  color: inherit;
+  border-radius: 999px;
+  padding: 10px 16px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.lo-plan__tabs button.is-active{
+  background: rgba(15, 23, 42, .92);
+  color: #fff;
+}
+
+:root[data-theme="nebula"] .lo-plan__tabs button.is-active{
+  background: rgba(255,255,255,.92);
+  color: #0f172a;
+}
+
+.lo-plan__content{
+  min-height: 620px;
+}
+
+.lo-plan__panel,
+.lo-plan__placeholder{
+  height: 100%;
+  border-radius: 24px;
+  padding: 20px;
+  background: rgba(255,255,255,.56);
+  border: 1px solid rgba(15, 23, 42, .08);
+}
+
+:root[data-theme="nebula"] .lo-plan__panel,
+:root[data-theme="nebula"] .lo-plan__placeholder{
+  background: rgba(255,255,255,.04);
+  border-color: rgba(255,255,255,.10);
+}

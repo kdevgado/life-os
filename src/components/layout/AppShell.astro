@@ -1,6 +1,6 @@
 ---
 import "../../styles/globals.css";
-import FloatingWorkspace from "./FloatingWorkspace";
+import WorkspaceMode from "./WorkspaceMode";
 
 const { title = "Life OS" } = Astro.props;
 ---
@@ -87,7 +87,7 @@ const { title = "Life OS" } = Astro.props;
       </script>
 
       <div class="iw-shell">
-        <FloatingWorkspace client:load />
+        <WorkspaceMode client:load />
         <main class="lo-page-slot">
           <slot />
         </main>
