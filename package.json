@@ -25,6 +25,7 @@
   },
   "devDependencies": {
     "@netlify/functions": "^5.1.2",
-    "@types/node": "^25.3.3"
+    "@types/node": "^25.3.3",
+    "vite-plugin-pwa": "^1.2.0"
   }
 }

@@ -1,7 +1,7 @@
 import React from "react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { useClickOutside } from "./useClickOutside";
+import { useClickOutside } from "../../lib/useClickOutside";
 
 type NoteTab = {
   id: string;

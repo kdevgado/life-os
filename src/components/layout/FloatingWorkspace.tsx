@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from "react";
 import TasksApp from "../tasks/TasksApp";
-import WallpaperPicker from "../dashboard/WallpaperPicker";
 import AuthButton from "../login/AuthButton";
 import NotesPanel from "../dashboard/NotesPanel";
 import DailyBibleVerse from "../dashboard/DailyBibleVerse";
@@ -41,7 +40,7 @@ function titleFor(k: Exclude<PanelKey, null>) {
 function defaultSizeFor(key: Exclude<PanelKey, null>) {
   switch (key) {
     case "spaces":
-      return { w: 460, h: 520 };
+      return { w: 375, h: 860 };
     case "sounds":
       return { w: 420, h: 460 };
     case "calendar":
@@ -60,7 +59,7 @@ function defaultSizeFor(key: Exclude<PanelKey, null>) {
 function minSizeFor(key: Exclude<PanelKey, null>) {
   switch (key) {
     case "spaces":
-      return { w: 360, h: 360 };
+      return { w: 375, h: 360 };
     case "sounds":
       return { w: 320, h: 320 };
     case "calendar":
@@ -242,7 +241,143 @@ function WindowShell({
   );
 }
 
+type SpaceWallpaper = {
+  id: string;
+  title: string;
+  src: string;
+  type: "image" | "video";
+};
+
+const SPACE_WALLPAPERS: SpaceWallpaper[] = [
+  {
+    id: "duna-sky",
+    title: "Duna Sky",
+    src: "/images/duna-sky.jpg",
+    type: "image",
+  },
+  {
+    id: "nebula-space",
+    title: "Nebula Space",
+    src: "/images/nebula-space.jpg",
+    type: "image",
+  },
+  {
+    id: "sunset",
+    title: "Sunset",
+    src: "/videos/sunset.mp4",
+    type: "video",
+  },
+  {
+    id: "rainy-cafe-japan",
+    title: "Rainy Cafe in Japan",
+    src: "/videos/rainy-cafe-japan.mp4",
+    type: "video",
+  },
+  {
+    id: "videogame",
+    title: "Videogame",
+    src: "/videos/videogame.mp4",
+    type: "video",
+  },
+];
+
 function SpacesPanel() {
+  const [theme, setTheme] = React.useState<"duna" | "nebula">("duna");
+  const [selected, setSelected] = React.useState<string>("");
+  const [tab, setTab] = React.useState<"video" | "image" | "favourites">(
+    "image",
+  );
+  const [favourites, setFavourites] = React.useState<string[]>([]);
+
+  const [videoMuted, setVideoMuted] = React.useState(true);
+  const [videoVolume, setVideoVolume] = React.useState(0.5);
+  const selectedWallpaper = React.useMemo(
+    () => SPACE_WALLPAPERS.find((item) => item.src === selected),
+    [selected],
+  );
+
+  React.useEffect(() => {
+    const savedMuted = localStorage.getItem("lifeos_wallpaper_muted");
+    const savedVolume = localStorage.getItem("lifeos_wallpaper_volume");
+
+    setVideoMuted(savedMuted === null ? true : savedMuted === "true");
+    setVideoVolume(savedVolume ? Number(savedVolume) : 0.5);
+    try {
+      const savedTheme =
+        (localStorage.getItem("lifeos_theme") || "duna").toLowerCase() ===
+        "nebula"
+          ? "nebula"
+          : "duna";
+
+      const savedWallpaper =
+        localStorage.getItem("lifeos_wallpaper") || SPACE_WALLPAPERS[0].src;
+
+      const savedFavourites = JSON.parse(
+        localStorage.getItem("lifeos_wallpaper_favourites") || "[]",
+      ) as string[];
+
+      setTheme(savedTheme);
+      setSelected(savedWallpaper);
+      setFavourites(Array.isArray(savedFavourites) ? savedFavourites : []);
+    } catch {
+      setTheme("duna");
+      setSelected(SPACE_WALLPAPERS[0].src);
+      setFavourites([]);
+    }
+  }, []);
+
+  const applyWallpaper = (src: string) => {
+    setSelected(src);
+    try {
+      localStorage.setItem("lifeos_wallpaper", src);
+      window.dispatchEvent(new Event("lifeos:wallpaper"));
+    } catch {}
+  };
+
+  const toggleFavourite = (id: string) => {
+    setFavourites((prev) => {
+      const next = prev.includes(id)
+        ? prev.filter((item) => item !== id)
+        : [...prev, id];
+
+      try {
+        localStorage.setItem(
+          "lifeos_wallpaper_favourites",
+          JSON.stringify(next),
+        );
+      } catch {}
+
+      return next;
+    });
+  };
+
+  const filteredWallpapers = React.useMemo(() => {
+    if (tab === "favourites") {
+      return SPACE_WALLPAPERS.filter((item) => favourites.includes(item.id));
+    }
+
+    return SPACE_WALLPAPERS.filter((item) => item.type === tab);
+  }, [tab, favourites]);
+
+  const toggleVideoMuted = () => {
+    setVideoMuted((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("lifeos_wallpaper_muted", String(next));
+        window.dispatchEvent(new Event("lifeos:wallpaper-audio"));
+      } catch {}
+      return next;
+    });
+  };
+
+  const changeVideoVolume = (value: number) => {
+    setVideoVolume(value);
+    try {
+      localStorage.setItem("lifeos_wallpaper_volume", String(value));
+      window.dispatchEvent(new Event("lifeos:wallpaper-audio"));
+    } catch {}
+  };
+
   return (
     <div className="lo-spaces">
       <div className="lo-spaces__section">
@@ -253,14 +388,10 @@ function SpacesPanel() {
 
         <select
           className="lo-spaces__select"
-          defaultValue={
-            (localStorage.getItem("lifeos_theme") || "duna").toLowerCase() ===
-            "nebula"
-              ? "nebula"
-              : "duna"
-          }
+          value={theme}
           onChange={(e) => {
             const v = e.target.value === "nebula" ? "nebula" : "duna";
+            setTheme(v);
             localStorage.setItem("lifeos_theme", v);
             document.documentElement.setAttribute("data-theme", v);
           }}
@@ -270,11 +401,128 @@ function SpacesPanel() {
         </select>
       </div>
 
-      <WallpaperPicker />
+      <div
+        className="lo-spaces__tabs"
+        role="tablist"
+        aria-label="Wallpaper categories"
+      >
+        <button
+          type="button"
+          className={`lo-spaces__tab ${tab === "video" ? "is-active" : ""}`}
+          onClick={() => setTab("video")}
+        >
+          Videos
+        </button>
+
+        <button
+          type="button"
+          className={`lo-spaces__tab ${tab === "image" ? "is-active" : ""}`}
+          onClick={() => setTab("image")}
+        >
+          Images
+        </button>
+
+        <button
+          type="button"
+          className={`lo-spaces__tab ${tab === "favourites" ? "is-active" : ""}`}
+          onClick={() => setTab("favourites")}
+        >
+          Favourites
+        </button>
+      </div>
+
+      <div className="lo-spaces__gallery">
+        {filteredWallpapers.length === 0 ? (
+          <div className="lo-spaces__empty">No wallpapers here yet.</div>
+        ) : (
+          filteredWallpapers.map((item) => {
+            const isActive = selected === item.src;
+            const isFav = favourites.includes(item.id);
+
+            return (
+              <button
+                key={item.id}
+                type="button"
+                className={`lo-spaces__card ${isActive ? "is-selected" : ""}`}
+                onClick={() => applyWallpaper(item.src)}
+              >
+                <div className="lo-spaces__preview">
+                  {item.type === "image" ? (
+                    <div
+                      className="lo-spaces__preview-image"
+                      style={{ backgroundImage: `url(${item.src})` }}
+                    />
+                  ) : (
+                    <video
+                      className="lo-spaces__preview-video"
+                      src={item.src}
+                      muted
+                      loop
+                      autoPlay
+                      playsInline
+                    />
+                  )}
+
+                  <button
+                    type="button"
+                    className={`lo-spaces__fav ${isFav ? "is-fav" : ""}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleFavourite(item.id);
+                    }}
+                    aria-label={
+                      isFav ? "Remove from favourites" : "Add to favourites"
+                    }
+                  >
+                    {isFav ? "♥" : "♡"}
+                  </button>
+                </div>
+
+                <div className="lo-spaces__meta">
+                  <div className="lo-spaces__title">{item.title}</div>
+                </div>
+              </button>
+            );
+          })
+        )}
+      </div>
+      <div className="lo-spaces__footer">
+  <div className="lo-spaces__current">
+    <div className="lo-spaces__current-label">Selected wallpaper</div>
+    <div className="lo-spaces__current-title">
+      {selectedWallpaper?.title || "No wallpaper selected"}
+    </div>
+  </div>
+
+  {tab === "video" && selectedWallpaper?.type === "video" ? (
+    <div className="lo-spaces__audio">
+      <div className="lo-spaces__audio-row">
+        <span className="lo-spaces__audio-label">Wallpaper sound</span>
+
+        <button
+          type="button"
+          className={`lo-spaces__mute ${videoMuted ? "is-muted" : ""}`}
+          onClick={toggleVideoMuted}
+        >
+          {videoMuted ? "Unmute" : "Mute"}
+        </button>
+      </div>
+
+      <input
+        className="lo-spaces__volume"
+        type="range"
+        min="0"
+        max="1"
+        step="0.05"
+        value={videoVolume}
+        onChange={(e) => changeVideoVolume(Number(e.target.value))}
+      />
+    </div>
+  ) : null}
+</div>
     </div>
   );
 }
-
 function intersects(
   a: { x: number; y: number; w: number; h: number },
   b: { x: number; y: number; w: number; h: number },
@@ -598,7 +846,7 @@ export default function FloatingWorkspace() {
         label: "Bible",
         iconWhite: "/icons/white/bible.png",
         iconBlack: "/icons/black/bible.png",
-      }
+      },
     ],
     [],
   );
@@ -717,7 +965,8 @@ export default function FloatingWorkspace() {
                   <img
                     src={theme === "nebula" ? it.iconBlack : it.iconWhite}
                     alt=""
-                    className="lo-dock__icon-img"/>
+                    className="lo-dock__icon-img"
+                  />
                 </span>
                 <span className="lo-dock__label">{it.label}</span>
               </button>
@@ -784,7 +1033,8 @@ export default function FloatingWorkspace() {
                   <img
                     src={theme === "nebula" ? it.iconBlack : it.iconWhite}
                     alt=""
-                    className="lo-dock__icon-img"/>
+                    className="lo-dock__icon-img"
+                  />
                 </span>
                 <span className="lo-dock__label">{it.label}</span>
               </button>
