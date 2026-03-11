@@ -11,11 +11,16 @@ const { title = "Life OS" } = Astro.props;
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
 
+    <script type="module" src="/scripts/pwa.js"></script>
+
     <script is:inline>
       try {
         const raw = localStorage.getItem("lifeos_theme") || "duna";
         const t = String(raw).trim().toLowerCase();
-        document.documentElement.setAttribute("data-theme", t === "nebula" ? "nebula" : "duna");
+        document.documentElement.setAttribute(
+          "data-theme",
+          t === "nebula" ? "nebula" : "duna",
+        );
       } catch {}
     </script>
   </head>
@@ -24,74 +29,76 @@ const { title = "Life OS" } = Astro.props;
     <!-- Wallpaper background layer (no hydration) -->
     <div class="iw-bg" aria-hidden="true">
       <div id="iw-bg-image" class="iw-bg__image"></div>
-        <video
-          id="iw-bg-video"
-          class="iw-bg__video"
-          autoplay
-          muted
-          loop
-          playsinline
-          preload="auto"
-        ></video>
-      </div>
+      <video
+        id="iw-bg-video"
+        class="iw-bg__video"
+        autoplay
+        muted
+        loop
+        playsinline
+        preload="auto"></video>
+    </div>
 
-      <script is:inline>
-        (function () {
-          try {
-            const val = localStorage.getItem("lifeos_wallpaper") || "/images/duna-sky.jpg";
-            const isVideo = /\.(mp4|webm|ogg)$/i.test(val);
+    <script is:inline>
+      (function () {
+        try {
+          const val =
+            localStorage.getItem("lifeos_wallpaper") || "/images/duna-sky.jpg";
+          const isVideo = /\.(mp4|webm|ogg)$/i.test(val);
 
-            const img = document.getElementById("iw-bg-image");
-            const vid = document.getElementById("iw-bg-video");
+          const img = document.getElementById("iw-bg-image");
+          const vid = document.getElementById("iw-bg-video");
 
-            if (!img || !vid) return;
+          if (!img || !vid) return;
 
-            if (isVideo) {
-              img.style.display = "none";
-              vid.style.display = "block";
-              if (vid.getAttribute("src") !== val) vid.setAttribute("src", val);
-              // Some browsers need an explicit play call
-              const p = vid.play();
-              if (p && typeof p.catch === "function") p.catch(() => {});
-            } else {
-              vid.style.display = "none";
-              vid.removeAttribute("src");
-              vid.load();
-              img.style.display = "block";
-              img.style.backgroundImage = "url(" + val + ")";
-            }
+          if (isVideo) {
+            img.style.display = "none";
+            vid.style.display = "block";
+            if (vid.getAttribute("src") !== val) vid.setAttribute("src", val);
+            // Some browsers need an explicit play call
+            const p = vid.play();
+            if (p && typeof p.catch === "function") p.catch(() => {});
+          } else {
+            vid.style.display = "none";
+            vid.removeAttribute("src");
+            vid.load();
+            img.style.display = "block";
+            img.style.backgroundImage = "url(" + val + ")";
+          }
 
-            // Update on picker changes (your picker dispatches this event)
-            window.addEventListener("lifeos:wallpaper", () => {
-              try {
-                const next = localStorage.getItem("lifeos_wallpaper") || "/images/duna-sky.jpg";
-                const nextIsVideo = /\.(mp4|webm|ogg)$/i.test(next);
+          // Update on picker changes (your picker dispatches this event)
+          window.addEventListener("lifeos:wallpaper", () => {
+            try {
+              const next =
+                localStorage.getItem("lifeos_wallpaper") ||
+                "/images/duna-sky.jpg";
+              const nextIsVideo = /\.(mp4|webm|ogg)$/i.test(next);
 
-                if (nextIsVideo) {
-                  img.style.display = "none";
-                  vid.style.display = "block";
-                  if (vid.getAttribute("src") !== next) vid.setAttribute("src", next);
-                  const p2 = vid.play();
-                  if (p2 && typeof p2.catch === "function") p2.catch(() => {});
-                } else {
-                  vid.style.display = "none";
-                  vid.removeAttribute("src");
-                  vid.load();
-                  img.style.display = "block";
-                  img.style.backgroundImage = "url(" + next + ")";
-                }
-              } catch {}
-            });
-          } catch {}
-        })();
-      </script>
+              if (nextIsVideo) {
+                img.style.display = "none";
+                vid.style.display = "block";
+                if (vid.getAttribute("src") !== next)
+                  vid.setAttribute("src", next);
+                const p2 = vid.play();
+                if (p2 && typeof p2.catch === "function") p2.catch(() => {});
+              } else {
+                vid.style.display = "none";
+                vid.removeAttribute("src");
+                vid.load();
+                img.style.display = "block";
+                img.style.backgroundImage = "url(" + next + ")";
+              }
+            } catch {}
+          });
+        } catch {}
+      })();
+    </script>
 
-      <div class="iw-shell">
-        <WorkspaceMode client:only="react" />
-        <main class="lo-page-slot">
-          <slot />
-        </main>
-      </div>
+    <div class="iw-shell">
+      <WorkspaceMode client:load />
+      <main class="lo-page-slot">
+        <slot />
+      </main>
     </div>
   </body>
 </html>

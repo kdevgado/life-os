@@ -8,6 +8,7 @@
     "dist"
   ],
   "compilerOptions": {
+    "types": ["vite-plugin-pwa/client"],
     "jsx": "react-jsx",
     "jsxImportSource": "react"
   }

@@ -3,6 +3,8 @@ import TasksApp from "../tasks/TasksApp";
 import AuthButton from "../login/AuthButton";
 import NotesPanel from "../dashboard/NotesPanel";
 import DailyBibleVerse from "../dashboard/DailyBibleVerse";
+import InstallButton from "../login/InstallButton";
+import FullscreenButton from "./FullscreenButton";
 
 type PanelKey =
   | "spaces"
@@ -904,6 +906,8 @@ export default function FloatingWorkspace() {
     <>
       {/* Top-right login */}
       <div className="lo-auth">
+        <InstallButton />
+        <FullscreenButton />
         <AuthButton />
       </div>
 

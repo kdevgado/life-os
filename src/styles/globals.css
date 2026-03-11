@@ -2470,3 +2470,58 @@ body.iw-app { background: transparent !important; }
     grid-template-columns: 1fr;
   }
 }
+
+.lo-header-actions{
+  display:flex;
+  align-items:center;
+  gap:.6rem;
+}
+
+.lo-install-btn,
+.lo-fullscreen-btn{
+  border:1px solid var(--border);
+  background:var(--panel);
+  color:var(--text);
+  padding:.6rem .9rem;
+  border-radius:999px;
+  font:inherit;
+  cursor:pointer;
+  transition:transform .18s ease, background .18s ease, border-color .18s ease;
+}
+
+.lo-install-btn:hover,
+.lo-fullscreen-btn:hover{
+  transform:translateY(-1px);
+  background:var(--panel-2);
+}
+
+.lo-icon-btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:40px;
+  height:40px;
+  padding:0;
+  border:none;
+  background:transparent;
+  cursor:pointer;
+  border-radius:10px;
+  transition:transform .18s ease, background .18s ease, opacity .18s ease;
+}
+
+.lo-icon-btn:hover{
+  transform:translateY(-1px) scale(1.04);
+  background:rgba(255,255,255,.08);
+}
+
+.lo-icon-btn:active{
+  transform:scale(.96);
+}
+
+.lo-icon-btn__img{
+  width:18px;
+  height:18px;
+  object-fit:contain;
+  pointer-events:none;
+  user-select:none;
+}
