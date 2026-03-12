@@ -11,53 +11,74 @@ export default function InstallButton() {
   const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
-    const standalone =
-      window.matchMedia?.("(display-mode: standalone)").matches ||
-      (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+    const checkInstalled = () => {
+      const standalone =
+        window.matchMedia?.("(display-mode: standalone)").matches ||
+        (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
 
-    setIsInstalled(Boolean(standalone));
-
-    const handler = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-      console.log("beforeinstallprompt fired");
+      setIsInstalled(Boolean(standalone));
     };
 
-    const installedHandler = () => {
+    checkInstalled();
+
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
+    };
+
+    const handleInstalled = () => {
       setIsInstalled(true);
       setDeferredPrompt(null);
     };
 
-    window.addEventListener("beforeinstallprompt", handler);
-    window.addEventListener("appinstalled", installedHandler);
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    window.addEventListener("appinstalled", handleInstalled);
 
     return () => {
-      window.removeEventListener("beforeinstallprompt", handler);
-      window.removeEventListener("appinstalled", installedHandler);
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+      window.removeEventListener("appinstalled", handleInstalled);
     };
   }, []);
 
   if (isInstalled) return null;
 
   const handleInstall = async () => {
-    if (!deferredPrompt) {
-      alert("Install is not available yet. Check service worker, manifest, and icons.");
-      return;
-    }
+    if (!deferredPrompt) return;
 
     await deferredPrompt.prompt();
     await deferredPrompt.userChoice;
+    setDeferredPrompt(null);
   };
 
   return (
     <button
       type="button"
-      className="lo-install-btn"
+      className="lo-install-btn lo-install-btn--desktop"
       onClick={handleInstall}
       disabled={!deferredPrompt}
-      title={!deferredPrompt ? "Install not available yet" : "Install LifeOS"}
+      title={!deferredPrompt ? "Desktop app not available yet" : "Install LifeOS desktop app"}
+      aria-label="Install LifeOS desktop app"
     >
-      {!deferredPrompt ? "Install unavailable" : "Install LifeOS"}
+      <span className="lo-install-btn__icon" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          width="18"
+          height="18"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.9"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <rect x="3" y="4" width="18" height="12" rx="2" />
+          <path d="M8 20h8" />
+          <path d="M12 16v4" />
+          <path d="M12 8v4" />
+          <path d="m9.5 10.5 2.5 2.5 2.5-2.5" />
+        </svg>
+      </span>
+
+      <span className="lo-install-btn__label">Desktop App</span>
     </button>
   );
 }

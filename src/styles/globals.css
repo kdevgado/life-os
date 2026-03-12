@@ -2525,3 +2525,30 @@ body.iw-app { background: transparent !important; }
   pointer-events:none;
   user-select:none;
 }
+
+.lo-install-btn--desktop {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.65rem 0.95rem;
+}
+
+.lo-install-btn__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  flex: 0 0 auto;
+}
+
+.lo-install-btn__label {
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.lo-install-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}

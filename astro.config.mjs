@@ -7,11 +7,18 @@ export default defineConfig({
   vite: {
     plugins: [
       VitePWA({
-        registerType: "prompt",
+        registerType: "autoUpdate",
+        injectRegister: false,
+        devOptions: {
+          enabled: true,
+        },
         manifest: {
+          id: "/",
           name: "LifeOS",
           short_name: "LifeOS",
+          description: "LifeOS productivity and planning app",
           start_url: "/",
+          scope: "/",
           display: "standalone",
           background_color: "#ffffff",
           theme_color: "#ffffff",
@@ -19,16 +26,16 @@ export default defineConfig({
             {
               src: "/icons/pwa-192.png",
               sizes: "192x192",
-              type: "image/png"
+              type: "image/png",
             },
             {
               src: "/icons/pwa-512.png",
               sizes: "512x512",
-              type: "image/png"
-            }
-          ]
-        }
-      })
-    ]
-  }
+              type: "image/png",
+            },
+          ],
+        },
+      }),
+    ],
+  },
 });
