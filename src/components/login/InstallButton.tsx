@@ -8,39 +8,52 @@ type BeforeInstallPromptEvent = Event & {
 export default function InstallButton() {
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
-  const [isInstalled, setIsInstalled] = useState(false);
+  const [installed, setInstalled] = useState(false);
+  const [theme, setTheme] = useState<"duna" | "nebula">("duna");
 
   useEffect(() => {
-    const checkInstalled = () => {
-      const standalone =
-        window.matchMedia?.("(display-mode: standalone)").matches ||
-        (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
-
-      setIsInstalled(Boolean(standalone));
+    const readTheme = () => {
+      const current =
+        document.documentElement.getAttribute("data-theme") === "nebula"
+          ? "nebula"
+          : "duna";
+      setTheme(current);
     };
 
-    checkInstalled();
+    readTheme();
 
-    const handleBeforeInstallPrompt = (e: Event) => {
+    if (window.matchMedia("(display-mode: standalone)").matches) {
+      setInstalled(true);
+    }
+
+    const onBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
     };
 
-    const handleInstalled = () => {
-      setIsInstalled(true);
+    const onAppInstalled = () => {
+      setInstalled(true);
       setDeferredPrompt(null);
     };
 
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-    window.addEventListener("appinstalled", handleInstalled);
+    const observer = new MutationObserver(() => {
+      readTheme();
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
+
+    window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+    window.addEventListener("appinstalled", onAppInstalled);
 
     return () => {
-      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-      window.removeEventListener("appinstalled", handleInstalled);
+      observer.disconnect();
+      window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+      window.removeEventListener("appinstalled", onAppInstalled);
     };
   }, []);
-
-  if (isInstalled) return null;
 
   const handleInstall = async () => {
     if (!deferredPrompt) return;
@@ -50,35 +63,27 @@ export default function InstallButton() {
     setDeferredPrompt(null);
   };
 
+  const iconSrc =
+    theme === "nebula" ? "/icons/black/app.png" : "/icons/white/app.png";
+
+  if (installed) {
+    return (
+      <button className="install-btn installed" type="button" disabled>
+        <img src={iconSrc} alt="" className="install-btn__icon" />
+        <span>App already installed</span>
+      </button>
+    );
+  }
+
   return (
     <button
+      className="install-btn"
       type="button"
-      className="lo-install-btn lo-install-btn--desktop"
       onClick={handleInstall}
       disabled={!deferredPrompt}
-      title={!deferredPrompt ? "Desktop app not available yet" : "Install LifeOS desktop app"}
-      aria-label="Install LifeOS desktop app"
     >
-      <span className="lo-install-btn__icon" aria-hidden="true">
-        <svg
-          viewBox="0 0 24 24"
-          width="18"
-          height="18"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.9"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <rect x="3" y="4" width="18" height="12" rx="2" />
-          <path d="M8 20h8" />
-          <path d="M12 16v4" />
-          <path d="M12 8v4" />
-          <path d="m9.5 10.5 2.5 2.5 2.5-2.5" />
-        </svg>
-      </span>
-
-      <span className="lo-install-btn__label">Desktop App</span>
+      <img src={iconSrc} alt="" className="install-btn__icon" />
+      <span>Download app</span>
     </button>
   );
 }

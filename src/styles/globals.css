@@ -2552,3 +2552,21 @@ body.iw-app { background: transparent !important; }
   cursor: not-allowed;
   transform: none;
 }
+
+.install-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.install-btn__icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.install-btn.installed {
+  opacity: 0.72;
+  cursor: not-allowed;
+}
