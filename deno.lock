@@ -22,7 +22,8 @@
         "npm:astro@^5.17.1",
         "npm:netlify-identity-widget@^2.0.3",
         "npm:react-dom@^19.2.4",
-        "npm:react@^19.2.4"
+        "npm:react@^19.2.4",
+        "npm:vite-plugin-pwa@^1.2.0"
       ],
       "overrides": {
         "rollup": "npm:@rollup/wasm-node@4.57.1"
