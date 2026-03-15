@@ -36,9 +36,7 @@ export default function InstallButton() {
       setDeferredPrompt(null);
     };
 
-    const observer = new MutationObserver(() => {
-      readTheme();
-    });
+    const observer = new MutationObserver(() => readTheme());
 
     observer.observe(document.documentElement, {
       attributes: true,
@@ -57,7 +55,6 @@ export default function InstallButton() {
 
   const handleInstall = async () => {
     if (!deferredPrompt) return;
-
     await deferredPrompt.prompt();
     await deferredPrompt.userChoice;
     setDeferredPrompt(null);
@@ -66,24 +63,19 @@ export default function InstallButton() {
   const iconSrc =
     theme === "nebula" ? "/icons/black/app.png" : "/icons/white/app.png";
 
-  if (installed) {
-    return (
-      <button className="install-btn installed" type="button" disabled>
-        <img src={iconSrc} alt="" className="install-btn__icon" />
-        <span>App already installed</span>
-      </button>
-    );
-  }
-
   return (
     <button
-      className="install-btn"
       type="button"
+      className={`lo-dock-action ${installed ? "is-installed" : ""}`}
       onClick={handleInstall}
-      disabled={!deferredPrompt}
+      disabled={installed || !deferredPrompt}
+      aria-label={installed ? "App already installed" : "Download app"}
+      title={installed ? "App already installed" : "Download app"}
     >
-      <img src={iconSrc} alt="" className="install-btn__icon" />
-      <span>Download app</span>
+      <img src={iconSrc} alt="" className="lo-dock-action__img" />
+      <span className="lo-dock-action__label">
+        {installed ? "Installed" : "Install"}
+      </span>
     </button>
   );
 }

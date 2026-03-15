@@ -56,7 +56,7 @@ export default function FullscreenButton() {
   return (
     <button
       type="button"
-      className="lo-icon-btn"
+      className="lo-dock-action"
       onClick={toggleFullscreen}
       aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
       title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}

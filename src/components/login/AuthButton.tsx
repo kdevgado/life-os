@@ -2,7 +2,11 @@ import { useEffect, useState } from "react";
 
 type User = { email?: string } | null;
 
-export default function AuthButton() {
+type AuthButtonProps = {
+  className?: string;
+};
+
+export default function AuthButton({ className = "duna-auth" }: AuthButtonProps) {
   const [user, setUser] = useState<User>(null);
   const [identity, setIdentity] = useState<any>(null);
 
@@ -10,7 +14,6 @@ export default function AuthButton() {
     let mounted = true;
 
     (async () => {
-      // Only runs in the browser
       const mod = await import("netlify-identity-widget");
       const netlifyIdentity = mod.default;
 
@@ -18,7 +21,7 @@ export default function AuthButton() {
         import.meta.env.PUBLIC_NETLIFY_IDENTITY_URL ||
         `${window.location.origin}/.netlify/identity`;
 
-        netlifyIdentity.init({ APIUrl });
+      netlifyIdentity.init({ APIUrl });
 
       const current = netlifyIdentity.currentUser();
       if (mounted) {
@@ -39,10 +42,9 @@ export default function AuthButton() {
     };
   }, []);
 
-  // While loading identity, show nothing or a placeholder
   if (!identity) {
     return (
-      <button className="duna-auth" type="button" disabled>
+      <button className={className} type="button" disabled>
         Sign in
       </button>
     );
@@ -50,14 +52,22 @@ export default function AuthButton() {
 
   if (!user) {
     return (
-      <button className="duna-auth" type="button" onClick={() => identity.open("login")}>
+      <button
+        className={className}
+        type="button"
+        onClick={() => identity.open("login")}
+      >
         Sign in
       </button>
     );
   }
 
   return (
-    <button className="duna-auth" type="button" onClick={() => identity.logout()}>
+    <button
+      className={className}
+      type="button"
+      onClick={() => identity.logout()}
+    >
       Sign out
     </button>
   );

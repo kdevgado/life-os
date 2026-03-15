@@ -905,10 +905,12 @@ export default function FloatingWorkspace() {
   return (
     <>
       {/* Top-right login */}
-      <div className="lo-auth">
-        <InstallButton />
-        <FullscreenButton />
-        <AuthButton />
+      <div className="lo-utility-dock lo-utility-dock--top-right" aria-label="Quick actions">
+        <div className="lo-utility-dock__inner">
+          <InstallButton />
+          <FullscreenButton />
+          <AuthButton className="lo-dock-action" />
+        </div>
       </div>
 
       {/* Left floating dock */}

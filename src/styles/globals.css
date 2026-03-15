@@ -2553,20 +2553,107 @@ body.iw-app { background: transparent !important; }
   transform: none;
 }
 
-.install-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.65rem;
+.lo-utility-dock {
+  position: fixed;
+  z-index: 80;
+  pointer-events: none;
 }
 
-.install-btn__icon {
+.lo-utility-dock--top-right {
+  top: 1.1rem;
+  right: 1.1rem;
+}
+
+.lo-utility-dock__inner {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem;
+  border-radius: 999px;
+  pointer-events: auto;
+
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow:
+    0 10px 24px rgba(15, 23, 42, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+:root[data-theme="nebula"] .lo-utility-dock__inner {
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 14px 34px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.lo-dock-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 40px;
+  padding: 0 0.85rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    transform 160ms ease,
+    opacity 160ms ease;
+}
+
+.lo-dock-action:hover {
+  background: rgba(15, 23, 42, 0.06);
+  transform: translateY(-1px);
+}
+
+:root[data-theme="nebula"] .lo-dock-action:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.lo-dock-action:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.lo-dock-action__label {
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.lo-dock-action__icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.lo-dock-action__img {
   width: 18px;
   height: 18px;
   object-fit: contain;
   flex-shrink: 0;
 }
 
-.install-btn.installed {
-  opacity: 0.72;
-  cursor: not-allowed;
+@media (max-width: 720px) {
+  .lo-utility-dock--top-right {
+    top: 0.85rem;
+    right: 0.85rem;
+  }
+
+  .lo-utility-dock__inner {
+    gap: 0.3rem;
+    padding: 0.35rem;
+  }
+
+  .lo-dock-action {
+    min-height: 38px;
+    padding: 0 0.7rem;
+  }
 }
