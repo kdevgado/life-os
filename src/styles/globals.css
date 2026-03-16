@@ -2863,3 +2863,70 @@ body.iw-app { background: transparent !important; }
 :root[data-theme="nebula"] .lo-top-dock__divider {
   background: rgba(255, 255, 255, 0.14);
 }
+
+.lo-account-menu__range-wrap {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.lo-account-menu__range {
+  width: 100%;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  accent-color: currentColor;
+}
+
+.lo-account-menu__range-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.84rem;
+  opacity: 0.78;
+}
+
+.lo-account-menu__range-meta strong {
+  font-size: 0.88rem;
+  font-weight: 700;
+  opacity: 1;
+}
+
+/* optional nicer track feel */
+.lo-account-menu__range::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.12);
+}
+
+.lo-account-menu__range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  margin-top: -5px;
+  border: 0;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.lo-account-menu__range::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.12);
+}
+
+.lo-account-menu__range::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border: 0;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+:root[data-theme="nebula"] .lo-account-menu__range::-webkit-slider-runnable-track {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+:root[data-theme="nebula"] .lo-account-menu__range::-moz-range-track {
+  background: rgba(255, 255, 255, 0.14);
+}

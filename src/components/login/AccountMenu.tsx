@@ -174,7 +174,9 @@ export default function AccountMenu() {
 
     return () => {
       if (hideTimerRef.current) window.clearTimeout(hideTimerRef.current);
-      events.forEach((name) => window.removeEventListener(name, resetHideTimer));
+      events.forEach((name) =>
+        window.removeEventListener(name, resetHideTimer),
+      );
     };
   }, [focusMode, hideAfterSeconds]);
 
@@ -334,23 +336,31 @@ export default function AccountMenu() {
             <div className="lo-account-menu__heading">Focus mode</div>
 
             <label className="lo-account-menu__check">
-            <input
+              <input
                 type="checkbox"
                 checked={focusMode}
                 onChange={toggleFocusMode}
-            />
-            <span>Hide Elements</span>
+              />
+              <span>Hide Elements</span>
             </label>
 
             <label className="lo-account-menu__field">
-              <span>Hide after (seconds)</span>
-              <input
-                type="number"
-                min={3}
-                max={120}
-                value={hideAfterSeconds}
-                onChange={(e) => updateHideAfter(Number(e.target.value))}
-              />
+              <span>Hide after</span>
+
+              <div className="lo-account-menu__range-wrap">
+                <input
+                  className="lo-account-menu__range"
+                  type="range"
+                  min={3}
+                  max={120}
+                  step={1}
+                  value={hideAfterSeconds}
+                  onChange={(e) => updateHideAfter(Number(e.target.value))}
+                />
+                <div className="lo-account-menu__range-meta">
+                  <strong>{hideAfterSeconds}s</strong>
+                </div>
+              </div>
             </label>
           </section>
 
