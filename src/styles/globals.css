@@ -2675,7 +2675,7 @@ body.iw-app { background: transparent !important; }
   position: absolute;
   top: calc(100% + 0.6rem);
   right: 0;
-  width: 320px;
+  width: 220px;
   max-height: min(80vh, 720px);
   overflow: auto;
   padding: 0.75rem;
@@ -2773,16 +2773,57 @@ body.iw-app { background: transparent !important; }
 /* focus mode */
 .is-focus-mode .lo-docks,
 .is-focus-mode .lo-auth,
-.is-focus-mode .lo-mode-switcher {
+.is-focus-mode .lo-window {
   transition: opacity 180ms ease, transform 180ms ease;
 }
 
 .is-focus-mode-hidden .lo-docks,
 .is-focus-mode-hidden .lo-auth,
-.is-focus-mode-hidden .lo-mode-switcher {
+.is-focus-mode-hidden .lo-window {
   opacity: 0;
   pointer-events: none;
   transform: translateY(-8px);
+}
+
+.lo-account-menu__check {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 40px;
+  padding: 0.7rem 0.85rem;
+  border-radius: 14px;
+  cursor: pointer;
+}
+
+.lo-account-menu__check:hover {
+  background: rgba(15, 23, 42, 0.06);
+}
+
+:root[data-theme="nebula"] .lo-account-menu__check:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.lo-account-menu__check input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: currentColor;
+  cursor: pointer;
+}
+
+.lo-account-menu__check span {
+  font-size: 0.95rem;
+}
+
+/* Remove number input arrows */
+.lo-account-menu__field input[type="number"]::-webkit-outer-spin-button,
+.lo-account-menu__field input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.lo-account-menu__field input[type="number"] {
+  -moz-appearance: textfield;
 }
 
 .lo-auth {

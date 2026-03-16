@@ -904,8 +904,8 @@ export default function FloatingWorkspace() {
   return (
     <>
       {/* Top-right login */}
-      <div className="lo-utility-dock lo-utility-dock--top-right" aria-label="Quick actions">
-        <div className="lo-utility-dock__inner">
+      <div className="lo-auth">
+        <div className="lo-top-dock" aria-label="Quick actions">
           <FullscreenButton />
           <span className="lo-top-dock__divider" aria-hidden="true" />
           <AccountMenu />

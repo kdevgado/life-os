@@ -333,13 +333,14 @@ export default function AccountMenu() {
           <section className="lo-account-menu__section">
             <div className="lo-account-menu__heading">Focus mode</div>
 
-            <button
-              type="button"
-              className="lo-account-menu__item"
-              onClick={toggleFocusMode}
-            >
-              {focusMode ? "Disable focus mode" : "Enable focus mode"}
-            </button>
+            <label className="lo-account-menu__check">
+            <input
+                type="checkbox"
+                checked={focusMode}
+                onChange={toggleFocusMode}
+            />
+            <span>Hide Elements</span>
+            </label>
 
             <label className="lo-account-menu__field">
               <span>Hide after (seconds)</span>
