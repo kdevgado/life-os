@@ -1,9 +1,8 @@
 import React, { useMemo, useState } from "react";
 import TasksApp from "../tasks/TasksApp";
-import AuthButton from "../login/AuthButton";
+import AccountMenu from "../login/AccountMenu";
 import NotesPanel from "../dashboard/NotesPanel";
 import DailyBibleVerse from "../dashboard/DailyBibleVerse";
-import InstallButton from "../login/InstallButton";
 import FullscreenButton from "./FullscreenButton";
 
 type PanelKey =
@@ -907,9 +906,9 @@ export default function FloatingWorkspace() {
       {/* Top-right login */}
       <div className="lo-utility-dock lo-utility-dock--top-right" aria-label="Quick actions">
         <div className="lo-utility-dock__inner">
-          <InstallButton />
           <FullscreenButton />
-          <AuthButton className="lo-dock-action" />
+          <span className="lo-top-dock__divider" aria-hidden="true" />
+          <AccountMenu />
         </div>
       </div>
 

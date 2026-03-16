@@ -1078,43 +1078,6 @@ body.iw-app { background: transparent !important; }
 /* Floating desktop layout */
 .lo-page-slot { display:none; } /* keep pages empty visually */
 
-/* login button container */
-.lo-auth{
-  position: fixed;
-  top: 18px;
-  right: 18px;
-  z-index: 80;
-}
-
-.lo-auth button{
-  appearance: none;
-  border: 1px solid var(--shell-border-strong);
-  padding: 8px 16px;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--shell-title);
-  background: var(--shell-surface-strong);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: var(--shell-shadow);
-  cursor: pointer;
-  transition:
-    background .15s ease,
-    transform .12s ease,
-    border .15s ease;
-}
-
-.lo-auth button:hover{
-  background: var(--shell-btn-hover);
-  border-color: var(--shell-border-strong);
-  transform: translateY(-1px);
-}
-
-.lo-auth button:active{
-  transform: translateY(0);
-}
-
 .lo-docks{
   position: fixed;
   left: 14px;
@@ -2656,4 +2619,206 @@ body.iw-app { background: transparent !important; }
     min-height: 38px;
     padding: 0 0.7rem;
   }
+}
+
+.lo-auth {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 140;
+}
+
+.lo-account-menu {
+  position: relative;
+}
+
+.lo-account-menu__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 42px;
+  padding: 0 0.85rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.88);
+  color: rgba(15, 23, 42, 0.92);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  cursor: pointer;
+}
+
+:root[data-theme="nebula"] .lo-account-menu__trigger {
+  background: rgba(15, 23, 42, 0.72);
+  color: rgba(255, 255, 255, 0.96);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.lo-account-menu__icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.lo-account-menu__label {
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.lo-account-menu__caret {
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.lo-account-menu__panel {
+  position: absolute;
+  top: calc(100% + 0.6rem);
+  right: 0;
+  width: 320px;
+  max-height: min(80vh, 720px);
+  overflow: auto;
+  padding: 0.75rem;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.94);
+  color: rgba(15, 23, 42, 0.92);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.18);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+:root[data-theme="nebula"] .lo-account-menu__panel {
+  background: rgba(10, 14, 24, 0.9);
+  color: rgba(255, 255, 255, 0.96);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.lo-account-menu__section + .lo-account-menu__section {
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+:root[data-theme="nebula"] .lo-account-menu__section + .lo-account-menu__section {
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+.lo-account-menu__heading {
+  margin-bottom: 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.lo-account-menu__item {
+  width: 100%;
+  min-height: 40px;
+  padding: 0.7rem 0.85rem;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.lo-account-menu__item:hover {
+  background: rgba(15, 23, 42, 0.06);
+}
+
+:root[data-theme="nebula"] .lo-account-menu__item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.lo-account-menu__item.is-danger {
+  color: #c0392b;
+}
+
+.lo-account-menu__field {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.55rem;
+}
+
+.lo-account-menu__field span {
+  font-size: 0.8rem;
+  opacity: 0.75;
+}
+
+.lo-account-menu__field input {
+  width: 100%;
+  min-height: 40px;
+  padding: 0.65rem 0.8rem;
+  border-radius: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.78);
+  color: inherit;
+}
+
+:root[data-theme="nebula"] .lo-account-menu__field input {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: inherit;
+}
+
+.lo-account-menu__row {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.65rem;
+}
+
+/* focus mode */
+.is-focus-mode .lo-docks,
+.is-focus-mode .lo-auth,
+.is-focus-mode .lo-mode-switcher {
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.is-focus-mode-hidden .lo-docks,
+.is-focus-mode-hidden .lo-auth,
+.is-focus-mode-hidden .lo-mode-switcher {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-8px);
+}
+
+.lo-auth {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 140;
+}
+
+.lo-top-dock {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.4rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+:root[data-theme="nebula"] .lo-top-dock {
+  background: rgba(15, 23, 42, 0.72);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+
+.lo-top-dock__divider {
+  width: 1px;
+  height: 24px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.12);
+  flex-shrink: 0;
+}
+
+:root[data-theme="nebula"] .lo-top-dock__divider {
+  background: rgba(255, 255, 255, 0.14);
 }
