@@ -1,7 +1,7 @@
 import React from "react";
 
-type InputProps = React.InputHTMLAttributes<HTMLInputElement>;
+type Props = React.InputHTMLAttributes<HTMLInputElement>;
 
-export function Input({ className = "", ...props }: InputProps) {
+export function Input({ className = "", ...props }: Props) {
   return <input className={`lo-input ${className}`} {...props} />;
 }

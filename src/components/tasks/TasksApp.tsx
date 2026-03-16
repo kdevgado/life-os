@@ -1,12 +1,21 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type { Task } from "../../types/task";
-import { createTask, deleteTask, loadTasks, updateTask } from "../../lib/tasksStore";
-import { Input } from "../ui/Input";
+import {
+  createTask,
+  deleteTask,
+  loadTasks,
+  updateTask,
+} from "../../lib/tasksStore";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { getJwt, onAuthChange } from "../../lib/identity";
 
-type View = "today" | "week" | "all";
 type Priority = 1 | 2 | 3;
 
 function isoDate(d: Date) {
@@ -23,10 +32,12 @@ function endOfWeek() {
   return d;
 }
 
-export default function TasksApp() {
+type TasksMode = "focus" | "plan";
+
+export default function TasksApp({ mode = "plan" }: { mode?: TasksMode }) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [title, setTitle] = useState("");
-  const [view, setView] = useState<View>("today");
+  const [query, setQuery] = useState("");
 
   // ✅ defaults requested
   const [dueDate, setDueDate] = useState<string>(() => isoDate(new Date())); // today
@@ -34,7 +45,6 @@ export default function TasksApp() {
 
   // ✅ for “new task” animation
   const [justAddedId, setJustAddedId] = useState<string | null>(null);
-  const addBtnRef = useRef<HTMLButtonElement | null>(null);
 
   const [authed, setAuthed] = useState(false);
   const ignoreNextSaveRef = useRef(false);
@@ -42,7 +52,7 @@ export default function TasksApp() {
   // ✅ error handling for load
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  
+
   const reloadTasks = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
@@ -81,22 +91,7 @@ export default function TasksApp() {
   }, []);
 
   useEffect(() => {
-    (async () => {
-      reloadTasks();
-      const jwt = await getJwt();
-      setAuthed(!!jwt);
-
-      if (!jwt) {
-        setTasks(loadTasks());
-        return;
-      }
-
-      const res = await fetch("/.netlify/functions/tasks", {
-        headers: { Authorization: `Bearer ${jwt}` },
-      });
-
-      setTasks(res.ok ? ((await res.json()) as Task[]) : loadTasks());
-    })();
+    reloadTasks();
   }, [reloadTasks]);
 
   useEffect(() => {
@@ -154,19 +149,34 @@ export default function TasksApp() {
 
   const filtered = useMemo(() => {
     const today = isoDate(new Date());
-    const weekEnd = isoDate(endOfWeek());
 
-    if (view === "all") return tasks;
+    const normalizedQuery = query.trim().toLowerCase();
+    const searched = !normalizedQuery
+      ? tasks
+      : tasks.filter((t) => {
+          const q = normalizedQuery.startsWith("@")
+            ? normalizedQuery.slice(1)
+            : normalizedQuery;
 
-    if (view === "today") {
-      return tasks.filter((t) => t.dueDate === today && t.status !== "done");
+          return (
+            t.title.toLowerCase().includes(q) ||
+            (t.notes ?? "").toLowerCase().includes(q) ||
+            (t.list ?? "").toLowerCase().includes(q) ||
+            (t.tags ?? []).some((tag) => tag.toLowerCase().includes(q))
+          );
+        });
+
+    if (mode === "focus") {
+      return searched.filter((t) => {
+        const isToday = t.dueDate === today || t.plannedFor === today;
+        const isFocused = t.focus === true;
+        const isDoing = t.status === "doing";
+        return t.status !== "done" && (isToday || isFocused || isDoing);
+      });
     }
 
-    return tasks.filter((t) => {
-      if (!t.dueDate) return false;
-      return t.dueDate >= today && t.dueDate <= weekEnd && t.status !== "done";
-    });
-  }, [tasks, view]);
+    return searched;
+  }, [tasks, query, mode]);
 
   const canAdd = title.trim().length > 0;
 
@@ -183,24 +193,50 @@ export default function TasksApp() {
     };
   }
 
-  function onAdd() {
+  async function onAdd(forcedList?: string) {
     const trimmed = title.trim();
     if (!trimmed) return;
 
-    const due = dueDate || isoDate(new Date());
+    const due = dueDate || undefined;
+    const today = isoDate(new Date());
+
+    const basePatch =
+      mode === "focus"
+        ? {
+            dueDate: today,
+            plannedFor: today,
+            priority: priority ?? 3,
+            status: "todo" as const,
+            focus: true,
+          }
+        : {
+            dueDate: due,
+            priority: priority ?? 3,
+            status: "todo" as const,
+          };
+
+    const taskList = mode === "plan" ? (forcedList ?? "inbox") : "focus";
 
     const newTask = authed
-      ? makeTask(trimmed, due, priority ?? 3)
-      : createTask({ title: trimmed, dueDate: due, priority: priority ?? 3, status: "todo" });
+      ? {
+          ...makeTask(trimmed, due, priority ?? 3),
+          ...basePatch,
+          list: taskList,
+          tags: mode === "focus" ? ["focus"] : [],
+        }
+      : createTask({
+          title: trimmed,
+          ...basePatch,
+          list: taskList,
+          tags: mode === "focus" ? ["focus"] : [],
+        });
 
     setTasks((prev) => [newTask, ...prev]);
     setTitle("");
+    setDueDate("");
+    setPriority(2);
     setJustAddedId(newTask.id);
-
-    setDueDate(isoDate(new Date()));
-    setPriority(3);
-
-    window.setTimeout(() => setJustAddedId(null), 650);
+    window.setTimeout(() => setJustAddedId(null), 1600);
   }
 
   function onToggleDone(task: Task) {
@@ -209,12 +245,30 @@ export default function TasksApp() {
     if (authed) {
       const now = new Date().toISOString();
       setTasks((prev) =>
-        prev.map((t) => (t.id === task.id ? { ...t, status: nextStatus, updatedAt: now } : t))
+        prev.map((t) =>
+          t.id === task.id ? { ...t, status: nextStatus, updatedAt: now } : t,
+        ),
       );
       return;
     }
 
     const updated = updateTask(task.id, { status: nextStatus });
+    if (!updated) return;
+    setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
+  }
+
+  function onSetStatus(task: Task, status: "todo" | "doing" | "done") {
+    if (authed) {
+      const now = new Date().toISOString();
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.id === task.id ? { ...t, status, updatedAt: now } : t,
+        ),
+      );
+      return;
+    }
+
+    const updated = updateTask(task.id, { status });
     if (!updated) return;
     setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
   }
@@ -230,26 +284,27 @@ export default function TasksApp() {
 
     if (authed) {
       const now = new Date().toISOString();
-      setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, dueDate: nextDue, updatedAt: now } : t)));
-
-      // your view-switch logic can stay the same
-      if (view === "today" && nextDue && nextDue !== isoDate(new Date())) setView(inNext7Days(nextDue) ? "week" : "all");
-      if (view === "week" && nextDue && !inNext7Days(nextDue)) setView("all");
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.id === task.id ? { ...t, dueDate: nextDue, updatedAt: now } : t,
+        ),
+      );
       return;
     }
 
     const updated = updateTask(task.id, { dueDate: nextDue });
     if (!updated) return;
     setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
-
-    if (view === "today" && nextDue && nextDue !== isoDate(new Date())) setView(inNext7Days(nextDue) ? "week" : "all");
-    if (view === "week" && nextDue && !inNext7Days(nextDue)) setView("all");
   }
 
   function onSetPriority(task: Task, p: Priority) {
     if (authed) {
       const now = new Date().toISOString();
-      setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, priority: p, updatedAt: now } : t)));
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.id === task.id ? { ...t, priority: p, updatedAt: now } : t,
+        ),
+      );
       return;
     }
 
@@ -266,131 +321,502 @@ export default function TasksApp() {
   return (
     <div className="lo-page lo-tasks lo-stack">
       {loading && <div className="muted">Loading tasks…</div>}
-        {loadError && (
-          <div className="error">
-            {loadError}
-            <button className="linkBtn" onClick={reloadTasks}>Retry</button>
-          </div>
-        )}
-      {!loading && !loadError && tasks.length === 0 && (
-        <div className="muted">No tasks yet — add your first one.</div>
+      {loadError && (
+        <div className="error">
+          {loadError}
+          <button className="linkBtn" onClick={reloadTasks}>
+            Retry
+          </button>
+        </div>
       )}
+
+      {!loading && mode === "focus" && (
+        <FocusTasksView
+          query={query}
+          setQuery={setQuery}
+          title={title}
+          setTitle={setTitle}
+          canAdd={canAdd}
+          onAdd={onAdd}
+          tasks={filtered}
+          justAddedId={justAddedId}
+          onToggleDone={onToggleDone}
+          onSetStatus={onSetStatus}
+          onRemove={onRemove}
+        />
+      )}
+
+      {!loading && mode === "plan" && (
+        <PlanTasksView
+          query={query}
+          setQuery={setQuery}
+          title={title}
+          setTitle={setTitle}
+          dueDate={dueDate}
+          setDueDate={setDueDate}
+          priority={priority}
+          setPriority={setPriority}
+          canAdd={canAdd}
+          onAdd={onAdd}
+          tasks={filtered}
+          justAddedId={justAddedId}
+          onToggleDone={onToggleDone}
+          onRemove={onRemove}
+          onSetDue={onSetDue}
+          onSetPriority={onSetPriority}
+        />
+      )}
+    </div>
+  );
+}
+
+// View components
+function FocusTasksView({
+  query,
+  setQuery,
+  title,
+  setTitle,
+  canAdd,
+  onAdd,
+  tasks,
+  justAddedId,
+  onToggleDone,
+  onSetStatus,
+  onRemove,
+}: {
+  query: string;
+  setQuery: (value: string) => void;
+  title: string;
+  setTitle: (value: string) => void;
+  canAdd: boolean;
+  onAdd: (forcedList?: string) => void;
+  tasks: Task[];
+  justAddedId: string | null;
+  onToggleDone: (task: Task) => void;
+  onSetStatus: (task: Task, status: "todo" | "doing" | "done") => void;
+  onRemove: (task: Task) => void;
+}) {
+  const doing = tasks.filter((t) => t.status === "doing");
+  const next = tasks.filter((t) => t.status === "todo");
+
+  return (
+    <>
       <Card className="toolbar-card">
-        <div className="lo-toolbar">
-          <Button variant={view === "today" ? "primary" : "ghost"} onClick={() => setView("today")}>
-            Today
-          </Button>
-          <Button variant={view === "week" ? "primary" : "ghost"} onClick={() => setView("week")}>
-            This Week
-          </Button>
-          <Button variant={view === "all" ? "primary" : "ghost"} onClick={() => setView("all")}>
-            All
-          </Button>
-          <div className="spacer" />
-          <span className="muted" style={{ fontSize: 14 }}>
-            {filtered.length} items
-          </span>
+        <div className="lo-focusbar">
+          <input
+            className="lo-input"
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search focus tasks… use @focus @today"
+          />
         </div>
       </Card>
 
       <Card className="toolbar-card">
         <div className="lo-addbar">
-            <Input
+          <input
+            className="lo-input"
+            type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Add a task…"
-            onKeyDown={(e) => e.key === "Enter" && canAdd && onAdd()}
-            />
-
-            <div className="lo-chip" title="Due date">
-            <label>Due</label>
-            <input
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                aria-label="Due date"
-            />
-            </div>
-
-            <div className="lo-chip" title="Priority">
-            <label>Priority</label>
-            <select
-                value={priority}
-                onChange={(e) => setPriority(Number(e.target.value) as Priority)}
-                aria-label="Priority"
-            >
-                <option value={1}>High</option>
-                <option value={2}>Med</option>
-                <option value={3}>Low</option>
-            </select>
-            </div>
-
-            <div className="lo-add-btn">
-            <Button onClick={onAdd} disabled={!canAdd}>
-                Add
+            placeholder="What do you need to do now? eg. Finish planner @focus @today"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && canAdd) onAdd();
+            }}
+          />
+          <div className="lo-add-btn">
+            <Button onClick={() => onAdd()} disabled={!canAdd}>
+              Add
             </Button>
-            </div>
+          </div>
         </div>
-        </Card>
+      </Card>
 
-      <div className="lo-tasklist lo-stack">
-        {filtered.map((task) => {
-        const isNew = task.id === justAddedId;
-
-        const priorityLabel = task.priority === 1 ? "High" : task.priority === 2 ? "Med" : "Low";
-        const priClass = task.priority === 1 ? "high" : task.priority === 2 ? "med" : "low";
-
-        return (
-            <Card key={task.id} className={`lo-task ${task.status === "done" ? "is-done" : ""} ${isNew ? "is-new" : ""}`}>
+      <section className="lo-stack">
+        <h3 className="lo-section-title">Doing</h3>
+        {doing.length === 0 && (
+          <div className="muted">No active task right now.</div>
+        )}
+        {doing.map((task) => (
+          <Card
+            key={task.id}
+            className={`lo-task lo-task-focus ${task.id === justAddedId ? "is-new" : ""}`}
+          >
             <div className="lo-task-row">
-                <input
+              <input
                 type="checkbox"
                 checked={task.status === "done"}
                 onChange={() => onToggleDone(task)}
                 aria-label="Mark done"
+              />
+              <div className="lo-task-title">{task.title}</div>
+              <Button variant="ghost" onClick={() => onSetStatus(task, "todo")}>
+                Back
+              </Button>
+              <Button variant="danger" onClick={() => onRemove(task)}>
+                Delete
+              </Button>
+            </div>
+          </Card>
+        ))}
+      </section>
+
+      <section className="lo-stack">
+        <h3 className="lo-section-title">Up Next</h3>
+        {next.length === 0 && <div className="muted">Nothing queued.</div>}
+        {next.map((task) => (
+          <Card
+            key={task.id}
+            className={`lo-task lo-task-focus ${task.id === justAddedId ? "is-new" : ""}`}
+          >
+            <div className="lo-task-row">
+              <input
+                type="checkbox"
+                checked={task.status === "done"}
+                onChange={() => onToggleDone(task)}
+                aria-label="Mark done"
+              />
+              <div className="lo-task-title">{task.title}</div>
+              <Button
+                variant="primary"
+                onClick={() => onSetStatus(task, "doing")}
+              >
+                Start
+              </Button>
+              <Button variant="danger" onClick={() => onRemove(task)}>
+                Delete
+              </Button>
+            </div>
+          </Card>
+        ))}
+      </section>
+    </>
+  );
+}
+
+function labelForList(
+  list: "inbox" | "today" | "week" | "planner" | "work" | "personal" | "home",
+) {
+  if (list === "today") return "Today";
+  if (list === "week") return "This Week";
+  if (list === "planner") return "Planner";
+  if (list === "work") return "Work";
+  if (list === "personal") return "Personal";
+  if (list === "home") return "Home";
+  return "Inbox";
+}
+
+function PlanTasksView({
+  query,
+  setQuery,
+  title,
+  setTitle,
+  dueDate,
+  setDueDate,
+  priority,
+  setPriority,
+  canAdd,
+  onAdd,
+  tasks,
+  justAddedId,
+  onToggleDone,
+  onRemove,
+  onSetDue,
+  onSetPriority,
+}: {
+  query: string;
+  setQuery: (value: string) => void;
+  title: string;
+  setTitle: (value: string) => void;
+  dueDate: string;
+  setDueDate: (value: string) => void;
+  priority: Priority;
+  setPriority: (value: Priority) => void;
+  canAdd: boolean;
+  onAdd: (forcedList?: string) => void;
+  tasks: Task[];
+  justAddedId: string | null;
+  onToggleDone: (task: Task) => void;
+  onRemove: (task: Task) => void;
+  onSetDue: (task: Task, dueDate: string) => void;
+  onSetPriority: (task: Task, p: Priority) => void;
+}) {
+  const [selectedList, setSelectedList] = React.useState<
+    "inbox" | "today" | "week" | "planner" | "work" | "personal" | "home"
+  >("inbox");
+
+  const todayISO = isoDate(new Date());
+  const weekEnd = isoDate(endOfWeek());
+
+  const visibleTasks = tasks.filter((t) => {
+    if (selectedList === "inbox") return (t.list ?? "inbox") === "inbox";
+    if (selectedList === "planner") return t.list === "planner";
+    if (selectedList === "work") return t.list === "work";
+    if (selectedList === "personal") return t.list === "personal";
+    if (selectedList === "home") return t.list === "home";
+
+    if (selectedList === "today") {
+      const due = t.dueDate ?? t.plannedFor;
+      return due === todayISO && t.status !== "done";
+    }
+
+    if (selectedList === "week") {
+      const due = t.dueDate ?? t.plannedFor;
+      return !!due && due >= todayISO && due <= weekEnd && t.status !== "done";
+    }
+
+    return true;
+  });
+
+  return (
+    <div className="lo-plan-tasks-layout">
+      <Card className="lo-plan-tasks-sidebar">
+        <button
+          type="button"
+          className={selectedList === "inbox" ? "is-active" : ""}
+          onClick={() => setSelectedList("inbox")}
+        >
+          Inbox
+        </button>
+
+        <button
+          type="button"
+          className={selectedList === "today" ? "is-active" : ""}
+          onClick={() => setSelectedList("today")}
+        >
+          Today
+        </button>
+
+        <button
+          type="button"
+          className={selectedList === "week" ? "is-active" : ""}
+          onClick={() => setSelectedList("week")}
+        >
+          This Week
+        </button>
+
+        <button
+          type="button"
+          className={selectedList === "planner" ? "is-active" : ""}
+          onClick={() => setSelectedList("planner")}
+        >
+          Planner
+        </button>
+
+        <button
+          type="button"
+          className={selectedList === "work" ? "is-active" : ""}
+          onClick={() => setSelectedList("work")}
+        >
+          Work
+        </button>
+
+        <button
+          type="button"
+          className={selectedList === "personal" ? "is-active" : ""}
+          onClick={() => setSelectedList("personal")}
+        >
+          Personal
+        </button>
+
+        <button
+          type="button"
+          className={selectedList === "home" ? "is-active" : ""}
+          onClick={() => setSelectedList("home")}
+        >
+          Home
+        </button>
+      </Card>
+
+      <div className="lo-plan-tasks-main lo-stack">
+        <Card className="toolbar-card">
+          <div className="lo-toolbar">
+            <div className="lo-plan-tasks-heading">
+              <h3>{labelForList(selectedList)}</h3>
+            </div>
+
+            <div className="spacer" />
+
+            <input
+              className="lo-input"
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search tasks… or use @work @planner"
+            />
+          </div>
+        </Card>
+
+        <Card className="toolbar-card">
+          <div className="lo-addbar">
+            <input
+              className="lo-input"
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder={`Add a task in ${labelForList(selectedList)}…`}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && canAdd) {
+                  onAdd(
+                    selectedList === "today" || selectedList === "week"
+                      ? "inbox"
+                      : selectedList,
+                  );
+                }
+              }}
+            />
+
+            <div className="lo-chip" title="Due date">
+              <label>Due</label>
+              <input
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                aria-label="Due date"
+              />
+            </div>
+
+            <div className="lo-chip" title="Priority">
+              <label>Priority</label>
+              <select
+                value={priority}
+                onChange={(e) =>
+                  setPriority(Number(e.target.value) as Priority)
+                }
+                aria-label="Priority"
+              >
+                <option value={1}>High</option>
+                <option value={2}>Med</option>
+                <option value={3}>Low</option>
+              </select>
+            </div>
+
+            <div className="lo-add-btn">
+              <Button
+                onClick={() =>
+                  onAdd(
+                    selectedList === "today" || selectedList === "week"
+                      ? "inbox"
+                      : selectedList,
+                  )
+                }
+                disabled={!canAdd}
+              >
+                Add
+              </Button>
+            </div>
+          </div>
+        </Card>
+
+        <TaskSection
+          title={labelForList(selectedList)}
+          tasks={visibleTasks}
+          justAddedId={justAddedId}
+          onToggleDone={onToggleDone}
+          onRemove={onRemove}
+          onSetDue={onSetDue}
+          onSetPriority={onSetPriority}
+        />
+      </div>
+    </div>
+  );
+}
+
+function TaskSection({
+  title,
+  tasks,
+  justAddedId,
+  onToggleDone,
+  onRemove,
+  onSetDue,
+  onSetPriority,
+}: {
+  title: string;
+  tasks: Task[];
+  justAddedId: string | null;
+  onToggleDone: (task: Task) => void;
+  onRemove: (task: Task) => void;
+  onSetDue: (task: Task, dueDate: string) => void;
+  onSetPriority: (task: Task, p: Priority) => void;
+}) {
+  if (tasks.length === 0) {
+    return (
+      <section className="lo-stack">
+        <h3 className="lo-section-title">{title}</h3>
+        <Card className="lo-task">
+          <div className="muted">No tasks here yet.</div>
+        </Card>
+      </section>
+    );
+  }
+
+  return (
+    <section className="lo-stack">
+      <h3 className="lo-section-title">{title}</h3>
+      <div className="lo-tasklist lo-stack">
+        {tasks.map((task) => {
+          const isNew = task.id === justAddedId;
+          const priorityLabel =
+            task.priority === 1 ? "High" : task.priority === 2 ? "Med" : "Low";
+          const priClass =
+            task.priority === 1 ? "high" : task.priority === 2 ? "med" : "low";
+
+          return (
+            <Card
+              key={task.id}
+              className={`lo-task ${task.status === "done" ? "is-done" : ""} ${isNew ? "is-new" : ""}`}
+            >
+              <div className="lo-task-row">
+                <input
+                  type="checkbox"
+                  checked={task.status === "done"}
+                  onChange={() => onToggleDone(task)}
+                  aria-label="Mark done"
                 />
 
                 <div
-                className={`lo-task-title ${task.status === "done" ? "is-done" : ""}`}
-                title={task.title}
-                
+                  className={`lo-task-title ${task.status === "done" ? "is-done" : ""}`}
+                  title={task.title}
                 >
-                {task.title}
+                  {task.title}
                 </div>
 
                 <Button variant="danger" onClick={() => onRemove(task)}>
-                Delete
+                  Delete
                 </Button>
-            </div>
+              </div>
 
-            <div className="lo-meta-row">
+              <div className="lo-meta-row">
                 <span>Due</span>
                 <input
-                type="date"
-                value={task.dueDate ?? ""}
-                onChange={(e) => onSetDue(task, e.target.value)}
+                  type="date"
+                  value={task.dueDate ?? ""}
+                  onChange={(e) => onSetDue(task, e.target.value)}
                 />
 
                 <span className={`lo-pill ${priClass}`}>{priorityLabel}</span>
 
                 <span style={{ marginLeft: "auto" }} />
-
                 <span className="muted">Set priority:</span>
+
                 <select
-                className="lo-pri-select"
-                value={task.priority}
-                onChange={(e) => onSetPriority(task, Number(e.target.value) as Priority)}
-                aria-label="Set priority"
+                  className="lo-pri-select"
+                  value={task.priority}
+                  onChange={(e) =>
+                    onSetPriority(task, Number(e.target.value) as Priority)
+                  }
+                  aria-label="Set priority"
                 >
-                <option value={1}>High</option>
-                <option value={2}>Med</option>
-                <option value={3}>Low</option>
+                  <option value={1}>High</option>
+                  <option value={2}>Med</option>
+                  <option value={3}>Low</option>
                 </select>
-            </div>
+              </div>
             </Card>
-        );
+          );
         })}
       </div>
-    </div>
+    </section>
   );
 }

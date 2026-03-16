@@ -47,7 +47,7 @@ function defaultSizeFor(key: Exclude<PanelKey, null>) {
     case "calendar":
       return { w: 760, h: 640 };
     case "timer":
-      return { w: 360, h: 380 };
+      return { w: 360, h: 260 };
     case "tasks":
       return { w: 600, h: 640 };
     case "notes":
@@ -66,7 +66,7 @@ function minSizeFor(key: Exclude<PanelKey, null>) {
     case "calendar":
       return { w: 620, h: 520 };
     case "timer":
-      return { w: 300, h: 260 };
+      return { w: 300, h: 230 };
     case "tasks":
       return { w: 560, h: 520 };
     case "notes":
@@ -230,7 +230,13 @@ function WindowShell({
         </div>
       </header>
 
-      <div className="lo-window__body">{children}</div>
+      <div
+        className="lo-window__body"
+        onPointerDown={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        {children}
+      </div>
 
       <div
         className="lo-window__resize"
@@ -488,39 +494,39 @@ function SpacesPanel() {
         )}
       </div>
       <div className="lo-spaces__footer">
-  <div className="lo-spaces__current">
-    <div className="lo-spaces__current-label">Selected wallpaper</div>
-    <div className="lo-spaces__current-title">
-      {selectedWallpaper?.title || "No wallpaper selected"}
-    </div>
-  </div>
+        <div className="lo-spaces__current">
+          <div className="lo-spaces__current-label">Selected wallpaper</div>
+          <div className="lo-spaces__current-title">
+            {selectedWallpaper?.title || "No wallpaper selected"}
+          </div>
+        </div>
 
-  {tab === "video" && selectedWallpaper?.type === "video" ? (
-    <div className="lo-spaces__audio">
-      <div className="lo-spaces__audio-row">
-        <span className="lo-spaces__audio-label">Wallpaper sound</span>
+        {tab === "video" && selectedWallpaper?.type === "video" ? (
+          <div className="lo-spaces__audio">
+            <div className="lo-spaces__audio-row">
+              <span className="lo-spaces__audio-label">Wallpaper sound</span>
 
-        <button
-          type="button"
-          className={`lo-spaces__mute ${videoMuted ? "is-muted" : ""}`}
-          onClick={toggleVideoMuted}
-        >
-          {videoMuted ? "Unmute" : "Mute"}
-        </button>
+              <button
+                type="button"
+                className={`lo-spaces__mute ${videoMuted ? "is-muted" : ""}`}
+                onClick={toggleVideoMuted}
+              >
+                {videoMuted ? "Unmute" : "Mute"}
+              </button>
+            </div>
+
+            <input
+              className="lo-spaces__volume"
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={videoVolume}
+              onChange={(e) => changeVideoVolume(Number(e.target.value))}
+            />
+          </div>
+        ) : null}
       </div>
-
-      <input
-        className="lo-spaces__volume"
-        type="range"
-        min="0"
-        max="1"
-        step="0.05"
-        value={videoVolume}
-        onChange={(e) => changeVideoVolume(Number(e.target.value))}
-      />
-    </div>
-  ) : null}
-</div>
     </div>
   );
 }
@@ -1063,7 +1069,7 @@ export default function FloatingWorkspace() {
           onResize={(nw, nh) => resizeWindow(w.key, nw, nh)}
           onClose={() => closeWindow(w.key)}
         >
-          {w.key === "tasks" && <TasksApp />}
+          {w.key === "tasks" && <TasksApp mode="focus" />}
           {w.key === "notes" && <NotesPanel />}
           {w.key === "timer" && <TimerPanel />}
           {w.key === "sounds" && <SoundsPanel />}

@@ -12,4 +12,8 @@ export type Task = {
   projectId?: string | null;
   createdAt: string; // ISO datetime
   updatedAt: string; // ISO datetime
+  list?: string;
+  tags?: string[];
+  focus?: boolean;
+  plannedFor?: string;
 };

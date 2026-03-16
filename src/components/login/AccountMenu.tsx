@@ -352,7 +352,7 @@ export default function AccountMenu() {
                   className="lo-account-menu__range"
                   type="range"
                   min={3}
-                  max={120}
+                  max={80}
                   step={1}
                   value={hideAfterSeconds}
                   onChange={(e) => updateHideAfter(Number(e.target.value))}

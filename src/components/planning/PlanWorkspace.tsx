@@ -1,8 +1,9 @@
 import React from "react";
 import PlannerApp from "./planner/PlannerApp";
 import BoardView from "./BoardView";
+import TasksApp from "../tasks/TasksApp";
 
-type PlanTab = "board" | "calendar" | "planner";
+type PlanTab = "board" | "calendar" | "planner" | "tasks";
 
 export default function PlanWorkspace() {
   const [tab, setTab] = React.useState<PlanTab>("board");
@@ -42,6 +43,13 @@ export default function PlanWorkspace() {
             >
               Planner
             </button>
+            <button
+              type="button"
+              className={tab === "tasks" ? "is-active" : ""}
+              onClick={() => setTab("tasks")}
+            >
+              Tasks
+            </button>
           </div>
         </header>
 
@@ -62,6 +70,12 @@ export default function PlanWorkspace() {
           {tab === "planner" && (
             <div className="lo-plan__panel">
               <PlannerApp />
+            </div>
+          )}
+
+          {tab === "tasks" && (
+            <div className="lo-plan__panel">
+              <TasksApp mode="plan" />
             </div>
           )}
         </div>

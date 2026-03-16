@@ -287,14 +287,6 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   font-size:1.1rem;
 }
 
-.cta-row{
-  margin-top:2rem;
-  display:flex;
-  justify-content:center;
-  gap:1rem;
-  flex-wrap:wrap;
-}
-
 .btn{
   padding:.9rem 1.4rem;
   border-radius:14px;
@@ -311,22 +303,6 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 .btn.ghost{
   background:transparent;
   color:var(--text);
-}
-
-.features{
-  margin-top:3rem;
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-  gap:1rem;
-}
-
-.feature-card{
-  background:var(--panel);
-  border:1px solid var(--border);
-  padding:1.5rem;
-  border-radius:var(--radius);
-  backdrop-filter:blur(10px);
-  transition:transform .2s ease;
 }
 
 .feature-card:hover{
@@ -352,82 +328,30 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   transform: translateY(-2px);
 }
 
-/* BUTTON */
-
-.lo-btn-primary {
-  background: linear-gradient(135deg, var(--grad1), var(--grad3));
-  color: white;
-  border: none;
-}
-
-.lo-btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0,0,0,0.35);
-}
-
-.lo-btn-ghost {
-  background: var(--panel-2);
-  color: var(--text);
-}
-
-.lo-btn-ghost:hover {
-  background: var(--panel);
-}
-
-.lo-btn-danger {
-  background: rgba(255, 60, 60, 0.15);
-  color: #ff6b6b;
-  border: 1px solid rgba(255, 60, 60, 0.3);
-}
-
-.lo-btn-danger:hover {
-  background: rgba(255, 60, 60, 0.25);
-}
-
 /* INPUT */
 
 .lo-input {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 0.6rem 0.9rem;
-  color: var(--text);
   width: 100%;
-  transition: border 0.2s ease;
+  min-width: 0;
+  border: 1px solid rgba(255,255,255,0.16);
+  background: rgba(255,255,255,0.06);
+  color: inherit;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font: inherit;
+  outline: none;
+  pointer-events: auto;
+}
+
+.lo-window__body,
+.lo-addbar,
+.lo-focusbar {
+  pointer-events: auto;
 }
 
 .lo-input:focus {
   outline: none;
   border-color: var(--grad2);
-}
-
-/* BADGE */
-
-.lo-badge {
-  padding: 0.25rem 0.6rem;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.lo-badge-green {
-  background: rgba(34,197,94,0.15);
-  color: #22c55e;
-}
-
-.lo-badge-orange {
-  background: rgba(249,115,22,0.15);
-  color: #f97316;
-}
-
-.lo-badge-red {
-  background: rgba(255,0,0,0.15);
-  color: #ff4d4d;
-}
-
-.lo-badge-blue {
-  background: rgba(6,182,212,0.15);
-  color: #06b6d4;
 }
 
 /* Page width control (stops wide weird layouts) */
@@ -475,45 +399,12 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   white-space: nowrap;
 }
 
-.lo-task-meta {
-  display: flex;
-  gap: .6rem;
-  align-items: center;
-  flex-wrap: wrap;
-  margin-top: .55rem;
-  color: var(--muted);
-  font-size: .85rem;
-}
-
-.lo-task-meta input[type="date"]{
-  width: auto;
-  padding: .45rem .6rem;
-  border-radius: 12px;
-}
-
 /* =========================
    Tasks App (clean + animated)
    Scope: .lo-tasks
 ========================= */
 
 .lo-tasks .toolbar-card { padding: .85rem; }
-
-/* Clean add bar */
-.lo-tasks .lo-addbar{
-  display:grid;
-  grid-template-columns: 1fr auto auto auto;
-  gap:.6rem;
-  align-items:center;
-}
-
-@media (max-width: 720px){
-  .lo-tasks .lo-addbar{
-    grid-template-columns: 1fr 1fr 1fr;
-  }
-  .lo-tasks .lo-addbar .lo-add-btn{
-    grid-column: 1 / -1;
-  }
-}
 
 /* “Chip” controls (date + priority) */
 .lo-tasks .lo-chip{
@@ -562,17 +453,6 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   transform: translateY(1px) scale(.99);
 }
 
-/* Task card entry animation */
-.lo-tasks .lo-task{
-  transform-origin: top;
-  animation: loTaskIn .28s ease both;
-  transition: transform .18s ease, border-color .18s ease;
-}
-.lo-tasks .lo-task:hover{
-  transform: translateY(-1px);
-  border-color: rgba(255,255,255,.22);
-}
-
 @keyframes loTaskIn{
   from{ opacity:0; transform: translateY(8px) scale(.99); filter: blur(6px); }
   to  { opacity:1; transform: translateY(0) scale(1); filter: blur(0); }
@@ -587,33 +467,6 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   60%  { opacity:1; transform: translateY(0) scale(1.01); }
   100% { opacity:1; transform: translateY(0) scale(1); }
 }
-
-/* Meta row look */
-.lo-tasks .lo-meta-row{
-  display:flex;
-  align-items:center;
-  gap:.6rem;
-  flex-wrap: wrap;
-  margin-top:.6rem;
-  padding-top:.6rem;
-  border-top: 1px solid rgba(255,255,255,.10);
-  color: var(--muted);
-  font-size:.85rem;
-}
-
-/* Priority pill */
-.lo-tasks .lo-pill{
-  padding: .22rem .55rem;
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,.16);
-  background: rgba(255,255,255,.06);
-  color: var(--text);
-  font-size: 12px;
-  font-weight: 800;
-}
-.lo-tasks .lo-pill.low{ box-shadow: 0 0 0 3px rgba(34,197,94,.08); }
-.lo-tasks .lo-pill.med{ box-shadow: 0 0 0 3px rgba(249,115,22,.08); }
-.lo-tasks .lo-pill.high{ box-shadow: 0 0 0 3px rgba(255,77,77,.10); }
 
 /* Dropdown for per-task priority */
 .lo-tasks .lo-pri-select{
@@ -763,20 +616,6 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 .lo-tasks .lo-pill.med{ border-color: rgba(249,115,22,.35); }
 .lo-tasks .lo-pill.high{ border-color: rgba(239,68,68,.45); }
 
-/* Right side: keep label+select aligned and pushed right */
-.lo-tasks .lo-meta-right{
-  margin-left: auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  white-space: nowrap;
-}
-.lo-tasks .lo-meta-right .muted{
-  display: inline-flex;
-  align-items: center;
-  line-height: 1;
-}
-
 /* Select: readable + consistent sizing */
 .lo-tasks .lo-pri-select,
 .lo-tasks .lo-chip select{
@@ -804,6 +643,23 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 /* Completed task overall tone */
 .lo-tasks .lo-task.is-done{
   background: rgba(255,255,255,.045);
+}
+
+.lo-section-title {
+  font-size: 14px;
+  font-weight: 700;
+  opacity: 0.8;
+  margin: 0 0 8px;
+}
+
+.lo-task-focus .lo-task-row {
+  align-items: center;
+}
+
+.lo-focusbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
 }
 
 /* =========================
@@ -1102,15 +958,6 @@ body.iw-app { background: transparent !important; }
   box-shadow: var(--shell-shadow);
 }
 
-.lo-dock__title{
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  color: var(--shell-muted);
-  padding: 2px 6px 6px;
-}
-
 .lo-dock__btn:hover{
   background: var(--shell-btn);
   transform: translateY(-1px);
@@ -1223,13 +1070,6 @@ body.iw-app { background: transparent !important; }
   background: var(--shell-btn-hover);
 }
 
-.lo-placeholder{
-  padding: 16px;
-  border-radius: 14px;
-  background: var(--shell-surface-soft);
-  border: 1px solid var(--shell-border);
-}
-
 .lo-window__resize::before{
   content: "";
   position: absolute;
@@ -1240,15 +1080,6 @@ body.iw-app { background: transparent !important; }
   border-right: 2px solid var(--shell-resize);
   border-bottom: 2px solid var(--shell-resize);
   border-bottom-right-radius: 2px;
-}
-
-.lo-btn{
-  border: 1px solid var(--shell-border);
-  background: var(--shell-surface-soft);
-  color: var(--shell-title);
-  border-radius: 12px;
-  padding: 8px 12px;
-  cursor: pointer;
 }
 
 .lo-btn:hover{
@@ -1291,46 +1122,15 @@ body.iw-app { background: transparent !important; }
   border-color: var(--shell-border-strong);
 }
 
-.lo-spaces__section{
-  display:flex;
-  align-items:center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px;
-  border-radius: 14px;
-  background: var(--shell-surface-soft);
-  border: 1px solid var(--shell-border);
-}
-
-.lo-spaces__select{
-  background: var(--shell-surface-strong);
-  color: var(--shell-title);
-  border: 1px solid var(--shell-border);
-  border-radius: 12px;
-  padding: 10px 12px;
-}
-
 .lo-window__body{
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
   padding: 14px;
-}
-
-/* Simple settings panel styling inside window */
-.lo-spaces{
-  display: grid;
-  gap: 14px;
-}
-
-.lo-spaces__label{
-  display:grid;
-  gap: 4px;
-}
-
-.lo-spaces__label span{
-  opacity: 0.75;
-  font-size: 12px;
+  
+  height: calc(100% - 49px);
+  overflow: auto;
+  padding: 14px;
 }
 
 .lo-window__bar--draggable{
@@ -1347,12 +1147,6 @@ body.iw-app { background: transparent !important; }
   display:flex;
   align-items:center;
   gap: 10px;
-}
-
-.lo-window__body{
-  height: calc(100% - 49px);
-  overflow: auto;
-  padding: 14px;
 }
 
 .lo-window__resize{
@@ -1664,11 +1458,6 @@ body.iw-app { background: transparent !important; }
   background: var(--shell-btn-hover);
 }
 
-.lo-notes__tabactions{
-  display: flex;
-  gap: 8px;
-}
-
 .lo-notebar__icon{
   width: 16px;
   height: 16px;
@@ -1897,7 +1686,6 @@ body.iw-app { background: transparent !important; }
   margin: 0;
   max-width: 32ch;
 
-  font-size: clamp(24px, 2.6vw, 12px);
   line-height: 1.6;
   font-weight: bold;
   font-size: 1.17em;
@@ -2195,8 +1983,22 @@ body.iw-app { background: transparent !important; }
 }
 
 .lo-spaces__section{
-  display: grid;
+  display:grid;
+  align-items:center;
+  justify-content: space-between;
   gap: 10px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--shell-surface-soft);
+  border: 1px solid var(--shell-border);
+}
+
+.lo-spaces__select{
+  background: var(--shell-surface-strong);
+  color: var(--shell-title);
+  border: 1px solid var(--shell-border);
+  border-radius: 12px;
+  padding: 10px 12px;
 }
 
 .lo-spaces__label{
@@ -2675,7 +2477,7 @@ body.iw-app { background: transparent !important; }
   position: absolute;
   top: calc(100% + 0.6rem);
   right: 0;
-  width: 220px;
+  width: 250px;
   max-height: min(80vh, 720px);
   overflow: auto;
   padding: 0.75rem;
@@ -2929,4 +2731,40 @@ body.iw-app { background: transparent !important; }
 
 :root[data-theme="nebula"] .lo-account-menu__range::-moz-range-track {
   background: rgba(255, 255, 255, 0.14);
+}
+
+.lo-plan-tasks-layout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.lo-plan-tasks-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+}
+
+.lo-plan-tasks-sidebar button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.lo-plan-tasks-sidebar button.is-active {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.lo-plan-tasks-main {
+  min-width: 0;
+}
+
+.lo-plan-tasks-heading h3 {
+  margin: 0;
 }
