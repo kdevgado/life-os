@@ -791,11 +791,6 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   align-items: start;
 }
 
-/* Focus tasks — cleaner minimal style */
-.lo-focus-composer {
-  padding: 10px;
-}
-
 .lo-focus-addbar {
   display: flex;
   align-items: center;

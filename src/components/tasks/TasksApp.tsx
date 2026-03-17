@@ -242,6 +242,19 @@ export default function TasksApp({ mode = "plan" }: { mode?: TasksMode }) {
       return;
     }
 
+    if (authed) {
+      const now = new Date().toISOString();
+
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.id === id ? { ...t, title: trimmed, updatedAt: now } : t,
+        ),
+      );
+
+      window.setTimeout(() => setJustAddedId(null), 300);
+      return;
+    }
+
     const updated = updateTask(id, { title: trimmed });
     if (!updated) return;
 
@@ -749,13 +762,7 @@ function FocusTasksView({
               ) : (
                 <div className="lo-task-main">
                   <span className="lo-task-drag">⋮⋮</span>
-
-                  <input
-                    className="lo-task-input"
-                    defaultValue={task.title}
-                    onBlur={(e) => onSaveDraftTask(task.id, e.target.value)}
-                    autoFocus
-                  />
+                  <div className="lo-task-title">{task.title}</div>
                 </div>
               )}
               <Button
