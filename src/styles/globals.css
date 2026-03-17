@@ -942,6 +942,29 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   line-height: 1.25;
 }
 
+.lo-task-main{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  width:100%;
+}
+
+.lo-task-drag{
+  font-size:16px;
+  opacity:0.35;
+  cursor:grab;
+  user-select:none;
+  line-height:1;
+}
+
+.lo-task-drag:hover{
+  opacity:0.7;
+}
+
+.lo-task:active .lo-task-drag{
+  cursor:grabbing;
+}
+
 /* Duna */
 :root[data-theme="duna"] .lo-focus-add-trigger {
   color: rgba(15, 23, 42, 0.72);

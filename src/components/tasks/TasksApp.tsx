@@ -672,7 +672,11 @@ function FocusTasksView({
                   onCancel={() => onRemove(task)}
                 />
               ) : (
-                <div className="lo-task-title">{task.title}</div>
+                <div className="lo-task-main">
+                  <span className="lo-task-drag">⋮⋮</span>
+
+                  <div className="lo-task-title">{task.title}</div>
+                </div>
               )}
               <Button variant="ghost" onClick={() => onSetStatus(task, "todo")}>
                 Back
@@ -743,7 +747,16 @@ function FocusTasksView({
                   onCancel={() => onRemove(task)}
                 />
               ) : (
-                <div className="lo-task-title">{task.title}</div>
+                <div className="lo-task-main">
+                  <span className="lo-task-drag">⋮⋮</span>
+
+                  <input
+                    className="lo-task-input"
+                    defaultValue={task.title}
+                    onBlur={(e) => onSaveDraftTask(task.id, e.target.value)}
+                    autoFocus
+                  />
+                </div>
               )}
               <Button
                 variant="primary"
