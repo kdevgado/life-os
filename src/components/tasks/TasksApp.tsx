@@ -114,11 +114,6 @@ export default function TasksApp({ mode = "plan" }: { mode?: TasksMode }) {
   useEffect(() => {
     if (ignoreNextSaveRef.current) {
       ignoreNextSaveRef.current = false;
-      return;
-    }
-
-    // skip autosave until we’ve loaded initial data
-    if (!hydratedRef.current) {
       hydratedRef.current = true;
       return;
     }
@@ -129,7 +124,6 @@ export default function TasksApp({ mode = "plan" }: { mode?: TasksMode }) {
     saveTimerRef.current = window.setTimeout(async () => {
       const jwt = await getJwt();
 
-      // logged out -> keep local storage as your current store does
       if (!jwt) return;
 
       await fetch("/.netlify/functions/tasks", {
