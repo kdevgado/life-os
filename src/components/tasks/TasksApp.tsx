@@ -193,6 +193,54 @@ export default function TasksApp({ mode = "plan" }: { mode?: TasksMode }) {
     };
   }
 
+  function onCreateDraftTask() {
+    const today = isoDate(new Date());
+    const now = new Date().toISOString();
+
+    const draft: Task = authed
+      ? {
+          id: crypto.randomUUID(),
+          title: "",
+          status: "todo",
+          priority: 3,
+          dueDate: today,
+          plannedFor: today,
+          focus: true,
+          list: "focus",
+          tags: ["focus"],
+          createdAt: now,
+          updatedAt: now,
+        }
+      : createTask({
+          title: "",
+          dueDate: today,
+          plannedFor: today,
+          priority: 3,
+          status: "todo",
+          focus: true,
+          list: "focus",
+          tags: ["focus"],
+        });
+
+    setTasks((prev) => [...prev, draft]);
+    setJustAddedId(draft.id);
+  }
+
+  function onSaveDraftTask(id: string, nextTitle: string) {
+    const trimmed = nextTitle.trim();
+
+    if (!trimmed) {
+      onRemoveById(id);
+      return;
+    }
+
+    const updated = updateTask(id, { title: trimmed });
+    if (!updated) return;
+
+    setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)));
+    window.setTimeout(() => setJustAddedId(null), 300);
+  }
+
   async function onAdd(forcedList?: string) {
     const trimmed = title.trim();
     if (!trimmed) return;
@@ -273,12 +321,6 @@ export default function TasksApp({ mode = "plan" }: { mode?: TasksMode }) {
     setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
   }
 
-  function inNext7Days(due: string) {
-    const today = isoDate(new Date());
-    const end = isoDate(endOfWeek());
-    return due >= today && due <= end;
-  }
-
   function onSetDue(task: Task, dueDate: string) {
     const nextDue = dueDate || undefined;
 
@@ -318,6 +360,16 @@ export default function TasksApp({ mode = "plan" }: { mode?: TasksMode }) {
     setTasks((prev) => prev.filter((t) => t.id !== task.id));
   }
 
+  function onRemoveById(id: string) {
+    if (authed) {
+      setTasks((prev) => prev.filter((t) => t.id !== id));
+      return;
+    }
+
+    deleteTask(id);
+    setTasks((prev) => prev.filter((t) => t.id !== id));
+  }
+
   return (
     <div className="lo-page lo-tasks lo-stack">
       {loading && <div className="muted">Loading tasks…</div>}
@@ -332,12 +384,8 @@ export default function TasksApp({ mode = "plan" }: { mode?: TasksMode }) {
 
       {!loading && mode === "focus" && (
         <FocusTasksView
-          query={query}
-          setQuery={setQuery}
-          title={title}
-          setTitle={setTitle}
-          canAdd={canAdd}
-          onAdd={onAdd}
+          onCreateDraftTask={onCreateDraftTask}
+          onSaveDraftTask={onSaveDraftTask}
           tasks={filtered}
           justAddedId={justAddedId}
           onToggleDone={onToggleDone}
@@ -372,24 +420,16 @@ export default function TasksApp({ mode = "plan" }: { mode?: TasksMode }) {
 
 // View components
 function FocusTasksView({
-  query,
-  setQuery,
-  title,
-  setTitle,
-  canAdd,
-  onAdd,
+  onCreateDraftTask,
+  onSaveDraftTask,
   tasks,
   justAddedId,
   onToggleDone,
   onSetStatus,
   onRemove,
 }: {
-  query: string;
-  setQuery: (value: string) => void;
-  title: string;
-  setTitle: (value: string) => void;
-  canAdd: boolean;
-  onAdd: (forcedList?: string) => void;
+  onCreateDraftTask: () => void;
+  onSaveDraftTask: (id: string, title: string) => void;
   tasks: Task[];
   justAddedId: string | null;
   onToggleDone: (task: Task) => void;
@@ -401,37 +441,15 @@ function FocusTasksView({
 
   return (
     <>
-      <Card className="toolbar-card">
-        <div className="lo-focusbar">
-          <input
-            className="lo-input"
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search focus tasks… use @focus @today"
-          />
-        </div>
-      </Card>
-
-      <Card className="toolbar-card">
-        <div className="lo-addbar">
-          <input
-            className="lo-input"
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="What do you need to do now? eg. Finish planner @focus @today"
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && canAdd) onAdd();
-            }}
-          />
-          <div className="lo-add-btn">
-            <Button onClick={() => onAdd()} disabled={!canAdd}>
-              Add
-            </Button>
-          </div>
-        </div>
-      </Card>
+      <div className="lo-focus-composer">
+        <button
+          type="button"
+          className="lo-focus-add-trigger"
+          onClick={onCreateDraftTask}
+        >
+          + Add task
+        </button>
+      </div>
 
       <section className="lo-stack">
         <h3 className="lo-section-title">Doing</h3>
@@ -450,7 +468,15 @@ function FocusTasksView({
                 onChange={() => onToggleDone(task)}
                 aria-label="Mark done"
               />
-              <div className="lo-task-title">{task.title}</div>
+              {task.title.trim() === "" ? (
+                <FocusDraftInput
+                  taskId={task.id}
+                  onSave={onSaveDraftTask}
+                  onCancel={() => onRemove(task)}
+                />
+              ) : (
+                <div className="lo-task-title">{task.title}</div>
+              )}
               <Button variant="ghost" onClick={() => onSetStatus(task, "todo")}>
                 Back
               </Button>
@@ -477,7 +503,15 @@ function FocusTasksView({
                 onChange={() => onToggleDone(task)}
                 aria-label="Mark done"
               />
-              <div className="lo-task-title">{task.title}</div>
+              {task.title.trim() === "" ? (
+                <FocusDraftInput
+                  taskId={task.id}
+                  onSave={onSaveDraftTask}
+                  onCancel={() => onRemove(task)}
+                />
+              ) : (
+                <div className="lo-task-title">{task.title}</div>
+              )}
               <Button
                 variant="primary"
                 onClick={() => onSetStatus(task, "doing")}
@@ -492,6 +526,42 @@ function FocusTasksView({
         ))}
       </section>
     </>
+  );
+}
+
+function FocusDraftInput({
+  taskId,
+  onSave,
+  onCancel,
+}: {
+  taskId: string;
+  onSave: (id: string, title: string) => void;
+  onCancel: () => void;
+}) {
+  const [value, setValue] = React.useState("");
+  const inputRef = React.useRef<HTMLInputElement | null>(null);
+
+  React.useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  return (
+    <input
+      ref={inputRef}
+      className="lo-focus-inline-input"
+      type="text"
+      value={value}
+      onChange={(e) => setValue(e.target.value)}
+      placeholder="Type a task..."
+      onKeyDown={(e) => {
+        if (e.key === "Enter") onSave(taskId, value);
+        if (e.key === "Escape") onCancel();
+      }}
+      onBlur={() => {
+        if (value.trim()) onSave(taskId, value);
+        else onCancel();
+      }}
+    />
   );
 }
 

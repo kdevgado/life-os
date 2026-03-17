@@ -480,188 +480,493 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
 
 /* =========================================================
-   Tasks UI — Microsoft To Do–style polish (scoped to .lo-tasks)
+   Tasks UI — unified layout for Focus + Plan
    ========================================================= */
 
-*, *::before, *::after { box-sizing: border-box; }
-
-/* Reusable stacks (so TSX can avoid inline styles) */
-.lo-stack{ display:grid; gap: 12px; }
-/* Softer “sheet” cards for the toolbar areas */
-.lo-tasks .toolbar-card{
-  padding: 0;
-  background: rgba(255,255,255,.06);
-  border: 1px solid rgba(255,255,255,.14);
-  border-radius: 18px;
-  box-shadow: 0 10px 30px rgba(0,0,0,.25);
-  overflow: hidden;
+.lo-stack {
+  display: grid;
+  gap: 14px;
 }
-.lo-tasks .lo-toolbar{
-  padding: 12px 12px;
-  gap: 10px;
-}
-.lo-tasks .lo-toolbar .spacer{ flex: 1; }
 
-/* Add bar: cleaner, compact, To Do-like */
-.lo-tasks .lo-addbar{
+.lo-section-title {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 700;
+  opacity: 0.8;
+}
+
+/* Page width */
+.lo-page.lo-tasks {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 1.25rem 1.25rem;
+}
+
+/* Shared toolbar cards */
+.lo-tasks .toolbar-card {
   padding: 12px;
-  gap: 10px;
-  align-items: stretch;
-}
-.lo-tasks .lo-addbar input,
-.lo-tasks .lo-addbar select{
-  height: 42px;
-  border-radius: 14px;
-}
-.lo-tasks .lo-addbar input{
-  width: 100%;
-}
-
-/* Task list items (like To Do rows) */
-.lo-tasks .lo-task{
-  padding: 0;
-  border-radius: 16px;
+  border-radius: 18px;
   overflow: hidden;
-  background: rgba(255,255,255,.06);
-  border: 1px solid rgba(255,255,255,.14);
-  box-shadow: 0 10px 30px rgba(0,0,0,.20);
-  transition: transform .14s ease, border-color .14s ease, background .14s ease;
-}
-.lo-tasks .lo-task:hover{
-  transform: translateY(-1px);
-  background: rgba(255,255,255,.075);
-  border-color: rgba(255,255,255,.22);
 }
 
-/* Main row */
-.lo-tasks .lo-task-row{
-  padding: 12px 14px;
+/* Shared top bars */
+.lo-focusbar,
+.lo-toolbar,
+.lo-addbar {
   display: flex;
   align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.lo-toolbar .spacer {
+  flex: 1 1 auto;
+}
+
+.lo-focusbar .lo-input,
+.lo-toolbar .lo-input,
+.lo-addbar .lo-input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Input consistency */
+.lo-tasks .lo-input {
+  height: 44px;
+  border-radius: 14px;
+}
+
+/* Add bar controls */
+.lo-tasks .lo-addbar {
+  flex-wrap: wrap;
+}
+
+.lo-tasks .lo-add-btn {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+}
+
+.lo-tasks .lo-chip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 14px;
+}
+
+.lo-tasks .lo-chip label {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0.75;
+}
+
+.lo-tasks .lo-chip input,
+.lo-tasks .lo-chip select {
+  width: auto;
+  min-width: 0;
+  margin: 0;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 10px;
+}
+
+/* Shared task list */
+.lo-tasklist {
+  display: grid;
   gap: 12px;
 }
 
-/* Checkbox: round, modern */
-.lo-tasks .lo-task-row input[type="checkbox"]{
-  width: 20px;
-  height: 20px;
-  accent-color: var(--grad3);
-  cursor: pointer;
-  flex: 0 0 auto;
+/* Shared task card */
+.lo-tasks .lo-task {
+  padding: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  transition: transform 0.14s ease, border-color 0.14s ease, background 0.14s ease;
 }
 
-/* Title: single-line, tidy */
-.lo-tasks .lo-task-title{
+.lo-tasks .lo-task:hover {
+  transform: translateY(-1px);
+}
+
+/* Main task row */
+.lo-tasks .lo-task-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 12px 14px;
+}
+
+.lo-tasks .lo-task-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  flex: 0 0 auto;
+  accent-color: var(--grad3);
+}
+
+.lo-tasks .lo-task-title {
   flex: 1 1 auto;
   min-width: 0;
   font-weight: 650;
-  letter-spacing: .1px;
+  line-height: 1.25;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.lo-tasks .lo-task-title.is-done{
-  opacity: .58;
+
+.lo-tasks .lo-task-title.is-done {
+  opacity: 0.58;
   text-decoration: line-through;
 }
 
-/* Delete: keep it out of the way (only show on hover/focus) */
-.lo-tasks .lo-task-row button{
-  opacity: 0;
-  transform: translateX(4px);
-  transition: opacity .12s ease, transform .12s ease;
-}
-.lo-tasks .lo-task:hover .lo-task-row button,
-.lo-tasks .lo-task:focus-within .lo-task-row button{
-  opacity: 1;
-  transform: translateX(0);
-}
-
-/* Meta row: subtle details strip */
-.lo-tasks .lo-meta-row{
+/* Plan task meta row */
+.lo-tasks .lo-meta-row {
   display: flex;
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
-  padding: 10px 14px 12px 14px;
+  min-width: 0;
+  padding: 10px 14px 12px;
   border-top: 1px solid rgba(255,255,255,.08);
-  color: var(--muted);
   font-size: 13px;
-}
-.lo-tasks .lo-meta-row span:first-child{
-  opacity: .85;
-  font-weight: 600;
-  letter-spacing: .12px;
-}
-.lo-tasks .lo-meta-row input[type="date"]{
-  height: 34px;
-  padding: 0 10px;
-  border-radius: 12px;
-  border: 1px solid rgba(255,255,255,.14);
-  background: rgba(0,0,0,.22);
-  color: var(--text);
+  color: var(--muted);
 }
 
-/* Priority pill: small, calm */
-.lo-tasks .lo-pill{
+.lo-tasks .lo-meta-row input[type="date"],
+.lo-tasks .lo-pri-select {
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 10px;
+}
+
+.lo-tasks .lo-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
   padding: 4px 10px;
   border-radius: 999px;
-  border: 1px solid rgba(255,255,255,.14);
-  background: rgba(255,255,255,.06);
-  color: var(--text);
-  font-weight: 650;
   font-size: 12px;
-}
-.lo-tasks .lo-pill.low{ opacity: .85; }
-.lo-tasks .lo-pill.med{ border-color: rgba(249,115,22,.35); }
-.lo-tasks .lo-pill.high{ border-color: rgba(239,68,68,.45); }
-
-/* Select: readable + consistent sizing */
-.lo-tasks .lo-pri-select,
-.lo-tasks .lo-chip select{
-  height: 34px;
-  padding: 0 10px;
-  border-radius: 12px;
-  border: 1px solid rgba(255,255,255,.14);
-  background: rgba(0,0,0,.22);
-  color: var(--text);
+  font-weight: 650;
 }
 
-/* Fix “white options” in dropdown */
-.lo-tasks select{ color-scheme: dark; }
-.lo-tasks select option{
-  background: #0b1020;
-  color: rgba(255,255,255,.92);
-}
+.lo-tasks .lo-pill.low { opacity: 0.85; }
+.lo-tasks .lo-pill.med { border-color: rgba(249,115,22,.35); }
+.lo-tasks .lo-pill.high { border-color: rgba(239,68,68,.45); }
 
-/* New item pulse (subtle) */
-.lo-tasks .lo-task.is-new{
-  box-shadow: 0 0 0 4px rgba(6,182,212,.12), 0 10px 30px rgba(0,0,0,.25);
-  border-color: rgba(6,182,212,.35);
-}
-
-/* Completed task overall tone */
-.lo-tasks .lo-task.is-done{
-  background: rgba(255,255,255,.045);
-}
-
-.lo-section-title {
-  font-size: 14px;
-  font-weight: 700;
-  opacity: 0.8;
-  margin: 0 0 8px;
-}
-
+/* Focus mode: keep action buttons visible */
 .lo-task-focus .lo-task-row {
   align-items: center;
 }
 
-.lo-focusbar {
-  display: flex;
-  gap: 12px;
-  align-items: center;
+.lo-task-focus .lo-task-row button {
+  opacity: 1;
+  transform: none;
 }
 
+/* Plan mode only: hide row buttons until hover */
+.lo-plan-tasks-main .lo-task .lo-task-row button {
+  opacity: 0;
+  transform: translateX(4px);
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.lo-plan-tasks-main .lo-task:hover .lo-task-row button,
+.lo-plan-tasks-main .lo-task:focus-within .lo-task-row button {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Plan layout */
+.lo-plan-tasks-layout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.lo-plan-tasks-sidebar {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  align-self: start;
+}
+
+.lo-plan-tasks-sidebar button {
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 10px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.lo-plan-tasks-sidebar button.is-active {
+  background: rgba(255,255,255,.08);
+}
+
+.lo-plan-tasks-main {
+  min-width: 0;
+  display: grid;
+  gap: 14px;
+}
+
+.lo-plan-tasks-heading h3 {
+  margin: 0;
+}
+
+/* Focus sections */
+.lo-focusbar {
+  min-width: 0;
+}
+
+/* New item highlight */
+.lo-tasks .lo-task.is-new {
+  box-shadow: 0 0 0 4px rgba(6,182,212,.12), 0 10px 30px rgba(0,0,0,.25);
+  border-color: rgba(6,182,212,.35);
+}
+
+/* Mobile */
+@media (max-width: 900px) {
+  .lo-plan-tasks-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .lo-plan-tasks-sidebar {
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .lo-plan-tasks-sidebar button {
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 640px) {
+  .lo-page.lo-tasks {
+    padding: 0 1rem 1rem;
+  }
+
+  .lo-focusbar,
+  .lo-toolbar,
+  .lo-addbar {
+    flex-wrap: wrap;
+  }
+
+  .lo-tasks .lo-chip {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .lo-tasks .lo-add-btn {
+    width: 100%;
+  }
+
+  .lo-tasks .lo-add-btn > * {
+    width: 100%;
+  }
+
+  .lo-tasks .lo-task-row {
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .lo-tasks .lo-meta-row {
+    padding: 10px 12px 12px;
+  }
+}
+
+.lo-plan-tasks-layout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+/* Focus tasks — cleaner minimal style */
+.lo-focus-composer {
+  padding: 10px;
+}
+
+.lo-focus-addbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lo-focus-addbar .lo-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 44px;
+  border-radius: 14px;
+}
+
+.lo-task-focus {
+  border-radius: 14px;
+  box-shadow: none;
+}
+
+.lo-task-focus .lo-task-row {
+  padding: 12px 14px;
+  gap: 12px;
+}
+
+.lo-task-focus .lo-task-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.lo-task-focus .lo-task-row button {
+  opacity: 1;
+  transform: none;
+}
+
+.lo-task-focus .lo-task-row .lo-btn,
+.lo-task-focus .lo-task-row button {
+  min-height: 34px;
+  padding: 0 10px;
+  border-radius: 10px;
+}
+
+.lo-section-title {
+  margin: 2px 0 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.65;
+}
+
+.lo-focus-composer {
+  padding: 8px;
+}
+
+.lo-focus-add-trigger {
+  width: 100%;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  font: inherit;
+  opacity: 0.78;
+}
+
+.lo-focus-add-trigger:hover {
+  background: rgba(255, 255, 255, 0.06);
+  opacity: 1;
+}
+
+.lo-focus-inline-input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  padding: 0;
+}
+
+/* Focus add row blends into the window */
+.lo-focus-composer {
+  padding: 2px 0 6px;
+}
+
+.lo-focus-add-trigger {
+  width: 100%;
+  min-height: 40px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  padding: 8px 2px;
+  border-radius: 12px;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  opacity: 0.72;
+  transition: opacity 0.14s ease, background 0.14s ease, transform 0.14s ease;
+}
+
+.lo-focus-add-trigger:hover {
+  opacity: 1;
+  background: transparent;
+  transform: translateY(-1px);
+}
+
+.lo-focus-add-trigger:focus-visible {
+  opacity: 1;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+}
+
+/* Inline draft field */
+.lo-focus-inline-input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  padding: 0;
+}
+
+/* Focus tasks: cleaner + minimal */
+.lo-task-focus {
+  box-shadow: none;
+  border-radius: 14px;
+}
+
+.lo-task-focus .lo-task-row {
+  padding: 10px 12px;
+  gap: 10px;
+}
+
+.lo-task-focus .lo-task-title,
+.lo-focus-inline-input {
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+/* Duna */
+:root[data-theme="duna"] .lo-focus-add-trigger {
+  color: rgba(15, 23, 42, 0.72);
+}
+
+:root[data-theme="duna"] .lo-focus-add-trigger:hover {
+  color: rgba(15, 23, 42, 0.96);
+}
+
+:root[data-theme="duna"] .lo-focus-add-trigger:focus-visible {
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.12);
+}
+
+/* Nebula */
+:root[data-theme="nebula"] .lo-focus-add-trigger {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+:root[data-theme="nebula"] .lo-focus-add-trigger:hover {
+  color: rgba(255, 255, 255, 0.98);
+}
+
+:root[data-theme="nebula"] .lo-focus-add-trigger:focus-visible {
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.14);
+}
 /* =========================
    DUNA.COM-INSPIRED — PLANNER ONLY
    ========================= */
@@ -2731,40 +3036,4 @@ body.iw-app { background: transparent !important; }
 
 :root[data-theme="nebula"] .lo-account-menu__range::-moz-range-track {
   background: rgba(255, 255, 255, 0.14);
-}
-
-.lo-plan-tasks-layout {
-  display: grid;
-  grid-template-columns: 220px minmax(0, 1fr);
-  gap: 16px;
-  align-items: start;
-}
-
-.lo-plan-tasks-sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 12px;
-}
-
-.lo-plan-tasks-sidebar button {
-  border: 0;
-  background: transparent;
-  color: inherit;
-  text-align: left;
-  padding: 10px 12px;
-  border-radius: 12px;
-  cursor: pointer;
-}
-
-.lo-plan-tasks-sidebar button.is-active {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.lo-plan-tasks-main {
-  min-width: 0;
-}
-
-.lo-plan-tasks-heading h3 {
-  margin: 0;
 }

@@ -3,7 +3,7 @@ import TasksApp from "../tasks/TasksApp";
 import AccountMenu from "../login/AccountMenu";
 import NotesPanel from "../dashboard/NotesPanel";
 import DailyBibleVerse from "../dashboard/DailyBibleVerse";
-import FullscreenButton from "./FullscreenButton";
+import FullscreenButton from "../login/FullscreenButton";
 
 type PanelKey =
   | "spaces"
