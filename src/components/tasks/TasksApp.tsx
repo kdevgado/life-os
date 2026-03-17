@@ -188,6 +188,9 @@ export default function TasksApp({ mode = "plan" }: { mode?: TasksMode }) {
       status: "todo",
       priority,
       dueDate: due,
+      sortOrder: tasks.length
+        ? Math.max(...tasks.map((t) => t.sortOrder ?? 0)) + 1
+        : 1,
       createdAt: now,
       updatedAt: now,
     };
@@ -222,7 +225,10 @@ export default function TasksApp({ mode = "plan" }: { mode?: TasksMode }) {
           tags: ["focus"],
         });
 
-    setTasks((prev) => [...prev, draft]);
+    sortOrder: (tasks.length
+      ? Math.max(...tasks.map((t) => t.sortOrder ?? 0)) + 1
+      : 1,
+      setTasks((prev) => [...prev, draft]));
     setJustAddedId(draft.id);
   }
 
@@ -370,6 +376,138 @@ export default function TasksApp({ mode = "plan" }: { mode?: TasksMode }) {
     setTasks((prev) => prev.filter((t) => t.id !== id));
   }
 
+  function sortTasksForFocus(items: Task[]) {
+    return [...items].sort((a, b) => {
+      const ao = a.sortOrder ?? 0;
+      const bo = b.sortOrder ?? 0;
+      if (ao !== bo) return ao - bo;
+      return a.createdAt.localeCompare(b.createdAt);
+    });
+  }
+
+  function reorderFocusTasks(
+    sourceTaskId: string,
+    targetTaskId: string,
+    targetStatus: "todo" | "doing",
+  ) {
+    setTasks((prev) => {
+      const next = [...prev];
+      const source = next.find((t) => t.id === sourceTaskId);
+      const target = next.find((t) => t.id === targetTaskId);
+
+      if (!source || !target) return prev;
+
+      source.status = targetStatus;
+
+      const bucket = sortTasksForFocus(
+        next.filter((t) => t.status === targetStatus && t.id !== sourceTaskId),
+      );
+
+      const targetIndex = bucket.findIndex((t) => t.id === targetTaskId);
+      const insertAt = targetIndex < 0 ? bucket.length : targetIndex;
+
+      bucket.splice(insertAt, 0, source);
+
+      bucket.forEach((task, index) => {
+        task.sortOrder = index + 1;
+        task.updatedAt = new Date().toISOString();
+        if (!authed)
+          updateTask(task.id, {
+            sortOrder: task.sortOrder,
+            status: task.status,
+          });
+      });
+
+      return next.map((task) => {
+        const updated = bucket.find((b) => b.id === task.id);
+        return updated ? { ...task, ...updated } : task;
+      });
+    });
+  }
+
+  function moveFocusTaskToEnd(taskId: string, targetStatus: "todo" | "doing") {
+    setTasks((prev) => {
+      const next = [...prev];
+      const moving = next.find((t) => t.id === taskId);
+      if (!moving) return prev;
+
+      moving.status = targetStatus;
+
+      const bucket = sortTasksForFocus(
+        next.filter((t) => t.status === targetStatus && t.id !== taskId),
+      );
+
+      bucket.push(moving);
+
+      bucket.forEach((task, index) => {
+        task.sortOrder = index + 1;
+        task.updatedAt = new Date().toISOString();
+        if (!authed)
+          updateTask(task.id, {
+            sortOrder: task.sortOrder,
+            status: task.status,
+          });
+      });
+
+      return next.map((task) => {
+        const updated = bucket.find((b) => b.id === task.id);
+        return updated ? { ...task, ...updated } : task;
+      });
+    });
+  }
+
+  useEffect(() => {
+    function handleTaskScheduled(event: Event) {
+      const customEvent = event as CustomEvent<{
+        taskId: string | null;
+        title: string;
+        date: string;
+        hour: number;
+      }>;
+
+      const taskId = customEvent.detail?.taskId;
+      const date = customEvent.detail?.date;
+
+      if (!taskId || !date) return;
+
+      setTasks((prev) =>
+        prev.map((task) => {
+          if (task.id !== taskId) return task;
+
+          const nextTask = {
+            ...task,
+            plannedFor: date,
+            dueDate: task.dueDate ?? date,
+            list: "planner",
+            updatedAt: new Date().toISOString(),
+          };
+
+          if (!authed) {
+            updateTask(task.id, {
+              plannedFor: nextTask.plannedFor,
+              dueDate: nextTask.dueDate,
+              list: nextTask.list,
+            });
+          }
+
+          return nextTask;
+        }),
+      );
+    }
+
+    window.addEventListener(
+      "lifeos:task-scheduled",
+      handleTaskScheduled as EventListener,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "lifeos:task-scheduled",
+        handleTaskScheduled as EventListener,
+      );
+    };
+  }, [authed]);
+
   return (
     <div className="lo-page lo-tasks lo-stack">
       {loading && <div className="muted">Loading tasks…</div>}
@@ -391,6 +529,8 @@ export default function TasksApp({ mode = "plan" }: { mode?: TasksMode }) {
           onToggleDone={onToggleDone}
           onSetStatus={onSetStatus}
           onRemove={onRemove}
+          onReorderTask={reorderFocusTasks}
+          onMoveTaskToColumnEnd={moveFocusTaskToEnd}
         />
       )}
 
@@ -427,6 +567,8 @@ function FocusTasksView({
   onToggleDone,
   onSetStatus,
   onRemove,
+  onReorderTask,
+  onMoveTaskToColumnEnd,
 }: {
   onCreateDraftTask: () => void;
   onSaveDraftTask: (id: string, title: string) => void;
@@ -435,9 +577,26 @@ function FocusTasksView({
   onToggleDone: (task: Task) => void;
   onSetStatus: (task: Task, status: "todo" | "doing" | "done") => void;
   onRemove: (task: Task) => void;
+  onReorderTask: (
+    sourceTaskId: string,
+    targetTaskId: string,
+    targetStatus: "todo" | "doing",
+  ) => void;
+  onMoveTaskToColumnEnd: (
+    taskId: string,
+    targetStatus: "todo" | "doing",
+  ) => void;
 }) {
-  const doing = tasks.filter((t) => t.status === "doing");
-  const next = tasks.filter((t) => t.status === "todo");
+  const [draggingTaskId, setDraggingTaskId] = React.useState<string | null>(
+    null,
+  );
+  const doing = [...tasks]
+    .filter((t) => t.status === "doing")
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+
+  const next = [...tasks]
+    .filter((t) => t.status === "todo")
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
   return (
     <>
@@ -451,7 +610,15 @@ function FocusTasksView({
         </button>
       </div>
 
-      <section className="lo-stack">
+      <section
+        className="lo-stack"
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => {
+          e.preventDefault();
+          if (!draggingTaskId) return;
+          onMoveTaskToColumnEnd(draggingTaskId, "doing");
+        }}
+      >
         <h3 className="lo-section-title">Doing</h3>
         {doing.length === 0 && (
           <div className="muted">No active task right now.</div>
@@ -463,6 +630,7 @@ function FocusTasksView({
             draggable={task.title.trim() !== ""}
             onDragStart={(e) => {
               if (!task.title.trim()) return;
+              setDraggingTaskId(task.id);
               e.dataTransfer.effectAllowed = "move";
               e.dataTransfer.setData(
                 "application/x-lifeos-task",
@@ -472,6 +640,13 @@ function FocusTasksView({
                 }),
               );
               e.dataTransfer.setData("text/plain", task.title);
+            }}
+            onDragEnd={() => setDraggingTaskId(null)}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              if (!draggingTaskId || draggingTaskId === task.id) return;
+              onReorderTask(draggingTaskId, task.id, "doing");
             }}
           >
             <div className="lo-task-row">
@@ -501,7 +676,15 @@ function FocusTasksView({
         ))}
       </section>
 
-      <section className="lo-stack">
+      <section
+        className="lo-stack"
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => {
+          e.preventDefault();
+          if (!draggingTaskId) return;
+          onMoveTaskToColumnEnd(draggingTaskId, "todo");
+        }}
+      >
         <h3 className="lo-section-title">Up Next</h3>
         {next.length === 0 && <div className="muted">Nothing queued.</div>}
         {next.map((task) => (
@@ -511,6 +694,7 @@ function FocusTasksView({
             draggable={task.title.trim() !== ""}
             onDragStart={(e) => {
               if (!task.title.trim()) return;
+              setDraggingTaskId(task.id);
               e.dataTransfer.effectAllowed = "move";
               e.dataTransfer.setData(
                 "application/x-lifeos-task",
@@ -520,6 +704,13 @@ function FocusTasksView({
                 }),
               );
               e.dataTransfer.setData("text/plain", task.title);
+            }}
+            onDragEnd={() => setDraggingTaskId(null)}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              if (!draggingTaskId || draggingTaskId === task.id) return;
+              onReorderTask(draggingTaskId, task.id, "todo");
             }}
           >
             <div className="lo-task-row">
