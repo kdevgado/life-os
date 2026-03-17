@@ -1414,19 +1414,6 @@ body.iw-app { background: transparent !important; }
   gap: 8px;
 }
 
-.lo-cal__cell{
-  padding: 10px 0;
-  text-align: center;
-  border-radius: 12px;
-  background: var(--shell-surface-soft);
-  border: 1px solid var(--shell-border);
-}
-
-.lo-cal__cell.is-today{
-  background: var(--shell-btn);
-  border-color: var(--shell-border-strong);
-}
-
 .lo-window__body{
   flex: 1 1 auto;
   min-height: 0;
@@ -1505,25 +1492,290 @@ body.iw-app { background: transparent !important; }
 .lo-sounds{ display:grid; gap: 12px; }
 .lo-sounds__label{ font-weight: 650; }
 
-.lo-cal{ display:grid; gap: 12px; }
-.lo-cal__top{
-  display:flex;
-  align-items:center;
+/* Day calendar: clean + spacious */
+.lo-daycal {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  gap: 14px;
+  color: inherit;
+}
+
+.lo-daycal__top {
+  display: flex;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+  position: relative;
+  flex-wrap: wrap;
 }
-.lo-cal__title{ font-weight: 700; }
-.lo-cal__grid{
-  display:grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 8px;
+
+.lo-daycal__nav,
+.lo-daycal__tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
-.lo-cal__dowcell{
-  background: transparent;
+
+.lo-daycal__titlewrap {
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+}
+
+.lo-daycal__title {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.lo-daycal__subtitle {
+  font-size: 0.8rem;
+  opacity: 0.68;
+  margin-top: 2px;
+}
+
+.lo-daycal__provider {
+  display: flex;
+  align-items: center;
+}
+
+.lo-daycal__settingswrap {
+  position: relative;
+}
+
+.lo-daycal__settings {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 220px;
+  padding: 10px;
+  border-radius: 16px;
+  z-index: 30;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.12);
+}
+
+:root[data-theme="nebula"] .lo-daycal__settings {
+  background: rgba(16, 20, 30, 0.92);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.28);
+}
+
+.lo-daycal__settings-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.lo-daycal__settings-btn {
+  width: 100%;
   border: 0;
-  opacity: .75;
-  font-size: 12px;
-  padding: 4px 0;
+  background: transparent;
+  text-align: left;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.18s ease, opacity 0.18s ease;
+}
+
+.lo-daycal__settings-btn:hover {
+  background: rgba(15, 23, 42, 0.06);
+}
+
+:root[data-theme="nebula"] .lo-daycal__settings-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.lo-daycal__settings-btn.is-danger {
+  color: #c44949;
+}
+
+.lo-daycal__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.lo-daycal__row {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr);
+  align-items: stretch;
+  gap: 12px;
+  min-height: 54px;
+}
+
+.lo-daycal__hour {
+  padding-top: 10px;
+  font-size: 0.82rem;
+  opacity: 0.72;
+  white-space: nowrap;
+}
+
+.lo-daycal__slot {
+  min-height: 54px;
+  border-radius: 14px;
+  padding: 8px 10px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.34);
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+:root[data-theme="nebula"] .lo-daycal__slot {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.lo-daycal__row.is-drop-target .lo-daycal__slot {
+  background: rgba(99, 102, 241, 0.08);
+  border-color: rgba(99, 102, 241, 0.4);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.12);
+}
+
+.lo-daycal__emptyline {
+  min-height: 36px;
+  border-top: 1px dashed rgba(15, 23, 42, 0.1);
+}
+
+:root[data-theme="nebula"] .lo-daycal__emptyline {
+  border-top-color: rgba(255, 255, 255, 0.12);
+}
+
+.lo-daycal__event {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.14);
+  margin-bottom: 8px;
+}
+
+:root[data-theme="nebula"] .lo-daycal__event {
+  background: rgba(129, 140, 248, 0.14);
+  border-color: rgba(129, 140, 248, 0.18);
+}
+
+.lo-daycal__event:last-child {
+  margin-bottom: 0;
+}
+
+.lo-daycal__event-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.lo-daycal__event-main strong {
+  font-size: 0.92rem;
+  line-height: 1.2;
+}
+
+.lo-daycal__event-main span {
+  font-size: 0.76rem;
+  opacity: 0.7;
+}
+
+.lo-daycal__event-remove {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 1.15rem;
+  line-height: 1;
+  opacity: 0.65;
+  cursor: pointer;
+  padding: 0;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.lo-daycal__event-remove:hover {
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+.lo-daycal.is-compact {
+  gap: 10px;
+}
+
+.lo-daycal.is-compact .lo-daycal__title {
+  font-size: 0.95rem;
+}
+
+.lo-daycal.is-compact .lo-daycal__subtitle {
+  font-size: 0.76rem;
+}
+
+.lo-daycal.is-compact .lo-daycal__row {
+  grid-template-columns: 68px minmax(0, 1fr);
+  min-height: 48px;
+  gap: 10px;
+}
+
+.lo-daycal.is-compact .lo-daycal__slot {
+  min-height: 48px;
+  padding: 7px 9px;
+}
+
+.lo-daycal.is-compact .lo-daycal__event {
+  padding: 8px 10px;
+  border-radius: 10px;
+}
+
+.lo-daycal.is-compact .lo-daycal__hour {
+  font-size: 0.78rem;
+}
+
+.lo-focus-calendar .lo-daycal__body {
+  gap: 6px;
+}
+
+.lo-plan-calendar .lo-daycal__title {
+  font-size: 1.06rem;
+}
+
+.lo-plan-calendar .lo-daycal__slot {
+  background: rgba(255, 255, 255, 0.44);
+}
+
+:root[data-theme="nebula"] .lo-plan-calendar .lo-daycal__slot {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+@media (max-width: 720px) {
+  .lo-daycal__top {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .lo-daycal__nav,
+  .lo-daycal__tools {
+    flex-wrap: wrap;
+  }
+
+  .lo-daycal__row {
+    grid-template-columns: 64px minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .lo-daycal__titlewrap {
+    min-width: 0;
+  }
 }
 
 /* Notes app: clean, functional, with a touch of softness */
@@ -2856,9 +3108,9 @@ body.iw-app { background: transparent !important; }
 }
 
 .lo-account-menu__field input {
-  width: 100%;
+  width: 80%;
   min-height: 40px;
-  padding: 0.65rem 0.8rem;
+  padding: 0.66rem 0.8rem;
   border-radius: 12px;
   border: 1px solid rgba(15, 23, 42, 0.08);
   background: rgba(255, 255, 255, 0.78);

@@ -2,6 +2,7 @@ import React from "react";
 import PlannerApp from "./planner/PlannerApp";
 import BoardView from "./BoardView";
 import TasksApp from "../tasks/TasksApp";
+import DayCalendarPanel from "../dashboard/DayCalendarPanel";
 
 type PlanTab = "board" | "calendar" | "planner" | "tasks";
 
@@ -60,12 +61,15 @@ export default function PlanWorkspace() {
             </div>
           )}
 
-          {tab === "calendar" && (
-            <div className="lo-plan__placeholder">
-              <h3>Calendar view</h3>
-              <p>Add your fullscreen planning calendar here.</p>
-            </div>
-          )}
+          <DayCalendarPanel
+            startHour={6}
+            endHour={24}
+            storageKey="lifeos_plan_calendar_events"
+            providerStorageKey="lifeos_plan_calendar_provider"
+            onDropTask={({ task, dateKey, hour }) => {
+              console.log("Plan task scheduled", { task, dateKey, hour });
+            }}
+          />
 
           {tab === "planner" && (
             <div className="lo-plan__panel">

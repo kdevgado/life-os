@@ -100,6 +100,7 @@ export function createTask(
   partial: Pick<Task, "title"> & Partial<Omit<Task, "id" | "createdAt" | "updatedAt">>
 ): Task {
   const parsed = parseTaskInput(partial.title);
+  const existing = loadTasks();
 
   const task: Task = {
     id: uid(),
@@ -109,19 +110,20 @@ export function createTask(
     priority: partial.priority ?? parsed.priority,
     dueDate: partial.dueDate ?? parsed.plannedFor,
     projectId: partial.projectId ?? null,
-
     list: partial.list ?? parsed.list,
     tags: partial.tags ?? parsed.tags,
     focus: partial.focus ?? parsed.focus,
     plannedFor: partial.plannedFor ?? parsed.plannedFor,
+    sortOrder:
+      partial.sortOrder ??
+      (existing.length ? Math.max(...existing.map((t) => t.sortOrder ?? 0)) + 1 : 1),
 
     createdAt: nowISO(),
     updatedAt: nowISO(),
   };
 
-  const tasks = loadTasks();
-  tasks.unshift(task);
-  saveTasks(tasks);
+  existing.unshift(task);
+  saveTasks(existing);
   return task;
 }
 

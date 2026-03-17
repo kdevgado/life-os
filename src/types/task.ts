@@ -8,12 +8,13 @@ export type Task = {
   notes?: string;
   status: TaskStatus;
   priority: TaskPriority;
-  dueDate?: string; // ISO date: "2026-02-26"
+  dueDate?: string;
   projectId?: string | null;
-  createdAt: string; // ISO datetime
-  updatedAt: string; // ISO datetime
+  createdAt: string;
+  updatedAt: string;
   list?: string;
   tags?: string[];
   focus?: boolean;
   plannedFor?: string;
+  sortOrder?: number;
 };

@@ -460,6 +460,19 @@ function FocusTasksView({
           <Card
             key={task.id}
             className={`lo-task lo-task-focus ${task.id === justAddedId ? "is-new" : ""}`}
+            draggable={task.title.trim() !== ""}
+            onDragStart={(e) => {
+              if (!task.title.trim()) return;
+              e.dataTransfer.effectAllowed = "move";
+              e.dataTransfer.setData(
+                "application/x-lifeos-task",
+                JSON.stringify({
+                  id: task.id,
+                  title: task.title,
+                }),
+              );
+              e.dataTransfer.setData("text/plain", task.title);
+            }}
           >
             <div className="lo-task-row">
               <input
@@ -495,6 +508,19 @@ function FocusTasksView({
           <Card
             key={task.id}
             className={`lo-task lo-task-focus ${task.id === justAddedId ? "is-new" : ""}`}
+            draggable={task.title.trim() !== ""}
+            onDragStart={(e) => {
+              if (!task.title.trim()) return;
+              e.dataTransfer.effectAllowed = "move";
+              e.dataTransfer.setData(
+                "application/x-lifeos-task",
+                JSON.stringify({
+                  id: task.id,
+                  title: task.title,
+                }),
+              );
+              e.dataTransfer.setData("text/plain", task.title);
+            }}
           >
             <div className="lo-task-row">
               <input
@@ -835,7 +861,20 @@ function TaskSection({
           return (
             <Card
               key={task.id}
-              className={`lo-task ${task.status === "done" ? "is-done" : ""} ${isNew ? "is-new" : ""}`}
+              className={`lo-task lo-task-focus ${task.id === justAddedId ? "is-new" : ""}`}
+              draggable={task.title.trim() !== ""}
+              onDragStart={(e) => {
+                if (!task.title.trim()) return;
+                e.dataTransfer.effectAllowed = "move";
+                e.dataTransfer.setData(
+                  "application/x-lifeos-task",
+                  JSON.stringify({
+                    id: task.id,
+                    title: task.title,
+                  }),
+                );
+                e.dataTransfer.setData("text/plain", task.title);
+              }}
             >
               <div className="lo-task-row">
                 <input

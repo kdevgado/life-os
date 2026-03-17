@@ -1,9 +1,10 @@
 import React, { useMemo, useState } from "react";
 import TasksApp from "../tasks/TasksApp";
-import AccountMenu from "../login/AccountMenu";
+import AccountMenu from "../account/AccountMenu";
 import NotesPanel from "../dashboard/NotesPanel";
 import DailyBibleVerse from "../dashboard/DailyBibleVerse";
-import FullscreenButton from "../login/FullscreenButton";
+import FullscreenButton from "../account/FullscreenButton";
+import DayCalendarPanel from "../dashboard/DayCalendarPanel";
 
 type PanelKey =
   | "spaces"
@@ -45,11 +46,11 @@ function defaultSizeFor(key: Exclude<PanelKey, null>) {
     case "sounds":
       return { w: 420, h: 460 };
     case "calendar":
-      return { w: 760, h: 640 };
+      return { w: 450, h: 1150 };
     case "timer":
       return { w: 360, h: 260 };
     case "tasks":
-      return { w: 600, h: 640 };
+      return { w: 400, h: 540 };
     case "notes":
       return { w: 460, h: 450 };
     case "bible":
@@ -64,11 +65,11 @@ function minSizeFor(key: Exclude<PanelKey, null>) {
     case "sounds":
       return { w: 320, h: 320 };
     case "calendar":
-      return { w: 620, h: 520 };
+      return { w: 450, h: 1000 };
     case "timer":
       return { w: 300, h: 230 };
     case "tasks":
-      return { w: 560, h: 520 };
+      return { w: 480, h: 490 };
     case "notes":
       return { w: 460, h: 300 };
     case "bible":
@@ -709,71 +710,6 @@ function SoundsPanel() {
   );
 }
 
-// Calendar Panel
-function CalendarPanel() {
-  const [now, setNow] = React.useState(() => new Date());
-  const y = now.getFullYear();
-  const m = now.getMonth();
-
-  const first = new Date(y, m, 1);
-  const startDay = (first.getDay() + 6) % 7; // Monday=0
-  const daysInMonth = new Date(y, m + 1, 0).getDate();
-
-  const cells: (number | null)[] = [];
-  for (let i = 0; i < startDay; i++) cells.push(null);
-  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-  while (cells.length % 7 !== 0) cells.push(null);
-
-  const monthLabel = now.toLocaleString(undefined, {
-    month: "long",
-    year: "numeric",
-  });
-  const today = new Date();
-  const isThisMonth = today.getFullYear() === y && today.getMonth() === m;
-
-  return (
-    <div className="lo-cal">
-      <div className="lo-cal__top">
-        <button
-          className="lo-btn"
-          onClick={() => setNow(new Date(y, m - 1, 1))}
-        >
-          Prev
-        </button>
-        <div className="lo-cal__title">{monthLabel}</div>
-        <button
-          className="lo-btn"
-          onClick={() => setNow(new Date(y, m + 1, 1))}
-        >
-          Next
-        </button>
-      </div>
-
-      <div className="lo-cal__grid lo-cal__dow">
-        {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
-          <div key={d} className="lo-cal__cell lo-cal__dowcell">
-            {d}
-          </div>
-        ))}
-      </div>
-
-      <div className="lo-cal__grid">
-        {cells.map((d, i) => {
-          const isToday = isThisMonth && d === today.getDate();
-          return (
-            <div
-              key={i}
-              className={"lo-cal__cell " + (isToday ? "is-today" : "")}
-            >
-              {d ?? ""}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 export default function FloatingWorkspace() {
   type Win = {
     key: Exclude<PanelKey, null>;
@@ -1073,7 +1009,18 @@ export default function FloatingWorkspace() {
           {w.key === "notes" && <NotesPanel />}
           {w.key === "timer" && <TimerPanel />}
           {w.key === "sounds" && <SoundsPanel />}
-          {w.key === "calendar" && <CalendarPanel />}
+          {w.key === "calendar" && (
+            <DayCalendarPanel
+              compact
+              startHour={7}
+              endHour={22}
+              storageKey="lifeos_focus_calendar_events"
+              providerStorageKey="lifeos_focus_calendar_provider"
+              onDropTask={({ task, dateKey, hour }) => {
+                console.log("Focus task scheduled", { task, dateKey, hour });
+              }}
+            />
+          )}
           {w.key === "spaces" && <SpacesPanel />}
           {w.key === "bible" && <DailyBibleVerse />}
         </WindowShell>
