@@ -61,7 +61,9 @@ export default function PlanWorkspace() {
             </div>
           )}
 
-          <DayCalendarPanel
+          {tab === "calendar" && (
+            <div className="lo-plan__placeholder">
+              <DayCalendarPanel
             startHour={6}
             endHour={24}
             storageKey="lifeos_plan_calendar_events"
@@ -70,6 +72,8 @@ export default function PlanWorkspace() {
               console.log("Plan task scheduled", { task, dateKey, hour });
             }}
           />
+            </div>
+          )}
 
           {tab === "planner" && (
             <div className="lo-plan__panel">

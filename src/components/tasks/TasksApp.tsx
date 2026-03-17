@@ -199,6 +199,9 @@ export default function TasksApp({ mode = "plan" }: { mode?: TasksMode }) {
   function onCreateDraftTask() {
     const today = isoDate(new Date());
     const now = new Date().toISOString();
+    const nextSortOrder = tasks.length
+      ? Math.max(...tasks.map((t) => t.sortOrder ?? 0)) + 1
+      : 1;
 
     const draft: Task = authed
       ? {
@@ -211,6 +214,7 @@ export default function TasksApp({ mode = "plan" }: { mode?: TasksMode }) {
           focus: true,
           list: "focus",
           tags: ["focus"],
+          sortOrder: nextSortOrder,
           createdAt: now,
           updatedAt: now,
         }
@@ -223,12 +227,10 @@ export default function TasksApp({ mode = "plan" }: { mode?: TasksMode }) {
           focus: true,
           list: "focus",
           tags: ["focus"],
+          sortOrder: nextSortOrder,
         });
 
-    sortOrder: (tasks.length
-      ? Math.max(...tasks.map((t) => t.sortOrder ?? 0)) + 1
-      : 1,
-      setTasks((prev) => [...prev, draft]));
+    setTasks((prev) => [...prev, draft]);
     setJustAddedId(draft.id);
   }
 
@@ -617,6 +619,7 @@ function FocusTasksView({
           e.preventDefault();
           if (!draggingTaskId) return;
           onMoveTaskToColumnEnd(draggingTaskId, "doing");
+          setDraggingTaskId(null);
         }}
       >
         <h3 className="lo-section-title">Doing</h3>
@@ -633,6 +636,10 @@ function FocusTasksView({
               setDraggingTaskId(task.id);
               e.dataTransfer.effectAllowed = "move";
               e.dataTransfer.setData(
+                "application/x-lifeos-focus-reorder",
+                task.id,
+              );
+              e.dataTransfer.setData(
                 "application/x-lifeos-task",
                 JSON.stringify({
                   id: task.id,
@@ -645,8 +652,10 @@ function FocusTasksView({
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => {
               e.preventDefault();
+              e.stopPropagation();
               if (!draggingTaskId || draggingTaskId === task.id) return;
               onReorderTask(draggingTaskId, task.id, "doing");
+              setDraggingTaskId(null);
             }}
           >
             <div className="lo-task-row">
@@ -683,6 +692,7 @@ function FocusTasksView({
           e.preventDefault();
           if (!draggingTaskId) return;
           onMoveTaskToColumnEnd(draggingTaskId, "todo");
+          setDraggingTaskId(null);
         }}
       >
         <h3 className="lo-section-title">Up Next</h3>
@@ -697,6 +707,10 @@ function FocusTasksView({
               setDraggingTaskId(task.id);
               e.dataTransfer.effectAllowed = "move";
               e.dataTransfer.setData(
+                "application/x-lifeos-focus-reorder",
+                task.id,
+              );
+              e.dataTransfer.setData(
                 "application/x-lifeos-task",
                 JSON.stringify({
                   id: task.id,
@@ -709,8 +723,10 @@ function FocusTasksView({
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => {
               e.preventDefault();
+              e.stopPropagation();
               if (!draggingTaskId || draggingTaskId === task.id) return;
               onReorderTask(draggingTaskId, task.id, "todo");
+              setDraggingTaskId(null);
             }}
           >
             <div className="lo-task-row">
@@ -1052,7 +1068,7 @@ function TaskSection({
           return (
             <Card
               key={task.id}
-              className={`lo-task lo-task-focus ${task.id === justAddedId ? "is-new" : ""}`}
+              className={`lo-task ${task.status === "done" ? "is-done" : ""} ${isNew ? "is-new" : ""}`}
               draggable={task.title.trim() !== ""}
               onDragStart={(e) => {
                 if (!task.title.trim()) return;
