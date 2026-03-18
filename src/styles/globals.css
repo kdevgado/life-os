@@ -118,12 +118,12 @@
 }
 
 html,body{height:100%}
-html{ background: var(--bg0); }
+html{ background: transparent }
 body{
   margin:0;
   color: var(--text);
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  background: var(--bg0);
+  background: transparent;
 }
 
 /* CSS-only fallback background so the app never flashes white while
@@ -488,13 +488,6 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   gap: 14px;
 }
 
-.lo-section-title {
-  margin: 0 0 4px;
-  font-size: 14px;
-  font-weight: 700;
-  opacity: 0.8;
-}
-
 /* Page width */
 .lo-page.lo-tasks {
   max-width: 1100px;
@@ -619,11 +612,6 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   text-overflow: ellipsis;
 }
 
-.lo-tasks .lo-task-title.is-done {
-  opacity: 0.58;
-  text-decoration: line-through;
-}
-
 /* Plan task meta row */
 .lo-tasks .lo-meta-row {
   display: flex;
@@ -657,16 +645,6 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 .lo-tasks .lo-pill.low { opacity: 0.85; }
 .lo-tasks .lo-pill.med { border-color: rgba(249,115,22,.35); }
 .lo-tasks .lo-pill.high { border-color: rgba(239,68,68,.45); }
-
-/* Focus mode: keep action buttons visible */
-.lo-task-focus .lo-task-row {
-  align-items: center;
-}
-
-.lo-task-focus .lo-task-row button {
-  opacity: 1;
-  transform: none;
-}
 
 /* Plan mode only: hide row buttons until hover */
 .lo-plan-tasks-main .lo-task .lo-task-row button {
@@ -784,13 +762,6 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   }
 }
 
-.lo-plan-tasks-layout {
-  display: grid;
-  grid-template-columns: 220px minmax(0, 1fr);
-  gap: 16px;
-  align-items: start;
-}
-
 .lo-focus-addbar {
   display: flex;
   align-items: center;
@@ -802,11 +773,6 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   min-width: 0;
   height: 44px;
   border-radius: 14px;
-}
-
-.lo-task-focus {
-  border-radius: 14px;
-  box-shadow: none;
 }
 
 .lo-task-focus .lo-task-row {
@@ -838,40 +804,6 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   letter-spacing: 0.04em;
   text-transform: uppercase;
   opacity: 0.65;
-}
-
-.lo-focus-composer {
-  padding: 8px;
-}
-
-.lo-focus-add-trigger {
-  width: 100%;
-  min-height: 44px;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  text-align: left;
-  padding: 10px 12px;
-  border-radius: 12px;
-  cursor: pointer;
-  font: inherit;
-  opacity: 0.78;
-}
-
-.lo-focus-add-trigger:hover {
-  background: rgba(255, 255, 255, 0.06);
-  opacity: 1;
-}
-
-.lo-focus-inline-input {
-  width: 100%;
-  min-width: 0;
-  border: 0;
-  outline: none;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  padding: 0;
 }
 
 /* Focus add row blends into the window */
@@ -961,6 +893,11 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
 .lo-task:active .lo-task-drag{
   cursor:grabbing;
+}
+
+.lo-task-title.is-done {
+  text-decoration: line-through;
+  opacity: 0.55;
 }
 
 /* Duna */
@@ -1175,9 +1112,6 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   overflow: hidden; /* background stays fixed, workspace scrolls */
 }
 
-html, body { background: transparent !important; }
-body.iw-app { background: transparent !important; }
-
 .iw-bg{
   position: fixed;
   inset: 0;
@@ -1378,26 +1312,84 @@ body.iw-app { background: transparent !important; }
 
 .lo-window-filter-wrap {
   display: flex;
+  gap: 0.55rem;
   align-items: center;
-  width: 100%;
+  margin-bottom: 0.9rem;
+  flex-wrap: wrap;
 }
 
 .lo-window-filter {
   appearance: none;
-  border: 1px solid var(--lo-border, rgba(255,255,255,0.12));
-  background: var(--lo-surface, rgba(255,255,255,0.06));
-  color: inherit;
-  border-radius: 10px;
-  padding: 0.45rem 2rem 0.45rem 0.8rem;
-  font: inherit;
-  line-height: 1.2;
-  min-width: 180px;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  min-height: 36px;
+  padding: 0.55rem 2.2rem 0.55rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.92rem;
+  line-height: 1;
+  border: 1px solid transparent;
+  outline: none;
+  transition:
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.12s ease;
   cursor: pointer;
+  background-repeat: no-repeat;
+  background-position: right 0.8rem center;
+  background-size: 12px;
+}
+
+.lo-window-filter:hover {
+  transform: translateY(-1px);
 }
 
 .lo-window-filter:focus {
-  outline: none;
-  border-color: var(--lo-accent, rgba(255,255,255,0.3));
+  box-shadow: 0 0 0 3px rgba(125, 125, 125, 0.14);
+}
+
+:root[data-theme="duna"] .lo-window-filter {
+  background-color: rgba(255, 255, 255, 0.82);
+  color: rgba(24, 28, 40, 0.92);
+  border-color: rgba(24, 28, 40, 0.1);
+  box-shadow: 0 6px 20px rgba(24, 28, 40, 0.06);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M5 7.5L10 12.5L15 7.5' stroke='%235a6475' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+:root[data-theme="duna"] .lo-window-filter:hover {
+  background-color: rgba(255, 255, 255, 0.95);
+  border-color: rgba(24, 28, 40, 0.16);
+}
+
+:root[data-theme="duna"] .lo-window-filter:focus {
+  border-color: rgba(97, 126, 255, 0.35);
+}
+
+:root[data-theme="nebula"] .lo-window-filter {
+  background-color: rgba(18, 20, 34, 0.78);
+  color: rgba(245, 247, 255, 0.96);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M5 7.5L10 12.5L15 7.5' stroke='%23d9defd' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+:root[data-theme="nebula"] .lo-window-filter:hover {
+  background-color: rgba(27, 30, 48, 0.92);
+  border-color: rgba(180, 190, 255, 0.26);
+}
+
+:root[data-theme="nebula"] .lo-window-filter:focus {
+  border-color: rgba(147, 163, 255, 0.5);
+}
+
+.lo-window-filter-wrap .lo-window-filter {
+  font-weight: 500;
+  letter-spacing: 0.01em;
 }
 
 .lo-window__close{
@@ -1496,33 +1488,12 @@ body.iw-app { background: transparent !important; }
   z-index: 3;
 }
 
-.lo-window__resize::before{
-  content: "";
-  position: absolute;
-  right: 4px;
-  bottom: 4px;
-  width: 10px;
-  height: 10px;
-  border-right: 2px solid rgba(255,255,255,0.45);
-  border-bottom: 2px solid rgba(255,255,255,0.45);
-  border-bottom-right-radius: 2px;
-}
-
 .lo-btn{
   border: 1px solid rgba(255,255,255,0.16);
   background: rgba(0,0,0,0.28);
   color: inherit;
   border-radius: 12px;
   padding: 8px 12px;
-  cursor: pointer;
-}
-
-.lo-chip{
-  border: 1px solid rgba(255,255,255,0.14);
-  background: rgba(255,255,255,0.08);
-  color: inherit;
-  border-radius: 999px;
-  padding: 6px 10px;
   cursor: pointer;
 }
 
@@ -2000,10 +1971,28 @@ body.iw-app { background: transparent !important; }
   border-radius: 10px;
   padding: 8px 10px;
   cursor: pointer;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 38px;
+  min-height: 38px;
 }
 
 .lo-notebar__btn.is-active{
   background: var(--shell-btn-hover);
+}
+
+.lo-notebar__btn:hover,
+.lo-notes__tab:hover{
+  background: var(--shell-btn-hover);
+}
+
+.lo-notebar__icon{
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  display: block;
 }
 
 .lo-notes__meta{
@@ -2053,40 +2042,6 @@ body.iw-app { background: transparent !important; }
 .lo-notes__content .tiptap ul{
   padding-left: 20px;
   margin: 0 0 12px;
-}
-
-.lo-notebar__btn:hover,
-.lo-notes__tab:hover{
-  background: var(--shell-btn-hover);
-}
-
-.lo-notebar__icon{
-  width: 16px;
-  height: 16px;
-  object-fit: contain;
-  display: block;
-}
-
-.lo-notebar__btn{
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 38px;
-  min-height: 38px;
-  border: 1px solid var(--shell-border);
-  background: var(--shell-surface-strong);
-  color: var(--shell-title);
-  border-radius: 10px;
-  padding: 8px 10px;
-  cursor: pointer;
-}
-
-.lo-notebar__btn.is-active{
-  background: var(--shell-btn-hover);
-}
-
-.lo-notebar__btn:hover{
-  background: var(--shell-btn-hover);
 }
 
 /* Workspace switcher: centered, floating above the content */
@@ -2241,10 +2196,10 @@ body.iw-app { background: transparent !important; }
 
 /* Transparent Bible verse window */
 .lo-window--bible{
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  backdrop-filter: none !important;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
 
   width: auto !important;
   height: auto !important;
@@ -3228,13 +3183,6 @@ body.iw-app { background: transparent !important; }
 
 .lo-account-menu__field input[type="number"] {
   -moz-appearance: textfield;
-}
-
-.lo-auth {
-  position: fixed;
-  top: 1rem;
-  right: 1rem;
-  z-index: 140;
 }
 
 .lo-top-dock {

@@ -33,7 +33,8 @@ function endOfWeek() {
 }
 
 type TasksMode = "focus" | "plan";
-type FocusFilter = "hide-completed" | "today" | "overdue" | "unscheduled";
+type FocusFilter = "all-tasks" | "today" | "overdue" | "unscheduled";
+type StatusFilter = "all" | "completed" | "active";
 
 export default function TasksApp({
   mode = "plan",
@@ -61,7 +62,8 @@ export default function TasksApp({
   const [loadError, setLoadError] = useState<string | null>(null);
 
   // ✅ focus mode filter (hide completed)
-  const [focusFilter, setFocusFilter] = useState<FocusFilter>("hide-completed");
+  const [focusFilter, setFocusFilter] = useState<FocusFilter>("all-tasks");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
   const reloadTasks = useCallback(async () => {
     setLoading(true);
@@ -170,8 +172,14 @@ export default function TasksApp({
           );
         });
 
+    const statusFiltered = searched.filter((t) => {
+      if (statusFilter === "completed") return t.status === "done";
+      if (statusFilter === "active") return t.status !== "done";
+      return true;
+    });
+
     if (mode === "focus") {
-      return searched.filter((t) => {
+      return statusFiltered.filter((t) => {
         const due = t.dueDate ?? t.plannedFor;
         const isToday = due === today;
         const isOverdue = !!due && due < today;
@@ -185,28 +193,28 @@ export default function TasksApp({
 
         if (!isInFocusScope && !isOverdue && !isUnscheduled) return false;
 
-        if (focusFilter === "hide-completed") {
-          return t.status !== "done";
+        if (focusFilter === "all-tasks") {
+          return true;
         }
 
         if (focusFilter === "today") {
-          return t.status !== "done" && isToday;
+          return isToday;
         }
 
         if (focusFilter === "overdue") {
-          return t.status !== "done" && isOverdue;
+          return isOverdue;
         }
 
         if (focusFilter === "unscheduled") {
-          return t.status !== "done" && isUnscheduled;
+          return isUnscheduled;
         }
 
         return true;
       });
     }
 
-    return searched;
-  }, [tasks, query, mode, focusFilter]);
+    return statusFiltered;
+  }, [tasks, query, mode, focusFilter, statusFilter]);
 
   const canAdd = title.trim().length > 0;
 
@@ -332,8 +340,8 @@ export default function TasksApp({
 
     setTasks((prev) => [newTask, ...prev]);
     setTitle("");
-    setDueDate("");
-    setPriority(2);
+    setDueDate(isoDate(new Date()));
+    setPriority(3);
     setJustAddedId(newTask.id);
     window.setTimeout(() => setJustAddedId(null), 1600);
   }
@@ -553,30 +561,6 @@ export default function TasksApp({
     };
   }, [authed]);
 
-  const focusFilterControl =
-  mode === "focus" ? (
-    <div className="lo-window-filter-wrap">
-      <select
-        className="lo-window-filter"
-        value={focusFilter}
-        onChange={(e) => setFocusFilter(e.target.value as FocusFilter)}
-        aria-label="Filter focus tasks"
-      >
-        <option value="hide-completed">Hide Completed</option>
-        <option value="today">Today</option>
-        <option value="overdue">Overdue</option>
-        <option value="unscheduled">Unscheduled</option>
-      </select>
-    </div>
-  ) : null;
-
-  useEffect(() => {
-  if (!setWindowHeader) return;
-  setWindowHeader(focusFilterControl);
-
-  return () => setWindowHeader(null);
-}, [setWindowHeader, focusFilterControl]);
-
   return (
     <div className="lo-page lo-tasks lo-stack">
       {loading && <div className="muted">Loading tasks…</div>}
@@ -590,17 +574,44 @@ export default function TasksApp({
       )}
 
       {!loading && mode === "focus" && (
-        <FocusTasksView
-          onCreateDraftTask={onCreateDraftTask}
-          onSaveDraftTask={onSaveDraftTask}
-          tasks={filtered}
-          justAddedId={justAddedId}
-          onToggleDone={onToggleDone}
-          onSetStatus={onSetStatus}
-          onRemove={onRemove}
-          onReorderTask={reorderFocusTasks}
-          onMoveTaskToColumnEnd={moveFocusTaskToEnd}
-        />
+        <>
+          <div className="lo-window-filter-wrap">
+            <select
+              className="lo-window-filter"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+              aria-label="Filter task status"
+            >
+              <option value="all">All</option>
+              <option value="active">Not completed</option>
+              <option value="completed">Completed</option>
+            </select>
+
+            <select
+              className="lo-window-filter"
+              value={focusFilter}
+              onChange={(e) => setFocusFilter(e.target.value as FocusFilter)}
+              aria-label="Filter focus tasks"
+            >
+              <option value="all-tasks">All focus tasks</option>
+              <option value="today">Today</option>
+              <option value="overdue">Overdue</option>
+              <option value="unscheduled">Unscheduled</option>
+            </select>
+          </div>
+
+          <FocusTasksView
+            onCreateDraftTask={onCreateDraftTask}
+            onSaveDraftTask={onSaveDraftTask}
+            tasks={filtered}
+            justAddedId={justAddedId}
+            onToggleDone={onToggleDone}
+            onSetStatus={onSetStatus}
+            onRemove={onRemove}
+            onReorderTask={reorderFocusTasks}
+            onMoveTaskToColumnEnd={moveFocusTaskToEnd}
+          />
+        </>
       )}
 
       {!loading && mode === "plan" && (
@@ -665,6 +676,10 @@ function FocusTasksView({
 
   const next = [...tasks]
     .filter((t) => t.status === "todo")
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+
+  const completed = [...tasks]
+    .filter((t) => t.status === "done")
     .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
   return (
@@ -825,6 +840,34 @@ function FocusTasksView({
               >
                 Start
               </Button>
+              <Button variant="danger" onClick={() => onRemove(task)}>
+                Delete
+              </Button>
+            </div>
+          </Card>
+        ))}
+      </section>
+
+      <section className="lo-stack">
+        <h3 className="lo-section-title">Completed</h3>
+        {completed.length === 0 && (
+          <div className="muted">No completed tasks.</div>
+        )}
+        {completed.map((task) => (
+          <Card
+            key={task.id}
+            className={`lo-task lo-task-focus ${task.id === justAddedId ? "is-new" : ""}`}
+          >
+            <div className="lo-task-row">
+              <input
+                type="checkbox"
+                checked={task.status === "done"}
+                onChange={() => onToggleDone(task)}
+                aria-label="Mark done"
+              />
+              <div className="lo-task-main">
+                <div className="lo-task-title is-done">{task.title}</div>
+              </div>
               <Button variant="danger" onClick={() => onRemove(task)}>
                 Delete
               </Button>
