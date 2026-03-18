@@ -1367,10 +1367,34 @@ body.iw-app { background: transparent !important; }
   border-bottom: 1px solid var(--shell-border);
 }
 
-.lo-window__title{
-  font-weight: 650;
-  font-size: 14px;
-  color: var(--shell-title);
+.lo-window__title {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.lo-window-filter-wrap {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.lo-window-filter {
+  appearance: none;
+  border: 1px solid var(--lo-border, rgba(255,255,255,0.12));
+  background: var(--lo-surface, rgba(255,255,255,0.06));
+  color: inherit;
+  border-radius: 10px;
+  padding: 0.45rem 2rem 0.45rem 0.8rem;
+  font: inherit;
+  line-height: 1.2;
+  min-width: 180px;
+  cursor: pointer;
+}
+
+.lo-window-filter:focus {
+  outline: none;
+  border-color: var(--lo-accent, rgba(255,255,255,0.3));
 }
 
 .lo-window__close{

@@ -89,6 +89,7 @@ function WindowShell({
   onMove,
   onResize,
   onClose,
+  windowHeader,
   children,
 }: {
   title: string;
@@ -102,6 +103,7 @@ function WindowShell({
   onMove: (x: number, y: number) => void;
   onResize: (w: number, h: number) => void;
   onClose: () => void;
+  windowHeader?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const dragRef = React.useRef<{
@@ -213,7 +215,7 @@ function WindowShell({
         onPointerMove={onPointerMoveBar}
         onPointerUp={onPointerUpBar}
       >
-        <div className="lo-window__title">{title}</div>
+        <div className="lo-window__title">{windowHeader ?? title}</div>
 
         <div className="lo-window__actions">
           <button
@@ -711,6 +713,9 @@ function SoundsPanel() {
 }
 
 export default function FloatingWorkspace() {
+  const [windowHeader, setWindowHeader] = useState<React.ReactNode | null>(
+    null,
+  );
   type Win = {
     key: Exclude<PanelKey, null>;
     x: number;
@@ -1004,8 +1009,11 @@ export default function FloatingWorkspace() {
           onMove={(x, y) => moveWindow(w.key, x, y)}
           onResize={(nw, nh) => resizeWindow(w.key, nw, nh)}
           onClose={() => closeWindow(w.key)}
+          windowHeader={w.key === "tasks" ? windowHeader : null}
         >
-          {w.key === "tasks" && <TasksApp mode="focus" />}
+          {w.key === "tasks" && (
+            <TasksApp mode="focus" setWindowHeader={setWindowHeader} />
+          )}
           {w.key === "notes" && <NotesPanel />}
           {w.key === "timer" && <TimerPanel />}
           {w.key === "sounds" && <SoundsPanel />}

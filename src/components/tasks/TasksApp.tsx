@@ -33,8 +33,15 @@ function endOfWeek() {
 }
 
 type TasksMode = "focus" | "plan";
+type FocusFilter = "hide-completed" | "today" | "overdue" | "unscheduled";
 
-export default function TasksApp({ mode = "plan" }: { mode?: TasksMode }) {
+export default function TasksApp({
+  mode = "plan",
+  setWindowHeader,
+}: {
+  mode?: TasksMode;
+  setWindowHeader?: (node: React.ReactNode | null) => void;
+}) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [title, setTitle] = useState("");
   const [query, setQuery] = useState("");
@@ -52,6 +59,9 @@ export default function TasksApp({ mode = "plan" }: { mode?: TasksMode }) {
   // ✅ error handling for load
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  // ✅ focus mode filter (hide completed)
+  const [focusFilter, setFocusFilter] = useState<FocusFilter>("hide-completed");
 
   const reloadTasks = useCallback(async () => {
     setLoading(true);
@@ -162,15 +172,41 @@ export default function TasksApp({ mode = "plan" }: { mode?: TasksMode }) {
 
     if (mode === "focus") {
       return searched.filter((t) => {
-        const isToday = t.dueDate === today || t.plannedFor === today;
+        const due = t.dueDate ?? t.plannedFor;
+        const isToday = due === today;
+        const isOverdue = !!due && due < today;
+        const isUnscheduled = !t.dueDate && !t.plannedFor;
         const isFocused = t.focus === true;
         const isDoing = t.status === "doing";
-        return t.status !== "done" && (isToday || isFocused || isDoing);
+
+        // keep focus mode scoped to focus/today/doing items
+        const isInFocusScope =
+          isFocused || isDoing || t.plannedFor === today || t.dueDate === today;
+
+        if (!isInFocusScope && !isOverdue && !isUnscheduled) return false;
+
+        if (focusFilter === "hide-completed") {
+          return t.status !== "done";
+        }
+
+        if (focusFilter === "today") {
+          return t.status !== "done" && isToday;
+        }
+
+        if (focusFilter === "overdue") {
+          return t.status !== "done" && isOverdue;
+        }
+
+        if (focusFilter === "unscheduled") {
+          return t.status !== "done" && isUnscheduled;
+        }
+
+        return true;
       });
     }
 
     return searched;
-  }, [tasks, query, mode]);
+  }, [tasks, query, mode, focusFilter]);
 
   const canAdd = title.trim().length > 0;
 
@@ -516,6 +552,30 @@ export default function TasksApp({ mode = "plan" }: { mode?: TasksMode }) {
       );
     };
   }, [authed]);
+
+  const focusFilterControl =
+  mode === "focus" ? (
+    <div className="lo-window-filter-wrap">
+      <select
+        className="lo-window-filter"
+        value={focusFilter}
+        onChange={(e) => setFocusFilter(e.target.value as FocusFilter)}
+        aria-label="Filter focus tasks"
+      >
+        <option value="hide-completed">Hide Completed</option>
+        <option value="today">Today</option>
+        <option value="overdue">Overdue</option>
+        <option value="unscheduled">Unscheduled</option>
+      </select>
+    </div>
+  ) : null;
+
+  useEffect(() => {
+  if (!setWindowHeader) return;
+  setWindowHeader(focusFilterControl);
+
+  return () => setWindowHeader(null);
+}, [setWindowHeader, focusFilterControl]);
 
   return (
     <div className="lo-page lo-tasks lo-stack">
