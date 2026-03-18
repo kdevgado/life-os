@@ -50,7 +50,7 @@ function defaultSizeFor(key: Exclude<PanelKey, null>) {
     case "timer":
       return { w: 360, h: 260 };
     case "tasks":
-      return { w: 420, h: 420 };
+      return { w: 520, h: 500 };
     case "notes":
       return { w: 460, h: 450 };
     case "bible":

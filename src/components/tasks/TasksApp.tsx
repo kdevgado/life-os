@@ -65,6 +65,97 @@ export default function TasksApp({
   const [focusFilter, setFocusFilter] = useState<FocusFilter>("all-tasks");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
+  // ✅ context menu state
+  const [contextMenu, setContextMenu] = useState<{
+    task: Task;
+    x: number;
+    y: number;
+  } | null>(null);
+
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editingValue, setEditingValue] = useState("");
+
+  const pageRef = useRef<HTMLDivElement | null>(null);
+
+  // ✅ helpers for open / close / duplicate / edit save
+  const openTaskMenu = useCallback((e: React.MouseEvent, task: Task) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const container = pageRef.current;
+    if (!container) return;
+
+    const rect = container.getBoundingClientRect();
+
+    const menuWidth = 190;
+    const menuHeight = 132;
+
+    const rawX = e.clientX - rect.left;
+    const rawY = e.clientY - rect.top;
+
+    const x = Math.min(rawX + 8, rect.width - menuWidth - 8);
+    const y = Math.min(rawY + 8, rect.height - menuHeight - 8);
+
+    setContextMenu({
+      task,
+      x: Math.max(8, x),
+      y: Math.max(8, y),
+    });
+  }, []);
+
+  const closeTaskMenu = useCallback(() => {
+    setContextMenu(null);
+  }, []);
+
+  const onDuplicateTask = useCallback((task: Task) => {
+    const now = new Date().toISOString();
+
+    const copy: Task = {
+      ...task,
+      id: crypto.randomUUID(),
+      title: `${task.title} copy`,
+      status: task.status === "done" ? "todo" : task.status,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    setTasks((prev) => [copy, ...prev]);
+    setJustAddedId(copy.id);
+    window.setTimeout(() => setJustAddedId(null), 1600);
+  }, []);
+
+  const startEditingTask = useCallback((task: Task) => {
+    setEditingTaskId(task.id);
+    setEditingValue(task.title);
+    setContextMenu(null);
+  }, []);
+
+  const saveEditedTask = useCallback((task: Task, nextTitle: string) => {
+    const trimmed = nextTitle.trim();
+    if (!trimmed) {
+      setEditingTaskId(null);
+      setEditingValue("");
+      return;
+    }
+
+    const now = new Date().toISOString();
+
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === task.id
+          ? {
+              ...t,
+              title: trimmed,
+              updatedAt: now,
+            }
+          : t,
+      ),
+    );
+
+    setEditingTaskId(null);
+    setEditingValue("");
+  }, []);
+
   const reloadTasks = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
@@ -509,6 +600,23 @@ export default function TasksApp({
     });
   }
 
+  // Close the menu when clicking elsewhere
+  useEffect(() => {
+    if (!contextMenu) return;
+
+    const onClose = () => setContextMenu(null);
+
+    window.addEventListener("click", onClose);
+    window.addEventListener("scroll", onClose, true);
+    window.addEventListener("resize", onClose);
+
+    return () => {
+      window.removeEventListener("click", onClose);
+      window.removeEventListener("scroll", onClose, true);
+      window.removeEventListener("resize", onClose);
+    };
+  }, [contextMenu]);
+
   useEffect(() => {
     function handleTaskScheduled(event: Event) {
       const customEvent = event as CustomEvent<{
@@ -562,7 +670,7 @@ export default function TasksApp({
   }, [authed]);
 
   return (
-    <div className="lo-page lo-tasks lo-stack">
+    <div ref={pageRef} className="lo-page lo-tasks lo-stack lo-tasks-menu-root">
       {loading && <div className="muted">Loading tasks…</div>}
       {loadError && (
         <div className="error">
@@ -610,6 +718,12 @@ export default function TasksApp({
             onRemove={onRemove}
             onReorderTask={reorderFocusTasks}
             onMoveTaskToColumnEnd={moveFocusTaskToEnd}
+            onOpenTaskMenu={openTaskMenu}
+            editingTaskId={editingTaskId}
+            editingValue={editingValue}
+            setEditingValue={setEditingValue}
+            saveEditedTask={saveEditedTask}
+            setEditingTaskId={setEditingTaskId}
           />
         </>
       )}
@@ -632,7 +746,46 @@ export default function TasksApp({
           onRemove={onRemove}
           onSetDue={onSetDue}
           onSetPriority={onSetPriority}
+          onOpenTaskMenu={openTaskMenu}
         />
+      )}
+      {contextMenu && (
+        <div
+          className="lo-task-menu"
+          style={{
+            position: "absolute",
+            top: contextMenu.y,
+            left: contextMenu.x,
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            className="lo-task-menu__item"
+            onClick={() => startEditingTask(contextMenu.task)}
+          >
+            Edit
+          </button>
+
+          <button
+            className="lo-task-menu__item"
+            onClick={() => {
+              onDuplicateTask(contextMenu.task);
+              closeTaskMenu();
+            }}
+          >
+            Duplicate
+          </button>
+
+          <button
+            className="lo-task-menu__item is-danger"
+            onClick={() => {
+              onRemove(contextMenu.task);
+              closeTaskMenu();
+            }}
+          >
+            Delete
+          </button>
+        </div>
       )}
     </div>
   );
@@ -649,6 +802,12 @@ function FocusTasksView({
   onRemove,
   onReorderTask,
   onMoveTaskToColumnEnd,
+  onOpenTaskMenu,
+  editingTaskId,
+  editingValue,
+  setEditingValue,
+  saveEditedTask,
+  setEditingTaskId,
 }: {
   onCreateDraftTask: () => void;
   onSaveDraftTask: (id: string, title: string) => void;
@@ -666,6 +825,12 @@ function FocusTasksView({
     taskId: string,
     targetStatus: "todo" | "doing",
   ) => void;
+  onOpenTaskMenu: (e: React.MouseEvent, task: Task) => void;
+  editingTaskId: string | null;
+  editingValue: string;
+  setEditingValue: (v: string) => void;
+  saveEditedTask: (task: Task, v: string) => void;
+  setEditingTaskId: (id: string | null) => void;
 }) {
   const [draggingTaskId, setDraggingTaskId] = React.useState<string | null>(
     null,
@@ -713,6 +878,7 @@ function FocusTasksView({
             key={task.id}
             className={`lo-task lo-task-focus ${task.id === justAddedId ? "is-new" : ""}`}
             draggable={task.title.trim() !== ""}
+            onContextMenu={(e) => onOpenTaskMenu(e, task)}
             onDragStart={(e) => {
               if (!task.title.trim()) return;
               setDraggingTaskId(task.id);
@@ -757,7 +923,25 @@ function FocusTasksView({
                 <div className="lo-task-main">
                   <span className="lo-task-drag">⋮⋮</span>
 
-                  <div className="lo-task-title">{task.title}</div>
+                  {editingTaskId === task.id ? (
+                    <input
+                      className="lo-task-edit-input"
+                      value={editingValue}
+                      onChange={(e) => setEditingValue(e.target.value)}
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter")
+                          saveEditedTask(task, editingValue);
+                        if (e.key === "Escape") {
+                          setEditingTaskId(null);
+                          setEditingValue("");
+                        }
+                      }}
+                      onBlur={() => saveEditedTask(task, editingValue)}
+                    />
+                  ) : (
+                    <div className="lo-task-title">{task.title}</div>
+                  )}
                 </div>
               )}
               <Button variant="ghost" onClick={() => onSetStatus(task, "todo")}>
@@ -788,6 +972,7 @@ function FocusTasksView({
             key={task.id}
             className={`lo-task lo-task-focus ${task.id === justAddedId ? "is-new" : ""}`}
             draggable={task.title.trim() !== ""}
+            onContextMenu={(e) => onOpenTaskMenu(e, task)}
             onDragStart={(e) => {
               if (!task.title.trim()) return;
               setDraggingTaskId(task.id);
@@ -831,7 +1016,25 @@ function FocusTasksView({
               ) : (
                 <div className="lo-task-main">
                   <span className="lo-task-drag">⋮⋮</span>
-                  <div className="lo-task-title">{task.title}</div>
+                  {editingTaskId === task.id ? (
+                    <input
+                      className="lo-task-edit-input"
+                      value={editingValue}
+                      onChange={(e) => setEditingValue(e.target.value)}
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter")
+                          saveEditedTask(task, editingValue);
+                        if (e.key === "Escape") {
+                          setEditingTaskId(null);
+                          setEditingValue("");
+                        }
+                      }}
+                      onBlur={() => saveEditedTask(task, editingValue)}
+                    />
+                  ) : (
+                    <div className="lo-task-title">{task.title}</div>
+                  )}
                 </div>
               )}
               <Button
@@ -857,6 +1060,7 @@ function FocusTasksView({
           <Card
             key={task.id}
             className={`lo-task lo-task-focus ${task.id === justAddedId ? "is-new" : ""}`}
+            onContextMenu={(e) => onOpenTaskMenu(e, task)}
           >
             <div className="lo-task-row">
               <input
@@ -944,6 +1148,7 @@ function PlanTasksView({
   onRemove,
   onSetDue,
   onSetPriority,
+  onOpenTaskMenu,
 }: {
   query: string;
   setQuery: (value: string) => void;
@@ -961,6 +1166,7 @@ function PlanTasksView({
   onRemove: (task: Task) => void;
   onSetDue: (task: Task, dueDate: string) => void;
   onSetPriority: (task: Task, p: Priority) => void;
+  onOpenTaskMenu: (e: React.MouseEvent, task: Task) => void;
 }) {
   const [selectedList, setSelectedList] = React.useState<
     "inbox" | "today" | "week" | "planner" | "work" | "personal" | "home"
@@ -1137,6 +1343,7 @@ function PlanTasksView({
           onRemove={onRemove}
           onSetDue={onSetDue}
           onSetPriority={onSetPriority}
+          onOpenTaskMenu={onOpenTaskMenu}
         />
       </div>
     </div>
@@ -1151,6 +1358,7 @@ function TaskSection({
   onRemove,
   onSetDue,
   onSetPriority,
+  onOpenTaskMenu,
 }: {
   title: string;
   tasks: Task[];
@@ -1159,6 +1367,7 @@ function TaskSection({
   onRemove: (task: Task) => void;
   onSetDue: (task: Task, dueDate: string) => void;
   onSetPriority: (task: Task, p: Priority) => void;
+  onOpenTaskMenu: (e: React.MouseEvent, task: Task) => void;
 }) {
   if (tasks.length === 0) {
     return (
@@ -1187,6 +1396,7 @@ function TaskSection({
               key={task.id}
               className={`lo-task ${task.status === "done" ? "is-done" : ""} ${isNew ? "is-new" : ""}`}
               draggable={task.title.trim() !== ""}
+              onContextMenu={(e) => onOpenTaskMenu(e, task)}
               onDragStart={(e) => {
                 if (!task.title.trim()) return;
                 e.dataTransfer.effectAllowed = "move";
