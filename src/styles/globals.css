@@ -1034,9 +1034,9 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 }
 
 .lo-task-start-btn {
-  width: 45px;
-  height: 45px;
-  padding: 10px;
+  width: 40px;
+  height: 40px;
+  padding: 8px;
 
   display: inline-flex;
   align-items: center;
