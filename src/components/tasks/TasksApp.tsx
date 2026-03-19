@@ -96,11 +96,17 @@ export default function TasksApp({
     const x = Math.min(rawX + 8, rect.width - menuWidth - 8);
     const y = Math.min(rawY + 8, rect.height - menuHeight - 8);
 
-    setContextMenu({
+    setContextMenu((prev) => {
+    if (prev && prev.task.id === task.id) {
+      return null;
+    }
+
+    return {
       task,
       x: Math.max(8, x),
       y: Math.max(8, y),
-    });
+    };
+  });
   }, []);
 
   const closeTaskMenu = useCallback(() => {
@@ -759,6 +765,30 @@ export default function TasksApp({
           }}
           onClick={(e) => e.stopPropagation()}
         >
+          {contextMenu.task.status === "todo" && (
+            <button
+              className="lo-task-menu__item"
+              onClick={() => {
+                onSetStatus(contextMenu.task, "doing");
+                closeTaskMenu();
+              }}
+            >
+              Start
+            </button>
+          )}
+
+          {contextMenu.task.status === "doing" && (
+            <button
+              className="lo-task-menu__item"
+              onClick={() => {
+                onSetStatus(contextMenu.task, "todo");
+                closeTaskMenu();
+              }}
+            >
+              Move back
+            </button>
+          )}
+
           <button
             className="lo-task-menu__item"
             onClick={() => startEditingTask(contextMenu.task)}
@@ -962,12 +992,16 @@ function FocusTasksView({
                   )}
                 </div>
               )}
-              <Button variant="ghost" onClick={() => onSetStatus(task, "todo")}>
-                Back
-              </Button>
-              <Button variant="danger" onClick={() => onRemove(task)}>
-                Delete
-              </Button>
+              <button
+                type="button"
+                className="lo-task-menu-trigger"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenTaskMenu(e, task);
+                }}
+              >
+                ⋯
+              </button>
             </div>
           </Card>
         ))}
@@ -1075,15 +1109,16 @@ function FocusTasksView({
                   )}
                 </div>
               )}
-              <Button
-                variant="primary"
-                onClick={() => onSetStatus(task, "doing")}
+              <button
+                type="button"
+                className="lo-task-menu-trigger"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenTaskMenu(e, task);
+                }}
               >
-                Start
-              </Button>
-              <Button variant="danger" onClick={() => onRemove(task)}>
-                Delete
-              </Button>
+                ⋯
+              </button>
             </div>
           </Card>
         ))}
@@ -1116,9 +1151,16 @@ function FocusTasksView({
               <div className="lo-task-main">
                 <div className="lo-task-title is-done">{task.title}</div>
               </div>
-              <Button variant="danger" onClick={() => onRemove(task)}>
-                Delete
-              </Button>
+              <button
+                type="button"
+                className="lo-task-menu-trigger"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenTaskMenu(e, task);
+                }}
+              >
+                ⋯
+              </button>
             </div>
           </Card>
         ))}
@@ -1469,9 +1511,16 @@ function TaskSection({
                   {task.title}
                 </div>
 
-                <Button variant="danger" onClick={() => onRemove(task)}>
-                  Delete
-                </Button>
+                <button
+                  type="button"
+                  className="lo-task-menu-trigger"
+                  onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenTaskMenu(e, task);
+                }}
+                >
+                  ⋯
+                </button>
               </div>
 
               <div className="lo-meta-row">

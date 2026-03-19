@@ -1472,6 +1472,28 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   border-color: rgba(147, 163, 255, 0.5);
 }
 
+.lo-task-menu-trigger {
+  border: none;
+  background: transparent;
+  color: var(--shell-muted);
+  font-size: 18px;
+  line-height: 1;
+  padding: 6px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+.lo-task:hover .lo-task-menu-trigger {
+  opacity: 1;
+}
+
+.lo-task-menu-trigger:hover {
+  background: var(--shell-btn-hover);
+  color: var(--shell-title);
+}
+
 .lo-window-filter-wrap .lo-window-filter {
   font-weight: 500;
   letter-spacing: 0.01em;
