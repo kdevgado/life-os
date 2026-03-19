@@ -97,16 +97,16 @@ export default function TasksApp({
     const y = Math.min(rawY + 8, rect.height - menuHeight - 8);
 
     setContextMenu((prev) => {
-    if (prev && prev.task.id === task.id) {
-      return null;
-    }
+      if (prev && prev.task.id === task.id) {
+        return null;
+      }
 
-    return {
-      task,
-      x: Math.max(8, x),
-      y: Math.max(8, y),
-    };
-  });
+      return {
+        task,
+        x: Math.max(8, x),
+        y: Math.max(8, y),
+      };
+    });
   }, []);
 
   const closeTaskMenu = useCallback(() => {
@@ -1111,13 +1111,22 @@ function FocusTasksView({
               )}
               <button
                 type="button"
-                className="lo-task-menu-trigger"
+                className="lo-task-action-btn lo-task-menu-trigger"
                 onClick={(e) => {
                   e.stopPropagation();
                   onOpenTaskMenu(e, task);
                 }}
               >
                 ⋯
+              </button>
+            </div>
+
+            <div className="lo-task-subrow">
+              <button
+                className="lo-task-action-btn lo-task-start-btn"
+                onClick={() => onSetStatus(task, "doing")}
+              >
+                <img src="/icons/start.svg" alt="Start task" />
               </button>
             </div>
           </Card>
@@ -1515,9 +1524,9 @@ function TaskSection({
                   type="button"
                   className="lo-task-menu-trigger"
                   onClick={(e) => {
-                  e.stopPropagation();
-                  onOpenTaskMenu(e, task);
-                }}
+                    e.stopPropagation();
+                    onOpenTaskMenu(e, task);
+                  }}
                 >
                   ⋯
                 </button>
