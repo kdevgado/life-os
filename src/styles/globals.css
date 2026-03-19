@@ -579,6 +579,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   border-radius: 16px;
   overflow: hidden;
   transition: transform 0.14s ease, border-color 0.14s ease, background 0.14s ease;
+  position: relative;
 }
 
 .lo-tasks .lo-task:hover {
@@ -708,6 +709,28 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 .lo-tasks .lo-task.is-new {
   box-shadow: 0 0 0 4px rgba(6,182,212,.12), 0 10px 30px rgba(0,0,0,.25);
   border-color: rgba(6,182,212,.35);
+}
+
+.lo-task-drop-indicator {
+  height: 3px;
+  border-radius: 999px;
+  margin: 0 0 10px;
+  background: var(--accent, #7c8cff);
+  box-shadow: 0 0 0 1px rgba(124, 140, 255, 0.12);
+}
+
+.lo-task-drop-indicator--end {
+  margin-top: 8px;
+}
+
+:root[data-theme="duna"] .lo-task-drop-indicator {
+  background: rgba(87, 108, 255, 0.9);
+  box-shadow: 0 0 0 1px rgba(87, 108, 255, 0.14);
+}
+
+:root[data-theme="nebula"] .lo-task-drop-indicator {
+  background: rgba(166, 180, 255, 0.95);
+  box-shadow: 0 0 0 1px rgba(166, 180, 255, 0.18);
 }
 
 /* Mobile */
@@ -1386,7 +1409,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   -moz-appearance: none;
   min-height: 36px;
   padding: 0.55rem 2.2rem 0.55rem 0.9rem;
-  border-radius: 999px;
+  border-radius: 10px;
   font-size: 0.92rem;
   line-height: 1;
   border: 1px solid transparent;

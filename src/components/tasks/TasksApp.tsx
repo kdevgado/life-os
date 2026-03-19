@@ -835,6 +835,7 @@ function FocusTasksView({
   const [draggingTaskId, setDraggingTaskId] = React.useState<string | null>(
     null,
   );
+  const [dropTargetId, setDropTargetId] = React.useState<string | null>(null);
   const doing = [...tasks]
     .filter((t) => t.status === "doing")
     .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
@@ -861,15 +862,20 @@ function FocusTasksView({
 
       <section
         className="lo-stack"
-        onDragOver={(e) => e.preventDefault()}
+        onDragOver={(e) => {
+          e.preventDefault();
+          if (!draggingTaskId) return;
+          setDropTargetId("__doing-end__");
+        }}
         onDrop={(e) => {
           e.preventDefault();
           if (!draggingTaskId) return;
           onMoveTaskToColumnEnd(draggingTaskId, "doing");
           setDraggingTaskId(null);
+          setDropTargetId(null);
         }}
       >
-        <h3 className="lo-section-title">Doing</h3>
+        <h3 className="lo-section-title">In Progress</h3>
         {doing.length === 0 && (
           <div className="muted">No active task right now.</div>
         )}
@@ -896,16 +902,28 @@ function FocusTasksView({
               );
               e.dataTransfer.setData("text/plain", task.title);
             }}
-            onDragEnd={() => setDraggingTaskId(null)}
-            onDragOver={(e) => e.preventDefault()}
+            onDragEnd={() => {
+              setDraggingTaskId(null);
+              setDropTargetId(null);
+            }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (!draggingTaskId || draggingTaskId === task.id) return;
+              setDropTargetId(task.id);
+            }}
             onDrop={(e) => {
               e.preventDefault();
               e.stopPropagation();
               if (!draggingTaskId || draggingTaskId === task.id) return;
               onReorderTask(draggingTaskId, task.id, "doing");
               setDraggingTaskId(null);
+              setDropTargetId(null);
             }}
           >
+            {dropTargetId === task.id && draggingTaskId !== task.id && (
+              <div className="lo-task-drop-indicator" />
+            )}
             <div className="lo-task-row">
               <input
                 type="checkbox"
@@ -953,16 +971,24 @@ function FocusTasksView({
             </div>
           </Card>
         ))}
+        {dropTargetId === "__doing-end__" && draggingTaskId && (
+          <div className="lo-task-drop-indicator lo-task-drop-indicator--end" />
+        )}
       </section>
 
       <section
         className="lo-stack"
-        onDragOver={(e) => e.preventDefault()}
+        onDragOver={(e) => {
+          e.preventDefault();
+          if (!draggingTaskId) return;
+          setDropTargetId("__todo-end__");
+        }}
         onDrop={(e) => {
           e.preventDefault();
           if (!draggingTaskId) return;
           onMoveTaskToColumnEnd(draggingTaskId, "todo");
           setDraggingTaskId(null);
+          setDropTargetId(null);
         }}
       >
         <h3 className="lo-section-title">Up Next</h3>
@@ -990,16 +1016,28 @@ function FocusTasksView({
               );
               e.dataTransfer.setData("text/plain", task.title);
             }}
-            onDragEnd={() => setDraggingTaskId(null)}
-            onDragOver={(e) => e.preventDefault()}
+            onDragEnd={() => {
+              setDraggingTaskId(null);
+              setDropTargetId(null);
+            }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (!draggingTaskId || draggingTaskId === task.id) return;
+              setDropTargetId(task.id);
+            }}
             onDrop={(e) => {
               e.preventDefault();
               e.stopPropagation();
               if (!draggingTaskId || draggingTaskId === task.id) return;
               onReorderTask(draggingTaskId, task.id, "todo");
               setDraggingTaskId(null);
+              setDropTargetId(null);
             }}
           >
+            {dropTargetId === task.id && draggingTaskId !== task.id && (
+              <div className="lo-task-drop-indicator" />
+            )}
             <div className="lo-task-row">
               <input
                 type="checkbox"
@@ -1049,6 +1087,9 @@ function FocusTasksView({
             </div>
           </Card>
         ))}
+        {dropTargetId === "__todo-end__" && draggingTaskId && (
+          <div className="lo-task-drop-indicator lo-task-drop-indicator--end" />
+        )}
       </section>
 
       <section className="lo-stack">
@@ -1062,6 +1103,9 @@ function FocusTasksView({
             className={`lo-task lo-task-focus ${task.id === justAddedId ? "is-new" : ""}`}
             onContextMenu={(e) => onOpenTaskMenu(e, task)}
           >
+            {dropTargetId === task.id && draggingTaskId !== task.id && (
+              <div className="lo-task-drop-indicator" />
+            )}
             <div className="lo-task-row">
               <input
                 type="checkbox"
