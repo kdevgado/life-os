@@ -1,43 +1,144 @@
-# Astro Starter Kit: Minimal
+# 🧠 LifeOS
 
-```sh
-npm create astro@latest -- --template minimal
+> A personal operating system for designing, managing, and evolving your life.
+
+LifeOS is a **system-first approach to life management** — combining planning, execution, and reflection into a single structured framework.
+
+It’s not just a productivity tool.
+It’s a **decision-making system**.
+
+---
+
+## 🚀 Overview
+
+LifeOS is built around a simple idea:
+
+> Your life should run on a system — not memory, motivation, or guesswork.
+
+Inspired by emerging “life operating system” frameworks that combine **planning, journaling, and structured decision-making** ([GitHub][1]), this project focuses on:
+
+* Reducing cognitive load
+* Increasing clarity in decisions
+* Creating consistent forward progress
+
+---
+
+## ⚙️ Core Principles
+
+* **System over motivation**
+  Build processes that work even when you don’t feel like it
+
+* **Clarity over complexity**
+  Simple structures > over-engineered productivity stacks
+
+* **Execution over planning**
+  Ideas are useless without consistent action
+
+* **Feedback loops**
+  Reflect → adjust → improve
+
+---
+
+## 🧩 Features (WIP)
+
+### 📅 Structured Life Planning
+
+* Long-term vision (years)
+* Mid-term direction (months)
+* Daily execution system
+
+### 🧠 Decision Framework
+
+* Capture key decisions
+* Track reasoning over time
+* Improve judgment through iteration
+
+### 📓 Journaling System
+
+* Daily logs + reflections
+* Pattern recognition over time
+* Mental clarity & accountability
+
+### 📥 Capture System
+
+* Quick input for:
+
+  * Tasks
+  * Ideas
+  * Problems
+* Process later, not instantly
+
+### 🔁 Feedback Loop
+
+* Daily review
+* Weekly reset
+* Continuous system refinement
+
+---
+
+## 🏗 Architecture (Conceptual)
+
+LifeOS is designed as a modular system:
+
+```
+INPUT → PROCESS → EXECUTION → REVIEW → OPTIMISATION
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+* **Input:** Capture tasks, ideas, goals
+* **Process:** Organise + prioritise
+* **Execution:** Act with focus
+* **Review:** Reflect on outcomes
+* **Optimisation:** Improve the system
 
-## 🚀 Project Structure
+---
 
-Inside of your Astro project, you'll see the following folders and files:
+## 🛠 Tech Direction
 
-```text
-/
-├── public/
-├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
-```
+*(Subject to iteration as the system evolves)*
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+* Frontend: React / Next.js / Unity (future XR integration)
+* Backend: Node.js / Python
+* Data: Local-first + cloud sync
+* AI: Decision support, summarisation, pattern detection
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+---
 
-Any static assets, like images, can be placed in the `public/` directory.
+## 🔬 Why This Exists
 
-## 🧞 Commands
+Most productivity tools fail because they:
 
-All commands are run from the root of the project, from a terminal:
+* Fragment your workflow
+* Don’t help you think
+* Don’t adapt to your life
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
+LifeOS is built to solve that.
 
-## 👀 Want to learn more?
+It aims to become:
 
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+> A system that helps you **see clearly, decide better, and act consistently**
+
+---
+
+## 🧪 Current Status
+
+🚧 Early-stage / actively evolving
+
+This is a **living system**, not a finished product.
+Expect frequent changes, experiments, and redesigns.
+
+---
+
+## 🔮 Vision
+
+* AI-assisted decision engine
+* Personal analytics + behavioural insights
+* AR/XR interface for real-time interaction
+* Integration with real-world workflows (business, robotics, etc.)
+
+---
+
+## 🤝 Contributing
+
+Currently a **personal system project**, but open to collaboration in the future.
+
+---
