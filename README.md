@@ -15,7 +15,7 @@ LifeOS is built around a simple idea:
 
 > Your life should run on a system — not memory, motivation, or guesswork.
 
-Inspired by emerging “life operating system” frameworks that combine **planning, journaling, and structured decision-making** ([GitHub][1]), this project focuses on:
+Inspired by emerging “life operating system” frameworks that combine **planning, journaling, and structured decision-making**, this project focuses on:
 
 * Reducing cognitive load
 * Increasing clarity in decisions
