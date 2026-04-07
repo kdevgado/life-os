@@ -260,6 +260,14 @@ export default function TasksApp({
         setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
       }
 
+      broadcastTaskUpdated(task.id, {
+        title: patch.title,
+        dueDate: patch.dueDate,
+        plannedFor: patch.plannedFor,
+        plannedStart: patch.plannedStart,
+        plannedEnd: patch.plannedEnd,
+      });
+
       cancelEditingTask();
     },
     [authed, editorDraft, cancelEditingTask],
@@ -491,23 +499,32 @@ export default function TasksApp({
       return;
     }
 
-    if (authed) {
-      const now = new Date().toISOString();
+    const now = new Date().toISOString();
 
+    if (authed) {
       setTasks((prev) =>
         prev.map((t) =>
           t.id === id ? { ...t, title: trimmed, updatedAt: now } : t,
         ),
       );
 
+      broadcastTaskUpdated(id, {
+        title: trimmed,
+      });
+
       window.setTimeout(() => setJustAddedId(null), 300);
       return;
     }
 
-    const updated = updateTask(id, { title: trimmed });
+    const updated = updateTask(id, { title: trimmed, updatedAt: now });
     if (!updated) return;
 
     setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)));
+
+    broadcastTaskUpdated(id, {
+      title: trimmed,
+    });
+
     window.setTimeout(() => setJustAddedId(null), 300);
   }
 
@@ -770,6 +787,28 @@ export default function TasksApp({
     window.dispatchEvent(
       new CustomEvent("lifeos:task-status-changed", {
         detail: { taskId, status },
+      }),
+    );
+  }
+
+  function broadcastTaskUpdated(
+    taskId: string,
+    patch: {
+      title?: string;
+      dueDate?: string;
+      plannedFor?: string;
+      plannedStart?: string;
+      plannedEnd?: string;
+    },
+  ) {
+    if (typeof window === "undefined") return;
+
+    window.dispatchEvent(
+      new CustomEvent("lifeos:task-updated", {
+        detail: {
+          taskId,
+          patch,
+        },
       }),
     );
   }

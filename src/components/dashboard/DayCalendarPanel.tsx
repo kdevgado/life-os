@@ -253,16 +253,6 @@ export default function DayCalendarPanel({
         [dayKey]: existing.filter((item) => item.id !== id),
       };
     });
-
-    if (typeof window !== "undefined" && linkedTaskId) {
-      window.dispatchEvent(
-        new CustomEvent("lifeos:calendar-task-removed", {
-          detail: {
-            taskId: linkedTaskId,
-          },
-        }),
-      );
-    }
   }
 
   function cancelDragAndResize() {
@@ -422,6 +412,90 @@ export default function DayCalendarPanel({
       );
     };
   }, [storageKey]);
+
+  React.useEffect(() => {
+  if (typeof window === "undefined") return;
+
+  function handleTaskUpdated(event: Event) {
+    const custom = event as CustomEvent<{
+      taskId: string;
+      patch: {
+        title?: string;
+        dueDate?: string;
+        plannedFor?: string;
+        plannedStart?: string;
+        plannedEnd?: string;
+      };
+    }>;
+
+    const taskId = custom.detail?.taskId;
+    const patch = custom.detail?.patch;
+
+    if (!taskId || !patch) return;
+
+    setEventsByDay((prev) => {
+      let changed = false;
+
+      const next = Object.fromEntries(
+        Object.entries(prev).map(([dateKey, events]) => {
+          const updatedEvents = events.map((item) => {
+            if (item.sourceTaskId !== taskId) return item;
+
+            changed = true;
+
+            const startIso = patch.plannedStart ?? patch.plannedFor;
+            const endIso = patch.plannedEnd;
+
+            let nextStartHour = item.startHour;
+            let nextStartMinute = item.startMinute ?? 0;
+            let nextDurationHours = item.durationHours ?? 0.5;
+
+            if (startIso) {
+              const start = new Date(startIso);
+              nextStartHour = start.getHours();
+              nextStartMinute = clampMinuteToQuarter(start.getMinutes());
+            }
+
+            if (startIso && endIso) {
+              const start = new Date(startIso);
+              const end = new Date(endIso);
+              const duration =
+                (end.getTime() - start.getTime()) / 3600000;
+
+              nextDurationHours = clampDurationToQuarter(
+                Math.max(0.25, duration),
+              );
+            }
+
+            return {
+              ...item,
+              title: patch.title ?? item.title,
+              startHour: nextStartHour,
+              startMinute: nextStartMinute,
+              durationHours: nextDurationHours,
+            };
+          });
+
+          return [dateKey, updatedEvents];
+        }),
+      ) as Record<string, DayCalendarEvent[]>;
+
+      return changed ? next : prev;
+    });
+  }
+
+  window.addEventListener(
+    "lifeos:task-updated",
+    handleTaskUpdated as EventListener,
+  );
+
+  return () => {
+    window.removeEventListener(
+      "lifeos:task-updated",
+      handleTaskUpdated as EventListener,
+    );
+  };
+}, []);
 
   React.useEffect(() => {
     onEventsChange?.(eventsByDay);
