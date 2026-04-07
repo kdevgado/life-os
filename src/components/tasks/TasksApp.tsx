@@ -860,6 +860,7 @@ export default function TasksApp({
             plannedFor: date,
             dueDate: task.dueDate ?? date,
             list: "planner",
+            status: "doing" as const,
             updatedAt: new Date().toISOString(),
           };
 
@@ -868,6 +869,7 @@ export default function TasksApp({
               plannedFor: nextTask.plannedFor,
               dueDate: nextTask.dueDate,
               list: nextTask.list,
+              status: nextTask.status,
             });
           }
 
@@ -1334,6 +1336,12 @@ function FocusTasksView({
     .filter((t) => t.status === "done")
     .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
+  function isFocusReorderDrag(event: React.DragEvent) {
+    return Array.from(event.dataTransfer.types).includes(
+      "application/x-lifeos-focus-reorder",
+    );
+  }
+
   return (
     <>
       <div className="lo-focus-composer">
@@ -1349,11 +1357,13 @@ function FocusTasksView({
       <section
         className="lo-stack"
         onDragOver={(e) => {
+          if (!isFocusReorderDrag(e)) return;
           e.preventDefault();
           if (!draggingTaskId) return;
           setDropTargetId("__doing-end__");
         }}
         onDrop={(e) => {
+          if (!isFocusReorderDrag(e)) return;
           e.preventDefault();
           if (!draggingTaskId) return;
           onMoveTaskToColumnEnd(draggingTaskId, "doing");
@@ -1397,12 +1407,14 @@ function FocusTasksView({
               setDropTargetId(null);
             }}
             onDragOver={(e) => {
+              if (!isFocusReorderDrag(e)) return;
               e.preventDefault();
               e.stopPropagation();
               if (!draggingTaskId || draggingTaskId === task.id) return;
               setDropTargetId(task.id);
             }}
             onDrop={(e) => {
+              if (!isFocusReorderDrag(e)) return;
               e.preventDefault();
               e.stopPropagation();
               if (!draggingTaskId || draggingTaskId === task.id) return;
@@ -1599,11 +1611,13 @@ function FocusTasksView({
       <section
         className="lo-stack"
         onDragOver={(e) => {
+          if (!isFocusReorderDrag(e)) return;
           e.preventDefault();
           if (!draggingTaskId) return;
           setDropTargetId("__todo-end__");
         }}
         onDrop={(e) => {
+          if (!isFocusReorderDrag(e)) return;
           e.preventDefault();
           if (!draggingTaskId) return;
           onMoveTaskToColumnEnd(draggingTaskId, "todo");
@@ -1645,12 +1659,14 @@ function FocusTasksView({
               setDropTargetId(null);
             }}
             onDragOver={(e) => {
+              if (!isFocusReorderDrag(e)) return;
               e.preventDefault();
               e.stopPropagation();
               if (!draggingTaskId || draggingTaskId === task.id) return;
               setDropTargetId(task.id);
             }}
             onDrop={(e) => {
+              if (!isFocusReorderDrag(e)) return;
               e.preventDefault();
               e.stopPropagation();
               if (!draggingTaskId || draggingTaskId === task.id) return;

@@ -1340,10 +1340,22 @@ export default function DayCalendarPanel({
 
                       const columnIndex = layoutMeta.column;
                       const overlapCount = layoutMeta.columns;
+
                       const sidePadding = 10;
-                      const overlapOffset = 18; // how much each same-time event shifts right
-                      const stackedWidth = `calc(100% - ${sidePadding * 2}px - ${overlapOffset * Math.max(0, overlapCount - 1)}px)`;
-                      const leftOffset = `${sidePadding + columnIndex * overlapOffset}px`;
+                      const overlapOffset = 150;
+
+                      const isOverlapping = overlapCount > 1;
+                      const maxShift = 130; // increase this if you want more visible offset
+
+                      const overlapShift = isOverlapping
+                        ? Math.min(columnIndex * overlapOffset, maxShift)
+                        : 0;
+
+                      const eventWidth = isOverlapping
+                        ? `calc(100% - ${sidePadding * 2}px - ${maxShift}px)`
+                        : `calc(100% - ${sidePadding * 2}px)`;
+
+                      const leftOffset = `${sidePadding + overlapShift}px`;
 
                       const renderedDuration =
                         getRenderedDurationForEvent(event);
@@ -1382,7 +1394,7 @@ export default function DayCalendarPanel({
                               height: `calc(${renderedDuration * 100}% - 8px)`,
                               left: leftOffset,
                               right: "auto",
-                              width: stackedWidth,
+                              width: eventWidth,
                               "--daycal-line-clamp": lineClamp,
                             } as React.CSSProperties
                           }
