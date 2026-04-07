@@ -1543,6 +1543,26 @@ export default function FloatingWorkspace() {
   );
 
   React.useEffect(() => {
+  if (!hasCalendarSettingsOpen) return;
+
+  function handleOutsideClick(e: MouseEvent) {
+    const target = e.target as HTMLElement;
+
+    // if clicking inside the calendar settings window, ignore
+    if (target.closest(".lo-window--calendar-settings")) return;
+
+    // otherwise close it
+    setWins((prev) => prev.filter((w) => w.key !== "calendar-settings"));
+  }
+
+  window.addEventListener("mousedown", handleOutsideClick);
+
+  return () => {
+    window.removeEventListener("mousedown", handleOutsideClick);
+  };
+}, [hasCalendarSettingsOpen]);
+
+  React.useEffect(() => {
     const syncTopDockWindows = () => {
       const hidden = document.documentElement.classList.contains(
         "is-focus-mode-hidden",

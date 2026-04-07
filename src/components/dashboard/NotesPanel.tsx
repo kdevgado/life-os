@@ -619,8 +619,17 @@ export default function NotesPanel() {
             return;
           }
 
-          e.preventDefault();
-          editor.chain().focus("end").run();
+          const clickedInsideContent = !!target.closest(".lo-notes__content");
+          const isEmpty = editor.isEmpty;
+
+          if (clickedInsideContent && !isEmpty) {
+            return;
+          }
+
+          if (isEmpty) {
+            e.preventDefault();
+            editor.chain().focus("end").run();
+          }
         }}
       >
         <EditorContent editor={editor} className="lo-notes__content" />
