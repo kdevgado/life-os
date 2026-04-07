@@ -657,27 +657,26 @@ export default function DayCalendarPanel({
       const activeId = draggingEventIdRef.current;
       if (!activeId) return;
 
-      const target = document.elementFromPoint(
-        ev.clientX,
-        ev.clientY,
-      ) as HTMLElement | null;
+      const trackEl = trackRef.current;
+      if (!trackEl) return;
 
-      const slot = target?.closest("[data-hour-slot]") as HTMLDivElement | null;
+      const trackRect = trackEl.getBoundingClientRect();
+      const isInsideTrack =
+        ev.clientX >= trackRect.left &&
+        ev.clientX <= trackRect.right &&
+        ev.clientY >= trackRect.top &&
+        ev.clientY <= trackRect.bottom;
 
-      if (!slot) {
+      if (!isInsideTrack) {
         setDragOverHour(null);
         return;
       }
 
-      const nextHour = Number(slot.dataset.hour);
-
-      const rect = slot.getBoundingClientRect();
-      const y = ev.clientY - rect.top - dragPointerOffsetRef.current;
-      const ratio = Math.max(0, Math.min(0.999, y / rect.height));
-      const minute = Math.round((ratio * 60) / 15) * 15;
-
-      const nextMinute: 0 | 15 | 30 | 45 =
-        minute < 15 ? 0 : minute < 30 ? 15 : minute < 45 ? 30 : 45;
+      const { hour: nextHour, minute: nextMinute } = getTimeFromTrackPointer(
+        ev.clientY,
+        trackEl,
+        dragPointerOffsetRef.current,
+      );
 
       setDragPreview((prev) => {
         if (
@@ -728,6 +727,32 @@ export default function DayCalendarPanel({
       window.removeEventListener("pointercancel", handlePointerCancel);
     };
   }, [draggingEventId]);
+
+  function getTimeFromTrackPointer(
+    clientY: number,
+    trackEl: HTMLDivElement,
+    pointerOffset = 0,
+  ) {
+    const trackRect = trackEl.getBoundingClientRect();
+    const adjustedY = clientY - trackRect.top - pointerOffset;
+
+    const totalMinutes = visibleHours.length * 60;
+    const minuteHeight = trackRect.height / totalMinutes;
+
+    const rawMinutes = adjustedY / minuteHeight;
+    const snappedMinutes = Math.round(rawMinutes / 15) * 15;
+
+    const clampedMinutes = Math.max(
+      0,
+      Math.min(totalMinutes - 15, snappedMinutes),
+    );
+
+    const absoluteMinutes = visibleHours[0] * 60 + clampedMinutes;
+    const hour = Math.floor(absoluteMinutes / 60);
+    const minute = clampMinuteToQuarter(absoluteMinutes % 60);
+
+    return { hour, minute };
+  }
 
   function moveEventToTime(
     id: string,
@@ -1315,11 +1340,10 @@ export default function DayCalendarPanel({
 
                       const columnIndex = layoutMeta.column;
                       const overlapCount = layoutMeta.columns;
-                      const horizontalGap = 6;
                       const sidePadding = 10;
-
-                      const eventWidth = `calc((100% - ${sidePadding * 2}px - ${(overlapCount - 1) * horizontalGap}px) / ${overlapCount})`;
-                      const leftOffset = `calc(${sidePadding}px + (${eventWidth} + ${horizontalGap}px) * ${columnIndex})`;
+                      const overlapOffset = 18; // how much each same-time event shifts right
+                      const stackedWidth = `calc(100% - ${sidePadding * 2}px - ${overlapOffset * Math.max(0, overlapCount - 1)}px)`;
+                      const leftOffset = `${sidePadding + columnIndex * overlapOffset}px`;
 
                       const renderedDuration =
                         getRenderedDurationForEvent(event);
@@ -1342,7 +1366,7 @@ export default function DayCalendarPanel({
                                 draggingEventId === event.id ||
                                 resizingEventId === event.id
                                   ? 80
-                                  : 10 + columnIndex,
+                                  : 20 + columnIndex,
                               opacity:
                                 draggingEventId === event.id ||
                                 resizingEventId === event.id
@@ -1358,7 +1382,7 @@ export default function DayCalendarPanel({
                               height: `calc(${renderedDuration * 100}% - 8px)`,
                               left: leftOffset,
                               right: "auto",
-                              width: eventWidth,
+                              width: stackedWidth,
                               "--daycal-line-clamp": lineClamp,
                             } as React.CSSProperties
                           }

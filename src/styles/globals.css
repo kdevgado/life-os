@@ -2357,7 +2357,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   flex-direction: column;
   height: 100%;
   min-height: 0;
-  gap: 12px;
+  gap: 10px;
   color: inherit;
 }
 
@@ -2365,7 +2365,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   position: relative;
   flex-wrap: nowrap;
 }
@@ -2609,7 +2609,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 .lo-daycal__grid {
   display: grid;
   grid-template-columns: 84px minmax(0, 1fr);
-  gap: 12px;
+  gap: 10px;
   align-items: start;
 }
 
@@ -2619,7 +2619,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 }
 
 .lo-daycal__hour-row {
-  min-height: 104px;
+  min-height: 96px;
 }
 
 .lo-daycal__hour {
@@ -2658,8 +2658,8 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
 .lo-daycal__track-hour {
   position: relative;
-  min-height: 104px;
-  padding-right: 20px;
+  min-height: 96px;
+  padding-right: 12px;
 
   /* REMOVE old border */
   border-bottom: none;
@@ -2741,11 +2741,11 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   position: absolute;
   left: 10px;
   width: calc(100% - 20px);
-  min-height: calc(50% - 12px);
+  min-height: calc(50% - 10px);
+  padding: 7px 9px 7px 11px;
+  border-radius: 10px;
   height: auto;
-  padding: 8px 10px 8px 12px;
   padding-top: 8px;
-  border-radius: 9px;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -2756,7 +2756,14 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   border: 1px solid rgba(99, 102, 241, 0.14);
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
 
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(12px);
   overflow: hidden;
+}
+
+.lo-daycal__event:not(.is-dragging):not(.is-resizing):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.1);
 }
 
 .lo-daycal__event::before {

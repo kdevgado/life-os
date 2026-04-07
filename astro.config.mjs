@@ -30,13 +30,13 @@ export default defineConfig({
           theme_color: "#ffffff",
           icons: [
             {
-              src: "/icons/pwa-192.ico", // ⚠️ change this
+              src: "/icons/pwa-192.ico",
               sizes: "192x192",
               type: "image/x-icon",
               purpose: "any maskable"
             },
             {
-              src: "/icons/pwa-512.ico", // ⚠️ change this
+              src: "/icons/pwa-512.ico",
               sizes: "512x512",
               type: "image/x-icon",
               purpose: "any maskable"
