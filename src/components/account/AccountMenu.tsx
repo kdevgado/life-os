@@ -28,8 +28,8 @@ export default function AccountMenu() {
 
   const iconSrc = useMemo(() => {
     return theme === "nebula"
-      ? "/icons/black/account.png"
-      : "/icons/white/account.png";
+      ? "/icons/white/account.png"
+      : "/icons/black/account.png";
   }, [theme]);
 
   useEffect(() => {

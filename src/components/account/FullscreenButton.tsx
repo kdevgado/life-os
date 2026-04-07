@@ -15,7 +15,7 @@ export default function FullscreenButton() {
 
     const syncTheme = () => {
       const currentTheme = document.documentElement.getAttribute("data-theme");
-      setTheme(currentTheme === "nebula" ? "black" : "white");
+      setTheme(currentTheme === "nebula" ? "white" : "black");
     };
 
     syncTheme();

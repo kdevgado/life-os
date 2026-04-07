@@ -9,9 +9,15 @@ export default defineConfig({
       VitePWA({
         registerType: "autoUpdate",
         injectRegister: "auto",
+
         devOptions: {
-          enabled: true
+          enabled: true,
         },
+
+        workbox: {
+          globPatterns: ["**/*"], // simpler, avoids mismatch warning
+        },
+
         manifest: {
           id: "/",
           name: "LifeOS",
@@ -24,15 +30,15 @@ export default defineConfig({
           theme_color: "#ffffff",
           icons: [
             {
-              src: "/icons/pwa-192.png",
+              src: "/icons/pwa-192.ico", // ⚠️ change this
               sizes: "192x192",
-              type: "image/png",
+              type: "image/x-icon",
               purpose: "any maskable"
             },
             {
-              src: "/icons/pwa-512.png",
+              src: "/icons/pwa-512.ico", // ⚠️ change this
               sizes: "512x512",
-              type: "image/png",
+              type: "image/x-icon",
               purpose: "any maskable"
             }
           ]

@@ -2,6 +2,8 @@ import React from "react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useClickOutside } from "../../lib/useClickOutside";
+import Placeholder from "@tiptap/extension-placeholder";
+import { createPortal } from "react-dom";
 
 type NoteTab = {
   id: string;
@@ -22,7 +24,7 @@ function createNote(index: number): NoteTab {
   return {
     id: makeId(),
     title: `Note ${index}`,
-    content: "<h2>Heading</h2><p>Start typing a note...</p>",
+    content: "<p></p>",
   };
 }
 
@@ -38,7 +40,7 @@ function loadNotes(): NoteTab[] {
         n &&
         typeof n.id === "string" &&
         typeof n.title === "string" &&
-        typeof n.content === "string"
+        typeof n.content === "string",
     );
 
     return clean.length ? clean : [createNote(1)];
@@ -76,11 +78,7 @@ function ToolbarButton({
       title={label}
       aria-label={label}
     >
-      {icon ? (
-        <img src={icon} alt="" className="lo-notebar__icon" />
-      ) : (
-        children
-      )}
+      {icon ? <img src={icon} alt="" className="lo-notebar__icon" /> : children}
     </button>
   );
 }
@@ -141,7 +139,9 @@ function NotesMenu({
                 key={note.id}
                 className={`lo-notes-menu__item ${note.id === activeId ? "is-active" : ""}`}
                 onMouseEnter={() => setHoveredId(note.id)}
-                onMouseLeave={() => setHoveredId((id) => (id === note.id ? null : id))}
+                onMouseLeave={() =>
+                  setHoveredId((id) => (id === note.id ? null : id))
+                }
               >
                 <button
                   type="button"
@@ -201,6 +201,34 @@ function NotesMenu({
 export default function NotesPanel() {
   const [notes, setNotes] = React.useState<NoteTab[]>([]);
   const [activeId, setActiveId] = React.useState<string>("");
+  const [slashOpen, setSlashOpen] = React.useState(false);
+  const [slashPos, setSlashPos] = React.useState({ top: 0, left: 0 });
+  const editorWrapRef = React.useRef<HTMLDivElement | null>(null);
+  const [isMounted, setIsMounted] = React.useState(false);
+  const [slashIndex, setSlashIndex] = React.useState(0);
+  const slashOpenRef = React.useRef(false);
+  const slashIndexRef = React.useRef(0);
+
+  const slashItems = [
+    { label: "Paragraph", type: "paragraph" },
+    { label: "Heading 1", type: "h1" },
+    { label: "Heading 2", type: "h2" },
+    { label: "Heading 3", type: "h3" },
+    { label: "Bulleted list", type: "bullet" },
+    { label: "Numbered list", type: "number" },
+  ];
+
+  React.useEffect(() => {
+    slashOpenRef.current = slashOpen;
+  }, [slashOpen]);
+
+  React.useEffect(() => {
+    slashIndexRef.current = slashIndex;
+  }, [slashIndex]);
+
+  React.useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   React.useEffect(() => {
     const loaded = loadNotes();
@@ -222,23 +250,151 @@ export default function NotesPanel() {
     } catch {}
   }, [activeId]);
 
+  React.useEffect(() => {
+    function handlePointerDown(event: MouseEvent) {
+      const target = event.target as HTMLElement;
+      if (
+        target.closest(".lo-notes-slash") ||
+        target.closest(".lo-notes__content")
+      ) {
+        return;
+      }
+      setSlashOpen(false);
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    return () => document.removeEventListener("mousedown", handlePointerDown);
+  }, []);
+
+  function openSlashMenu(
+    view: Parameters<
+      NonNullable<typeof editor>["view"]["coordsAtPos"]
+    >[0] extends never
+      ? never
+      : any,
+  ) {
+    const { from } = view.state.selection;
+    const coords = view.coordsAtPos(from);
+
+    setSlashPos({
+      top: coords.bottom + 6,
+      left: coords.left,
+    });
+    setSlashIndex(0);
+    setSlashOpen(true);
+  }
+
+  function closeSlashMenu() {
+    setSlashOpen(false);
+    setSlashIndex(0);
+  }
+
   const activeNote = React.useMemo(
     () => notes.find((n) => n.id === activeId) ?? notes[0] ?? null,
-    [notes, activeId]
+    [notes, activeId],
   );
 
-  const editor = useEditor({
-    extensions: [StarterKit],
-    immediatelyRender: false,
-    content: activeNote?.content ?? "<p></p>",
-    onUpdate: ({ editor }) => {
-      if (!activeNote) return;
-      const html = editor.getHTML();
-      setNotes((prev) =>
-        prev.map((n) => (n.id === activeNote.id ? { ...n, content: html } : n))
-      );
+  const editor = useEditor(
+    {
+      extensions: [
+        StarterKit,
+        Placeholder.configure({
+          placeholder: "Start typing your note...",
+          emptyEditorClass: "is-editor-empty",
+        }),
+      ],
+      immediatelyRender: false,
+      content: activeNote?.content ?? "<p></p>",
+      editorProps: {
+        handleKeyDown(view, event) {
+          if (event.key === "/") {
+            requestAnimationFrame(() => {
+              const { from } = view.state.selection;
+              const coords = view.coordsAtPos(from);
+
+              setSlashPos({
+                top: coords.bottom + 6,
+                left: coords.left,
+              });
+              setSlashIndex(0);
+              setSlashOpen(true);
+            });
+            return false;
+          }
+
+          if (event.key === "Escape" && slashOpenRef.current) {
+            event.preventDefault();
+            closeSlashMenu();
+            return true;
+          }
+
+          if (slashOpenRef.current) {
+            if (event.key === "ArrowDown") {
+              event.preventDefault();
+              setSlashIndex((prev) => {
+                const next = (prev + 1) % slashItems.length;
+                slashIndexRef.current = next;
+                return next;
+              });
+              return true;
+            }
+
+            if (event.key === "ArrowUp") {
+              event.preventDefault();
+              setSlashIndex((prev) => {
+                const next = prev === 0 ? slashItems.length - 1 : prev - 1;
+                slashIndexRef.current = next;
+                return next;
+              });
+              return true;
+            }
+
+            if (event.key === "Enter") {
+              event.preventDefault();
+              const item = slashItems[slashIndexRef.current];
+              if (item) {
+                runSlashCommand(
+                  item.type as
+                    | "paragraph"
+                    | "h1"
+                    | "h2"
+                    | "h3"
+                    | "bullet"
+                    | "number",
+                );
+              }
+              return true;
+            }
+          }
+
+          return false;
+        },
+      },
+      onUpdate: ({ editor }) => {
+        if (!activeNote) return;
+
+        const html = editor.getHTML();
+        setNotes((prev) =>
+          prev.map((n) =>
+            n.id === activeNote.id ? { ...n, content: html } : n,
+          ),
+        );
+
+        const { from } = editor.state.selection;
+        const textBefore = editor.state.doc.textBetween(
+          Math.max(0, from - 20),
+          from,
+          "\n",
+          "\n",
+        );
+
+        if (slashOpenRef.current && !textBefore.includes("/")) {
+          closeSlashMenu();
+        }
+      },
     },
-  });
+    [activeNote?.id],
+  );
 
   React.useEffect(() => {
     if (!editor || !activeNote) return;
@@ -259,30 +415,30 @@ export default function NotesPanel() {
   }
 
   function deleteNoteById(id: string) {
-  const target = notes.find((n) => n.id === id);
-  if (!target) return;
+    const target = notes.find((n) => n.id === id);
+    if (!target) return;
 
-  if (notes.length === 1) {
-    const fresh = createNote(1);
-    setNotes([fresh]);
-    setActiveId(fresh.id);
-    return;
+    if (notes.length === 1) {
+      const fresh = createNote(1);
+      setNotes([fresh]);
+      setActiveId(fresh.id);
+      return;
+    }
+
+    const idx = notes.findIndex((n) => n.id === id);
+    const nextNotes = notes.filter((n) => n.id !== id);
+    const fallback = nextNotes[Math.max(0, idx - 1)] ?? nextNotes[0];
+
+    setNotes(nextNotes);
+
+    if (activeId === id) {
+      setActiveId(fallback.id);
+    }
   }
 
-  const idx = notes.findIndex((n) => n.id === id);
-  const nextNotes = notes.filter((n) => n.id !== id);
-  const fallback = nextNotes[Math.max(0, idx - 1)] ?? nextNotes[0];
-
-  setNotes(nextNotes);
-
-  if (activeId === id) {
-    setActiveId(fallback.id);
+  function deleteCurrentNoteById(id: string) {
+    deleteNoteById(id);
   }
-}
-
-function deleteCurrentNoteById(id: string) {
-  deleteNoteById(id);
-}
 
   if (!activeNote || !editor) {
     return <div className="lo-notes">Loading notes…</div>;
@@ -291,10 +447,58 @@ function deleteCurrentNoteById(id: string) {
   const textStyle = editor.isActive("heading", { level: 1 })
     ? "h1"
     : editor.isActive("heading", { level: 2 })
-    ? "h2"
-    : editor.isActive("heading", { level: 3 })
-    ? "h3"
-    : "p";
+      ? "h2"
+      : editor.isActive("heading", { level: 3 })
+        ? "h3"
+        : "p";
+
+  function runSlashCommand(
+    type: "paragraph" | "h1" | "h2" | "h3" | "bullet" | "number",
+  ) {
+    if (!editor) return;
+
+    const { state } = editor;
+    const { from } = state.selection;
+
+    const textBefore = state.doc.textBetween(
+      Math.max(0, from - 20),
+      from,
+      "\n",
+      "\n",
+    );
+
+    const slashIndex = textBefore.lastIndexOf("/");
+
+    if (slashIndex !== -1) {
+      const slashFrom = from - (textBefore.length - slashIndex);
+      editor.chain().focus().deleteRange({ from: slashFrom, to: from }).run();
+    }
+
+    const chain = editor.chain().focus();
+
+    switch (type) {
+      case "paragraph":
+        chain.setParagraph().run();
+        break;
+      case "h1":
+        chain.setHeading({ level: 1 }).run();
+        break;
+      case "h2":
+        chain.setHeading({ level: 2 }).run();
+        break;
+      case "h3":
+        chain.setHeading({ level: 3 }).run();
+        break;
+      case "bullet":
+        chain.toggleBulletList().run();
+        break;
+      case "number":
+        chain.toggleOrderedList().run();
+        break;
+    }
+
+    setSlashOpen(false);
+  }
 
   return (
     <div className="lo-notes">
@@ -315,79 +519,79 @@ function deleteCurrentNoteById(id: string) {
         </div>
 
         <NotesMenu
-            notes={notes}
-            activeId={activeId}
-            onOpenNote={(id) => setActiveId(id)}
-            onAddNote={addNote}
-            onRenameNote={renameNote}
-            onDeleteNote={deleteCurrentNoteById}
-            />
+          notes={notes}
+          activeId={activeId}
+          onOpenNote={(id) => setActiveId(id)}
+          onAddNote={addNote}
+          onRenameNote={renameNote}
+          onDeleteNote={deleteCurrentNoteById}
+        />
       </div>
 
       <div className="lo-notebar">
         <select
-            className="lo-notebar__select"
-            value={textStyle}
-            onChange={(e) => {
+          className="lo-notebar__select"
+          value={textStyle}
+          onChange={(e) => {
             const value = e.target.value;
             if (value === "p") {
-                editor.chain().focus().setParagraph().run();
+              editor.chain().focus().setParagraph().run();
             } else {
-                const level = Number(value.replace("h", "")) as 1 | 2 | 3;
-                editor.chain().focus().setHeading({ level }).run();
+              const level = Number(value.replace("h", "")) as 1 | 2 | 3;
+              editor.chain().focus().setHeading({ level }).run();
             }
-            }}
-            title="Text style"
-            aria-label="Text style"
+          }}
+          title="Text style"
+          aria-label="Text style"
         >
-            <option value="p">Paragraph</option>
-            <option value="h1">Heading 1</option>
-            <option value="h2">Heading 2</option>
-            <option value="h3">Heading 3</option>
+          <option value="p">Paragraph</option>
+          <option value="h1">Heading 1</option>
+          <option value="h2">Heading 2</option>
+          <option value="h3">Heading 3</option>
         </select>
 
         <ToolbarButton
-            label="Bold"
-            active={editor.isActive("bold")}
-            onClick={() => editor.chain().focus().toggleBold().run()}
+          label="Bold"
+          active={editor.isActive("bold")}
+          onClick={() => editor.chain().focus().toggleBold().run()}
         >
-            <strong>B</strong>
+          <strong>B</strong>
         </ToolbarButton>
 
         <ToolbarButton
-            label="Italic"
-            active={editor.isActive("italic")}
-            onClick={() => editor.chain().focus().toggleItalic().run()}
+          label="Italic"
+          active={editor.isActive("italic")}
+          onClick={() => editor.chain().focus().toggleItalic().run()}
         >
-            <em>I</em>
+          <em>I</em>
         </ToolbarButton>
 
         <ToolbarButton
-            label="Bulleted list"
-            active={editor.isActive("bulletList")}
-            onClick={() => editor.chain().focus().toggleBulletList().run()}
-            icon="/icons/notes/list.png"
+          label="Bulleted list"
+          active={editor.isActive("bulletList")}
+          onClick={() => editor.chain().focus().toggleBulletList().run()}
+          icon="/icons/notes/list.png"
         />
 
         <ToolbarButton
-            label="Numbered list"
-            active={editor.isActive("orderedList")}
-            onClick={() => editor.chain().focus().toggleOrderedList().run()}
-            icon="/icons/notes/number-list.png"
+          label="Numbered list"
+          active={editor.isActive("orderedList")}
+          onClick={() => editor.chain().focus().toggleOrderedList().run()}
+          icon="/icons/notes/number-list.png"
         />
 
         <ToolbarButton
-            label="Undo"
-            onClick={() => editor.chain().focus().undo().run()}
-            icon="/icons/notes/undo.png"
+          label="Undo"
+          onClick={() => editor.chain().focus().undo().run()}
+          icon="/icons/notes/undo.png"
         />
 
         <ToolbarButton
-            label="Redo"
-            onClick={() => editor.chain().focus().redo().run()}
-            icon="/icons/notes/redo.png"
+          label="Redo"
+          onClick={() => editor.chain().focus().redo().run()}
+          icon="/icons/notes/redo.png"
         />
-        </div>
+      </div>
 
       <div className="lo-notes__meta">
         <input
@@ -400,8 +604,61 @@ function deleteCurrentNoteById(id: string) {
         />
       </div>
 
-      <div className="lo-notes__editor">
+      <div
+        ref={editorWrapRef}
+        className="lo-notes__editor"
+        onMouseDown={(e) => {
+          if (!editor) return;
+
+          const target = e.target as HTMLElement;
+          if (
+            target.closest(".lo-notes-slash") ||
+            target.closest(".lo-notebar") ||
+            target.closest(".lo-notes__titleinput")
+          ) {
+            return;
+          }
+
+          e.preventDefault();
+          editor.chain().focus("end").run();
+        }}
+      >
         <EditorContent editor={editor} className="lo-notes__content" />
+
+        {isMounted &&
+          slashOpen &&
+          createPortal(
+            <div
+              className="lo-notes-slash"
+              style={{
+                top: slashPos.top,
+                left: slashPos.left,
+              }}
+            >
+              {slashItems.map((item, index) => (
+                <button
+                  key={item.type}
+                  type="button"
+                  className={index === slashIndex ? "is-active" : ""}
+                  onMouseEnter={() => setSlashIndex(index)}
+                  onClick={() =>
+                    runSlashCommand(
+                      item.type as
+                        | "paragraph"
+                        | "h1"
+                        | "h2"
+                        | "h3"
+                        | "bullet"
+                        | "number",
+                    )
+                  }
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>,
+            document.body,
+          )}
       </div>
     </div>
   );

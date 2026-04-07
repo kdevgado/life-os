@@ -55,37 +55,45 @@ export default function PlanWorkspace() {
         </header>
 
         <div className="lo-plan__content">
-          {tab === "board" && (
-            <div className="lo-plan__panel">
-              <BoardView />
-            </div>
-          )}
+          <div
+            className="lo-plan__panel"
+            hidden={tab !== "board"}
+            aria-hidden={tab !== "board"}
+          >
+            <BoardView />
+          </div>
 
-          {tab === "calendar" && (
-            <div className="lo-plan__placeholder">
-              <DayCalendarPanel
-            startHour={6}
-            endHour={24}
-            storageKey="lifeos_plan_calendar_events"
-            providerStorageKey="lifeos_plan_calendar_provider"
-            onDropTask={({ task, dateKey, hour }) => {
-              console.log("Plan task scheduled", { task, dateKey, hour });
-            }}
-          />
-            </div>
-          )}
+          <div
+            className="lo-plan__placeholder"
+            hidden={tab !== "calendar"}
+            aria-hidden={tab !== "calendar"}
+          >
+            <DayCalendarPanel
+              startHour={6}
+              endHour={24}
+              storageKey="lifeos_calendar_day_events_v1"
+              providerStorageKey="lifeos_calendar_provider_v1"
+              onDropTask={({ task, dateKey, hour }) => {
+                console.log("Plan task scheduled", { task, dateKey, hour });
+              }}
+            />
+          </div>
 
-          {tab === "planner" && (
-            <div className="lo-plan__panel">
-              <PlannerApp />
-            </div>
-          )}
+          <div
+            className="lo-plan__panel"
+            hidden={tab !== "planner"}
+            aria-hidden={tab !== "planner"}
+          >
+            <PlannerApp />
+          </div>
 
-          {tab === "tasks" && (
-            <div className="lo-plan__panel">
-              <TasksApp mode="plan" />
-            </div>
-          )}
+          <div
+            className="lo-plan__panel"
+            hidden={tab !== "tasks"}
+            aria-hidden={tab !== "tasks"}
+          >
+            <TasksApp mode="plan" />
+          </div>
         </div>
       </div>
     </section>

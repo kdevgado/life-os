@@ -5,11 +5,14 @@ import NotesPanel from "../dashboard/NotesPanel";
 import DailyBibleVerse from "../dashboard/DailyBibleVerse";
 import FullscreenButton from "../account/FullscreenButton";
 import DayCalendarPanel from "../dashboard/DayCalendarPanel";
+import SoundsPanel from "../dashboard/SoundsPanel";
+import { WALLPAPERS, type WallpaperItem } from "../../data/wallpapers";
 
 type PanelKey =
   | "spaces"
   | "sounds"
   | "calendar"
+  | "calendar-settings"
   | "timer"
   | "tasks"
   | "notes"
@@ -25,9 +28,11 @@ function titleFor(k: Exclude<PanelKey, null>) {
     case "spaces":
       return "Spaces";
     case "sounds":
-      return "Sounds";
+      return "Soundboard";
     case "calendar":
       return "Calendar";
+    case "calendar-settings":
+      return "Calendar Settings";
     case "timer":
       return "Timer";
     case "tasks":
@@ -42,11 +47,13 @@ function titleFor(k: Exclude<PanelKey, null>) {
 function defaultSizeFor(key: Exclude<PanelKey, null>) {
   switch (key) {
     case "spaces":
-      return { w: 375, h: 860 };
+      return { w: 400, h: 1150 };
     case "sounds":
-      return { w: 420, h: 460 };
+      return { w: 400, h: 1150 };
     case "calendar":
       return { w: 450, h: 1150 };
+    case "calendar-settings":
+      return { w: 500, h: 350 };
     case "timer":
       return { w: 360, h: 260 };
     case "tasks":
@@ -61,11 +68,13 @@ function defaultSizeFor(key: Exclude<PanelKey, null>) {
 function minSizeFor(key: Exclude<PanelKey, null>) {
   switch (key) {
     case "spaces":
-      return { w: 375, h: 360 };
+      return { w: 400, h: 1150 };
     case "sounds":
-      return { w: 320, h: 320 };
+      return { w: 400, h: 1150 };
     case "calendar":
-      return { w: 450, h: 1000 };
+      return { w: 450, h: 1150 };
+    case "calendar-settings":
+      return { w: 500, h: 350 };
     case "timer":
       return { w: 300, h: 230 };
     case "tasks":
@@ -77,6 +86,122 @@ function minSizeFor(key: Exclude<PanelKey, null>) {
   }
 }
 
+const TOP_DOCK_KEYS: Exclude<PanelKey, null>[] = [
+  "spaces",
+  "sounds",
+  "calendar",
+];
+
+function isTopDockPanel(key: Exclude<PanelKey, null>) {
+  return TOP_DOCK_KEYS.includes(key);
+}
+
+function isModalPanel(key: Exclude<PanelKey, null>) {
+  return key === "calendar-settings";
+}
+
+function isFocusModeHidden() {
+  if (typeof document === "undefined") return false;
+  return document.documentElement.classList.contains("is-focus-mode-hidden");
+}
+
+function topDockWindowPos() {
+  if (typeof window === "undefined") {
+    return { x: 110, y: 86 };
+  }
+
+  if (isFocusModeHidden()) {
+    return {
+      x: 7,
+      y: 7,
+    };
+  }
+
+  return {
+    x: 110,
+    y: 86,
+  };
+}
+
+function centeredWindowPos(w: number, h: number) {
+  if (typeof window === "undefined") {
+    return { x: 180, y: 120 };
+  }
+
+  return {
+    x: Math.max(24, Math.round((window.innerWidth - w) / 2)),
+    y: Math.max(24, Math.round((window.innerHeight - h) / 2)),
+  };
+}
+
+function fixedHeightFor(key: Exclude<PanelKey, null>) {
+  switch (key) {
+    case "spaces":
+      return 1150;
+    case "sounds":
+      return 1150;
+    case "calendar":
+      return 1150;
+    default:
+      return null;
+  }
+}
+
+const MOBILE_BREAKPOINT = 720;
+
+function getIsMobileViewport() {
+  if (typeof window === "undefined") return false;
+  return window.innerWidth <= MOBILE_BREAKPOINT;
+}
+
+function mobileWindowPos(w: number, h: number) {
+  if (typeof window === "undefined") {
+    return { x: 12, y: 100 };
+  }
+
+  const dockHeight = 92;
+  const topOffset = 72;
+  const sideGap = 12;
+  const bottomGap = 12;
+
+  return {
+    x: Math.max(sideGap, Math.round((window.innerWidth - w) / 2)),
+    y: Math.max(topOffset, window.innerHeight - h - dockHeight - bottomGap),
+  };
+}
+
+function mobileSizeFor(key: Exclude<PanelKey, null>) {
+  if (typeof window === "undefined") {
+    return defaultSizeFor(key);
+  }
+
+  const maxW = window.innerWidth - 24;
+  const maxH = window.innerHeight - 120;
+
+  switch (key) {
+    case "spaces":
+      return {
+        w: Math.min(400, maxW),
+        h: Math.min(maxH, Math.max(420, Math.round(window.innerHeight * 0.68))),
+      };
+    case "timer":
+      return {
+        w: Math.min(360, maxW),
+        h: 260,
+      };
+    case "tasks":
+      return {
+        w: Math.min(520, maxW),
+        h: Math.min(maxH, Math.max(360, Math.round(window.innerHeight * 0.62))),
+      };
+    default:
+      return {
+        w: Math.min(defaultSizeFor(key).w, maxW),
+        h: Math.min(defaultSizeFor(key).h, maxH),
+      };
+  }
+}
+
 function WindowShell({
   title,
   panelKey,
@@ -85,11 +210,14 @@ function WindowShell({
   z,
   w,
   h,
+  onClose,
   onFocus,
   onMove,
   onResize,
-  onClose,
   children,
+  resizable = true,
+  draggable = true,
+  isFocused = false,
 }: {
   title: string;
   panelKey: Exclude<PanelKey, null>;
@@ -98,11 +226,14 @@ function WindowShell({
   z: number;
   w: number;
   h: number;
+  onClose: () => void;
   onFocus: () => void;
   onMove: (x: number, y: number) => void;
   onResize: (w: number, h: number) => void;
-  onClose: () => void;
   children: React.ReactNode;
+  resizable?: boolean;
+  draggable?: boolean;
+  isFocused?: boolean;
 }) {
   const dragRef = React.useRef<{
     startX: number;
@@ -193,7 +324,7 @@ function WindowShell({
 
   return (
     <section
-      className={`lo-window lo-window--${panelKey}`}
+      className={`lo-window lo-window--${panelKey}${isFocused ? " is-focused" : ""}`}
       role="dialog"
       aria-label={title}
       style={{
@@ -208,10 +339,10 @@ function WindowShell({
       onPointerDown={() => onFocus()}
     >
       <header
-        className="lo-window__bar lo-window__bar--draggable"
-        onPointerDown={onPointerDownBar}
-        onPointerMove={onPointerMoveBar}
-        onPointerUp={onPointerUpBar}
+        className={`lo-window__bar ${draggable ? "lo-window__bar--draggable" : ""}`.trim()}
+        onPointerDown={draggable ? onPointerDownBar : undefined}
+        onPointerMove={draggable ? onPointerMoveBar : undefined}
+        onPointerUp={draggable ? onPointerUpBar : undefined}
       >
         <div className="lo-window__title">{title}</div>
 
@@ -239,70 +370,147 @@ function WindowShell({
         {children}
       </div>
 
-      <div
-        className="lo-window__resize"
-        onPointerDown={onPointerDownResize}
-        onPointerMove={onPointerMoveResize}
-        onPointerUp={onPointerUpResize}
-      />
+      {resizable ? (
+        <div
+          className="lo-window__resize"
+          onPointerDown={onPointerDownResize}
+          onPointerMove={onPointerMoveResize}
+          onPointerUp={onPointerUpResize}
+        />
+      ) : null}
     </section>
   );
 }
 
-type SpaceWallpaper = {
-  id: string;
-  title: string;
-  src: string;
-  type: "image" | "video";
+function useIsVisible<T extends HTMLElement>(
+  rootMargin = "200px",
+): [React.RefObject<T | null>, boolean] {
+  const ref = React.useRef<T | null>(null);
+  const [isVisible, setIsVisible] = React.useState(false);
+
+  React.useEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsVisible(entry.isIntersecting),
+      { rootMargin },
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [rootMargin]);
+
+  return [ref, isVisible];
+}
+
+type WallpaperPreviewCardProps = {
+  item: WallpaperItem;
+  isSelected: boolean;
+  isFavourite: boolean;
+  onSelect: (src: string) => void;
+  onToggleFavourite: (id: string) => void;
 };
 
-const SPACE_WALLPAPERS: SpaceWallpaper[] = [
-  {
-    id: "duna-sky",
-    title: "Duna Sky",
-    src: "/images/duna-sky.jpg",
-    type: "image",
-  },
-  {
-    id: "nebula-space",
-    title: "Nebula Space",
-    src: "/images/nebula-space.jpg",
-    type: "image",
-  },
-  {
-    id: "sunset",
-    title: "Sunset",
-    src: "/videos/sunset.mp4",
-    type: "video",
-  },
-  {
-    id: "rainy-cafe-japan",
-    title: "Rainy Cafe in Japan",
-    src: "/videos/rainy-cafe-japan.mp4",
-    type: "video",
-  },
-  {
-    id: "videogame",
-    title: "Videogame",
-    src: "/videos/videogame.mp4",
-    type: "video",
-  },
-];
+function WallpaperPreviewCard({
+  item,
+  isSelected,
+  isFavourite,
+  onSelect,
+  onToggleFavourite,
+}: WallpaperPreviewCardProps) {
+  const [ref, isVisible] = useIsVisible<HTMLButtonElement>("250px");
+
+  return (
+    <button
+      ref={ref}
+      type="button"
+      className={`lo-spaces__card${isSelected ? " is-active" : ""}`}
+      onClick={() => onSelect(item.src)}
+      aria-pressed={isSelected}
+    >
+      <div className="lo-spaces__preview">
+        {item.type === "video" ? (
+          isVisible ? (
+            <video
+              className="lo-spaces__preview-video"
+              src={item.src}
+              muted
+              playsInline
+              preload="metadata"
+              onMouseEnter={(e) => {
+                const el = e.currentTarget;
+                el.currentTime = 0;
+                void el.play().catch(() => {});
+              }}
+              onMouseLeave={(e) => {
+                const el = e.currentTarget;
+                el.pause();
+                el.currentTime = 0;
+              }}
+            />
+          ) : (
+            <div className="lo-spaces__preview-placeholder">Video preview</div>
+          )
+        ) : isVisible ? (
+          <img
+            className="lo-spaces__preview-image"
+            src={item.src}
+            alt={item.title}
+            loading="lazy"
+            decoding="async"
+          />
+        ) : (
+          <div className="lo-spaces__preview-placeholder">Image preview</div>
+        )}
+
+        <button
+          type="button"
+          className={`lo-spaces__favourite${isFavourite ? " is-active" : ""}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleFavourite(item.id);
+          }}
+          aria-label={isFavourite ? "Remove favourite" : "Add favourite"}
+        >
+          ★
+        </button>
+      </div>
+
+      <div className="lo-spaces__meta">
+        <span className="lo-spaces__title">{item.title}</span>
+      </div>
+    </button>
+  );
+}
 
 function SpacesPanel() {
   const [theme, setTheme] = React.useState<"duna" | "nebula">("duna");
   const [selected, setSelected] = React.useState<string>("");
   const [tab, setTab] = React.useState<"video" | "image" | "favourites">(
-    "image",
+    "video",
   );
   const [favourites, setFavourites] = React.useState<string[]>([]);
 
   const [videoMuted, setVideoMuted] = React.useState(true);
   const [videoVolume, setVideoVolume] = React.useState(0.5);
   const selectedWallpaper = React.useMemo(
-    () => SPACE_WALLPAPERS.find((item) => item.src === selected),
+    () => WALLPAPERS.find((item) => item.src === selected),
     [selected],
   );
+  const CATEGORY_OPTIONS = [
+    { value: "all", label: "All" },
+    { value: "nature", label: "Nature", icon: "🌿" },
+    { value: "countries", label: "Countries", icon: "🌎" },
+    { value: "retro", label: "Retro", icon: "👾" },
+    { value: "games", label: "Games", icon: "🎮" },
+    { value: "anime", label: "Anime", icon: "✨" },
+    { value: "cars", label: "Cars", icon: "🏎️" },
+  ] as const;
+  const [category, setCategory] = React.useState<
+    "all" | "nature" | "countries" | "retro" | "games" | "anime" | "cars"
+  >("all");
+  const [searchQuery, setSearchQuery] = React.useState("");
 
   React.useEffect(() => {
     const savedMuted = localStorage.getItem("lifeos_wallpaper_muted");
@@ -318,7 +526,7 @@ function SpacesPanel() {
           : "duna";
 
       const savedWallpaper =
-        localStorage.getItem("lifeos_wallpaper") || SPACE_WALLPAPERS[0].src;
+        localStorage.getItem("lifeos_wallpaper") || WALLPAPERS[0].src;
 
       const savedFavourites = JSON.parse(
         localStorage.getItem("lifeos_wallpaper_favourites") || "[]",
@@ -326,10 +534,20 @@ function SpacesPanel() {
 
       setTheme(savedTheme);
       setSelected(savedWallpaper);
-      setFavourites(Array.isArray(savedFavourites) ? savedFavourites : []);
+      setFavourites(
+        Array.isArray(savedFavourites)
+          ? Array.from(
+              new Set(
+                savedFavourites.filter(
+                  (v): v is string => typeof v === "string",
+                ),
+              ),
+            )
+          : [],
+      );
     } catch {
       setTheme("duna");
-      setSelected(SPACE_WALLPAPERS[0].src);
+      setSelected(WALLPAPERS[0].src);
       setFavourites([]);
     }
   }, []);
@@ -344,9 +562,11 @@ function SpacesPanel() {
 
   const toggleFavourite = (id: string) => {
     setFavourites((prev) => {
-      const next = prev.includes(id)
-        ? prev.filter((item) => item !== id)
-        : [...prev, id];
+      const safePrev = Array.from(new Set(prev));
+
+      const next = safePrev.includes(id)
+        ? safePrev.filter((item) => item !== id)
+        : [...safePrev, id];
 
       try {
         localStorage.setItem(
@@ -359,13 +579,43 @@ function SpacesPanel() {
     });
   };
 
+  const uniqueWallpapers = React.useMemo(() => {
+    const seen = new Set<string>();
+    return WALLPAPERS.filter((item) => {
+      if (seen.has(item.id)) return false;
+      seen.add(item.id);
+      return true;
+    });
+  }, []);
+
   const filteredWallpapers = React.useMemo(() => {
+    let list = uniqueWallpapers;
+
     if (tab === "favourites") {
-      return SPACE_WALLPAPERS.filter((item) => favourites.includes(item.id));
+      list = list.filter((item) => favourites.includes(item.id));
+    } else if (tab === "video") {
+      list = list.filter((item) => item.type === "video");
+    } else if (tab === "image") {
+      list = list.filter((item) => item.type === "image");
     }
 
-    return SPACE_WALLPAPERS.filter((item) => item.type === tab);
-  }, [tab, favourites]);
+    if (category !== "all") {
+      list = list.filter((item) => item.category === category);
+    }
+
+    const query = searchQuery.trim().toLowerCase();
+    if (query) {
+      list = list.filter((item) => item.title.toLowerCase().includes(query));
+    }
+
+    const seen = new Set<string>();
+    return list.filter((item) => {
+      const key = item.id; // or `${item.id}-${item.src}` if you want extra safety
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [tab, favourites, category, searchQuery]);
 
   const toggleVideoMuted = () => {
     setVideoMuted((prev) => {
@@ -388,86 +638,150 @@ function SpacesPanel() {
 
   return (
     <div className="lo-spaces">
-      <div className="lo-spaces__section">
-        <div className="lo-spaces__label">
-          <strong>Theme</strong>
-          <span>Duna / Nebula</span>
+      <div className="lo-spaces__top">
+        <div className="lo-spaces__section">
+          <div className="lo-spaces__label">
+            <strong>Theme</strong>
+            <span>Duna / Nebula</span>
+          </div>
+
+          <select
+            className="lo-spaces__select"
+            value={theme}
+            onChange={(e) => {
+              const v = e.target.value === "nebula" ? "nebula" : "duna";
+              setTheme(v);
+              localStorage.setItem("lifeos_theme", v);
+              document.documentElement.setAttribute("data-theme", v);
+            }}
+          >
+            <option value="duna">Duna</option>
+            <option value="nebula">Nebula</option>
+          </select>
         </div>
 
-        <select
-          className="lo-spaces__select"
-          value={theme}
-          onChange={(e) => {
-            const v = e.target.value === "nebula" ? "nebula" : "duna";
-            setTheme(v);
-            localStorage.setItem("lifeos_theme", v);
-            document.documentElement.setAttribute("data-theme", v);
-          }}
+        <div
+          className="lo-spaces__tabs"
+          role="tablist"
+          aria-label="Wallpaper categories"
         >
-          <option value="duna">Duna</option>
-          <option value="nebula">Nebula</option>
-        </select>
-      </div>
+          <button
+            type="button"
+            className={`lo-spaces__tab ${tab === "video" ? "is-active" : ""}`}
+            onClick={() => setTab("video")}
+          >
+            Videos
+          </button>
 
-      <div
-        className="lo-spaces__tabs"
-        role="tablist"
-        aria-label="Wallpaper categories"
-      >
-        <button
-          type="button"
-          className={`lo-spaces__tab ${tab === "video" ? "is-active" : ""}`}
-          onClick={() => setTab("video")}
-        >
-          Videos
-        </button>
+          <button
+            type="button"
+            className={`lo-spaces__tab ${tab === "image" ? "is-active" : ""}`}
+            onClick={() => setTab("image")}
+          >
+            Images
+          </button>
 
-        <button
-          type="button"
-          className={`lo-spaces__tab ${tab === "image" ? "is-active" : ""}`}
-          onClick={() => setTab("image")}
-        >
-          Images
-        </button>
+          <button
+            type="button"
+            className={`lo-spaces__tab ${tab === "favourites" ? "is-active" : ""}`}
+            onClick={() => setTab("favourites")}
+          >
+            Favourites
+          </button>
+        </div>
 
-        <button
-          type="button"
-          className={`lo-spaces__tab ${tab === "favourites" ? "is-active" : ""}`}
-          onClick={() => setTab("favourites")}
+        <div className="lo-spaces__search">
+          <span className="lo-spaces__search-icon" aria-hidden="true">
+            🔍
+          </span>
+
+          <input
+            type="text"
+            className="lo-spaces__search-input"
+            placeholder="Search Space..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+
+        <div
+          className="lo-spaces__categories"
+          role="tablist"
+          aria-label="Wallpaper style categories"
         >
-          Favourites
-        </button>
+          {CATEGORY_OPTIONS.map((c) => (
+            <button
+              key={c.value}
+              type="button"
+              className={`lo-spaces__category ${category === c.value ? "is-active" : ""} ${c.value === "all" ? "is-all" : ""}`}
+              onClick={() => setCategory(c.value)}
+              aria-label={c.label}
+              title={c.label}
+            >
+              {c.value === "all" ? (
+                <span className="lo-spaces__category-all">All</span>
+              ) : (
+                <>
+                  <span className="lo-spaces__category-icon" aria-hidden="true">
+                    {c.icon}
+                  </span>
+                  <span className="lo-spaces__category-tooltip">{c.label}</span>
+                </>
+              )}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="lo-spaces__gallery">
         {filteredWallpapers.length === 0 ? (
-          <div className="lo-spaces__empty">No wallpapers here yet.</div>
+          <div className="lo-spaces__empty">No wallpapers found.</div>
         ) : (
           filteredWallpapers.map((item) => {
             const isActive = selected === item.src;
             const isFav = favourites.includes(item.id);
 
             return (
-              <button
+              <div
                 key={item.id}
-                type="button"
                 className={`lo-spaces__card ${isActive ? "is-selected" : ""}`}
                 onClick={() => applyWallpaper(item.src)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    applyWallpaper(item.src);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                aria-pressed={isActive}
               >
                 <div className="lo-spaces__preview">
                   {item.type === "image" ? (
-                    <div
+                    <img
                       className="lo-spaces__preview-image"
-                      style={{ backgroundImage: `url(${item.src})` }}
+                      src={item.src}
+                      alt={item.title}
+                      loading="lazy"
+                      decoding="async"
                     />
                   ) : (
                     <video
                       className="lo-spaces__preview-video"
                       src={item.src}
                       muted
-                      loop
-                      autoPlay
                       playsInline
+                      preload="metadata"
+                      onMouseEnter={(e) => {
+                        const el = e.currentTarget;
+                        el.currentTime = 0;
+                        void el.play().catch(() => {});
+                      }}
+                      onMouseLeave={(e) => {
+                        const el = e.currentTarget;
+                        el.pause();
+                        el.currentTime = 0;
+                      }}
                     />
                   )}
 
@@ -489,11 +803,12 @@ function SpacesPanel() {
                 <div className="lo-spaces__meta">
                   <div className="lo-spaces__title">{item.title}</div>
                 </div>
-              </button>
+              </div>
             );
           })
         )}
       </div>
+
       <div className="lo-spaces__footer">
         <div className="lo-spaces__current">
           <div className="lo-spaces__current-label">Selected wallpaper</div>
@@ -502,7 +817,7 @@ function SpacesPanel() {
           </div>
         </div>
 
-        {tab === "video" && selectedWallpaper?.type === "video" ? (
+        {selectedWallpaper?.type === "video" ? (
           <div className="lo-spaces__audio">
             <div className="lo-spaces__audio-row">
               <span className="lo-spaces__audio-label">Wallpaper sound</span>
@@ -686,26 +1001,320 @@ function TimerPanel() {
   );
 }
 
-// Sounds Panel
-function SoundsPanel() {
-  const sounds = [
-    { id: "rain", label: "Rain", src: "/audio/gentle-rain.mp3" },
-    { id: "cafe", label: "Cafe", src: "/audio/cafe.mp3" },
-    { id: "fireplace", label: "Fireplace", src: "/audio/fireplace.mp3" },
-  ];
+function CalendarSettingsPanel() {
+  const ACCOUNTS_KEY = "lifeos_calendar_accounts_v1";
+  const EVENTS_KEY = "lifeos_calendar_day_events_v1";
+  const PROVIDER_KEY = "lifeos_calendar_provider_v1";
+  const [confirmResetOpen, setConfirmResetOpen] = React.useState(false);
+
+  const [accounts, setAccounts] = React.useState<
+    Array<{ id: string; provider: "google" | "outlook"; label: string }>
+  >(() => {
+    try {
+      const raw = localStorage.getItem(ACCOUNTS_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  React.useEffect(() => {
+    try {
+      localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
+    } catch {}
+  }, [accounts]);
+
+  function addAccount(provider: "google" | "outlook") {
+    const next = {
+      id: `${provider}-${Date.now()}`,
+      provider,
+      label: provider === "google" ? "Google Calendar" : "Outlook Calendar",
+    };
+
+    setAccounts((prev) => [...prev, next]);
+
+    try {
+      localStorage.setItem(PROVIDER_KEY, provider);
+    } catch {}
+
+    window.dispatchEvent(
+      new CustomEvent("lifeos:calendar-connect", { detail: { provider } }),
+    );
+  }
+
+  function removeAccount(id: string) {
+    setAccounts((prev) => {
+      const next = prev.filter((item) => item.id !== id);
+
+      try {
+        if (next.length === 0) {
+          localStorage.removeItem(PROVIDER_KEY);
+        } else {
+          localStorage.setItem(PROVIDER_KEY, next[next.length - 1].provider);
+        }
+      } catch {}
+
+      return next;
+    });
+  }
+
+  function resetCalendar() {
+    try {
+      localStorage.removeItem(EVENTS_KEY);
+      localStorage.removeItem(PROVIDER_KEY);
+      localStorage.removeItem(ACCOUNTS_KEY);
+    } catch {}
+
+    setAccounts([]);
+
+    window.dispatchEvent(new CustomEvent("lifeos:calendar-reset"));
+  }
+
+  // Change the colour of the live time line
+  const CALENDAR_NOW_COLOR_KEY = "lifeos_calendar_now_color_v1";
+
+  const [nowLineColor, setNowLineColor] = React.useState(() => {
+    try {
+      return localStorage.getItem(CALENDAR_NOW_COLOR_KEY) || "#ef4444";
+    } catch {
+      return "#ef4444";
+    }
+  });
+
+  React.useEffect(() => {
+    try {
+      localStorage.setItem(CALENDAR_NOW_COLOR_KEY, nowLineColor);
+    } catch {}
+
+    window.dispatchEvent(
+      new CustomEvent("lifeos:calendar-now-color-change", {
+        detail: { color: nowLineColor },
+      }),
+    );
+  }, [nowLineColor]);
+
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const params = new URLSearchParams(window.location.search);
+    const connected = params.get("connected");
+
+    if (connected !== "google") return;
+
+    const PROVIDER_KEY = "lifeos_calendar_provider_v1";
+    const ACCOUNTS_KEY = "lifeos_calendar_accounts_v1";
+
+    try {
+      localStorage.setItem(PROVIDER_KEY, "google");
+
+      const raw = localStorage.getItem(ACCOUNTS_KEY);
+      const existing = raw
+        ? (JSON.parse(raw) as Array<{
+            id: string;
+            provider: "google" | "outlook";
+            label: string;
+          }>)
+        : [];
+
+      const hasGoogle = existing.some((item) => item.provider === "google");
+
+      if (!hasGoogle) {
+        const next = [
+          ...existing,
+          {
+            id: `google-${Date.now()}`,
+            provider: "google" as const,
+            label: "Google Calendar",
+          },
+        ];
+
+        localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(next));
+      }
+    } catch {}
+
+    window.dispatchEvent(
+      new CustomEvent("lifeos:calendar-connect", {
+        detail: { provider: "google" },
+      }),
+    );
+
+    window.history.replaceState({}, "", window.location.pathname);
+  }, []);
+
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const params = new URLSearchParams(window.location.search);
+    const connected = params.get("connected");
+
+    if (connected !== "google") return;
+
+    const PROVIDER_KEY = "lifeos_calendar_provider_v1";
+    const ACCOUNTS_KEY = "lifeos_calendar_accounts_v1";
+
+    try {
+      localStorage.setItem(PROVIDER_KEY, "google");
+
+      const raw = localStorage.getItem(ACCOUNTS_KEY);
+      const existing = raw
+        ? (JSON.parse(raw) as Array<{
+            id: string;
+            provider: "google" | "outlook";
+            label: string;
+          }>)
+        : [];
+
+      const hasGoogle = existing.some((item) => item.provider === "google");
+
+      if (!hasGoogle) {
+        const next = [
+          ...existing,
+          {
+            id: `google-${Date.now()}`,
+            provider: "google" as const,
+            label: "Google Calendar",
+          },
+        ];
+
+        localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(next));
+      }
+    } catch {}
+
+    window.dispatchEvent(
+      new CustomEvent("lifeos:calendar-connect", {
+        detail: { provider: "google" },
+      }),
+    );
+
+    window.history.replaceState({}, "", window.location.pathname);
+  }, []);
 
   return (
-    <div className="lo-sounds">
-      <p className="lo-muted">
-        Audio files are loaded from <code>public/audio</code>.
-      </p>
+    <div className="lo-cal-settings">
+      <div className="lo-cal-settings__section">
+        <div className="lo-cal-settings__heading">Add a new calendar</div>
 
-      {sounds.map((s) => (
-        <div key={s.id} className="lo-sounds__item">
-          <div className="lo-sounds__label">{s.label}</div>
-          <audio controls loop preload="none" src={s.src} />
+        <div className="lo-cal-settings__actions">
+          <button
+            type="button"
+            className="lo-btn"
+            onClick={() => {
+              window.location.href = "/.netlify/functions/google-auth";
+            }}
+          >
+            Add Google
+          </button>
+
+          <button
+            type="button"
+            className="lo-btn"
+            onClick={() => addAccount("outlook")}
+          >
+            Add Outlook
+          </button>
         </div>
-      ))}
+      </div>
+
+      <div className="lo-cal-settings__section">
+        <div className="lo-cal-settings__heading">Connected calendars</div>
+
+        {accounts.length === 0 ? (
+          <div className="lo-muted">No calendar accounts connected yet.</div>
+        ) : (
+          <div className="lo-cal-settings__list">
+            {accounts.map((account) => (
+              <div key={account.id} className="lo-cal-settings__item">
+                <div className="lo-cal-settings__meta">
+                  <strong>{account.label}</strong>
+                  <span className="lo-muted">{account.provider}</span>
+                </div>
+
+                <button
+                  type="button"
+                  className="lo-btn"
+                  onClick={() => removeAccount(account.id)}
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="lo-cal-settings__section">
+        <div className="lo-cal-settings__heading">Live time line colour</div>
+
+        <div className="lo-cal-settings__swatches">
+          {[
+            "#ef4444",
+            "#f97316",
+            "#eab308",
+            "#22c55e",
+            "#06b6d4",
+            "#3b82f6",
+            "#8b5cf6",
+            "#ec4899",
+            "#ffffff",
+          ].map((color) => {
+            const active = nowLineColor === color;
+
+            return (
+              <button
+                key={color}
+                type="button"
+                className={`lo-cal-settings__swatch ${active ? "is-active" : ""}`.trim()}
+                style={{ backgroundColor: color }}
+                aria-label={`Set live time line colour to ${color}`}
+                onClick={() => setNowLineColor(color)}
+              />
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="lo-cal-settings__footer">
+        {!confirmResetOpen ? (
+          <button
+            type="button"
+            className="lo-btn lo-cal-settings__reset"
+            onClick={() => setConfirmResetOpen(true)}
+          >
+            Reset calendar
+          </button>
+        ) : (
+          <div className="lo-cal-settings__warning">
+            <div className="lo-cal-settings__warning-title">
+              Reset calendar?
+            </div>
+            <div className="lo-cal-settings__warning-text">
+              This will delete current work with your calendar, including saved
+              events and connected calendar accounts.
+            </div>
+
+            <div className="lo-cal-settings__warning-actions">
+              <button
+                type="button"
+                className="lo-btn"
+                onClick={() => setConfirmResetOpen(false)}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                className="lo-btn lo-cal-settings__reset"
+                onClick={() => {
+                  resetCalendar();
+                  setConfirmResetOpen(false);
+                }}
+              >
+                Yes, reset calendar
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -733,6 +1342,15 @@ export default function FloatingWorkspace() {
     const z = wins.reduce((m, w) => Math.max(m, w.z), 50);
     return z || 50;
   });
+
+  const [isMobile, setIsMobile] = useState(getIsMobileViewport);
+
+  React.useEffect(() => {
+    const onResize = () => setIsMobile(getIsMobileViewport());
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   React.useEffect(() => {
     try {
@@ -794,6 +1412,30 @@ export default function FloatingWorkspace() {
     [],
   );
 
+  const mobileGroup = useMemo(
+    () => [
+      {
+        key: "spaces" as const,
+        label: "Spaces",
+        iconWhite: "/icons/white/spaces.png",
+        iconBlack: "/icons/black/spaces.png",
+      },
+      {
+        key: "timer" as const,
+        label: "Timer",
+        iconWhite: "/icons/white/timer.png",
+        iconBlack: "/icons/black/timer.png",
+      },
+      {
+        key: "tasks" as const,
+        label: "Tasks",
+        iconWhite: "/icons/white/tasks.png",
+        iconBlack: "/icons/black/tasks.png",
+      },
+    ],
+    [],
+  );
+
   const [theme, setTheme] = useState<"duna" | "nebula">(() => {
     if (typeof document === "undefined") return "duna";
     const t = document.documentElement.getAttribute("data-theme");
@@ -821,10 +1463,12 @@ export default function FloatingWorkspace() {
 
   function focusWindow(key: Win["key"]) {
     setZTop((z) => {
-      const nextZ = z + 1;
+      const nextZ = isTopDockPanel(key) ? Math.max(z + 1, 2000) : z + 1;
+
       setWins((prev) =>
         prev.map((w) => (w.key === key ? { ...w, z: nextZ } : w)),
       );
+
       return nextZ;
     });
   }
@@ -838,10 +1482,212 @@ export default function FloatingWorkspace() {
   }
 
   function resizeWindow(key: Win["key"], w: number, h: number) {
+    if (isTopDockPanel(key)) return;
+
     setWins((prev) =>
       prev.map((win) => (win.key === key ? { ...win, w, h } : win)),
     );
   }
+
+  React.useEffect(() => {
+    function openCalendarSettingsWindow() {
+      setWins((prev) => {
+        const size = defaultSizeFor("calendar-settings");
+        const centered = centeredWindowPos(size.w, size.h);
+        const existing = prev.find((w) => w.key === "calendar-settings");
+
+        if (existing) {
+          return prev.map((w) =>
+            w.key === "calendar-settings"
+              ? {
+                  ...w,
+                  x: centered.x,
+                  y: centered.y,
+                  z: 5000,
+                  w: size.w,
+                  h: size.h,
+                }
+              : w,
+          );
+        }
+
+        return [
+          ...prev,
+          {
+            key: "calendar-settings",
+            x: centered.x,
+            y: centered.y,
+            z: 5000,
+            w: size.w,
+            h: size.h,
+          },
+        ];
+      });
+    }
+
+    window.addEventListener(
+      "lifeos:open-calendar-settings",
+      openCalendarSettingsWindow as EventListener,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "lifeos:open-calendar-settings",
+        openCalendarSettingsWindow as EventListener,
+      );
+    };
+  }, []);
+
+  const hasCalendarSettingsOpen = wins.some(
+    (w) => w.key === "calendar-settings",
+  );
+
+  React.useEffect(() => {
+    const syncTopDockWindows = () => {
+      const hidden = document.documentElement.classList.contains(
+        "is-focus-mode-hidden",
+      );
+
+      setWins((prev) =>
+        prev.map((w) => {
+          if (!isTopDockPanel(w.key)) return w;
+
+          if (hidden) {
+            return { ...w, x: 7, y: 7, h: window.innerHeight };
+          }
+
+          return { ...w, x: 110, y: 86 };
+        }),
+      );
+    };
+
+    syncTopDockWindows();
+
+    const observer = new MutationObserver(syncTopDockWindows);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+
+    window.addEventListener("resize", syncTopDockWindows);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", syncTopDockWindows);
+    };
+  }, []);
+
+  const topDockZ = Math.max(
+    0,
+    ...wins.filter((win) => isTopDockPanel(win.key)).map((win) => win.z),
+  );
+
+  function toggleWindowFromDock(
+    key: Exclude<PanelKey, null>,
+    preferred?: { x: number; y: number },
+  ) {
+    setWins((prev) => {
+      const existing = prev.find((w) => w.key === key);
+
+      if (existing) {
+        return prev.filter((w) => w.key !== key);
+      }
+
+      const nextZ = zTop + 1;
+      setZTop(nextZ);
+
+      if (isMobile) {
+        const size = mobileSizeFor(key);
+        const placed = mobileWindowPos(size.w, size.h);
+
+        return [
+          ...prev.filter(
+            (w) => !["notes", "bible", "sounds", "calendar"].includes(w.key),
+          ),
+          {
+            key,
+            x: placed.x,
+            y: placed.y,
+            z: nextZ,
+            w: size.w,
+            h: size.h,
+          },
+        ];
+      }
+
+      if (isTopDockPanel(key)) {
+        const withoutTopDockPanels = prev.filter((w) => !isTopDockPanel(w.key));
+        const size = defaultSizeFor(key);
+        const placed = topDockWindowPos();
+
+        return [
+          ...withoutTopDockPanels,
+          {
+            key,
+            x: placed.x,
+            y: placed.y,
+            z: nextZ,
+            w: size.w,
+            h: size.h,
+          },
+        ];
+      }
+
+      const size = defaultSizeFor(key);
+      const fixedH = fixedHeightFor(key);
+      const finalSize = { w: size.w, h: fixedH ?? size.h };
+
+      const placed = preferred
+        ? findNonOverlappingPos({
+            preferred,
+            size: finalSize,
+            existing: prev.map((w) => ({
+              x: w.x,
+              y: w.y,
+              w: w.w,
+              h: w.h,
+            })),
+          })
+        : centeredWindowPos(finalSize.w, finalSize.h);
+
+      return [
+        ...prev,
+        {
+          key,
+          x: placed.x,
+          y: placed.y,
+          z: nextZ,
+          w: finalSize.w,
+          h: finalSize.h,
+        },
+      ];
+    });
+  }
+
+  React.useEffect(() => {
+    if (!isMobile) return;
+
+    setWins((prev) =>
+      prev
+        .filter((w) =>
+          ["spaces", "timer", "tasks", "calendar-settings"].includes(w.key),
+        )
+        .map((w) => {
+          if (w.key === "calendar-settings") return w;
+
+          const size = mobileSizeFor(w.key);
+          const placed = mobileWindowPos(size.w, size.h);
+
+          return {
+            ...w,
+            x: placed.x,
+            y: placed.y,
+            w: size.w,
+            h: size.h,
+          };
+        }),
+    );
+  }, [isMobile]);
 
   return (
     <>
@@ -855,176 +1701,157 @@ export default function FloatingWorkspace() {
       </div>
 
       {/* Left floating dock */}
-      <div className="lo-docks" aria-label="Dock groups">
-        <nav className="lo-dock lo-dock--top" aria-label="Workspace tools">
-          {topGroup.map((it) => {
-            const active = wins.some((w) => w.key === it.key);
-            return (
-              <button
-                key={it.key}
-                className={"lo-dock__btn " + (active ? "is-active" : "")}
-                onClick={(e) => {
-                  const key = it.key;
-                  const btn = e.currentTarget as HTMLButtonElement;
-                  const r = btn.getBoundingClientRect();
-                  const preferred = {
-                    x: Math.round(r.right + 18),
-                    y: Math.round(r.top - 10),
-                  };
+      <div
+        className={`lo-docks${isMobile ? " lo-docks--mobile" : ""}`}
+        aria-label="Dock groups"
+      >
+        {isMobile ? (
+          <nav
+            className="lo-dock lo-dock--mobile"
+            aria-label="Mobile workspace tools"
+          >
+            {mobileGroup.map((it) => {
+              const active = wins.some((w) => w.key === it.key);
 
-                  setWins((prev) => {
-                    const existing = prev.find((w) => w.key === key);
-                    if (existing) return prev.filter((w) => w.key !== key);
+              return (
+                <button
+                  key={it.key}
+                  className={"lo-dock__btn " + (active ? "is-active" : "")}
+                  onClick={() => toggleWindowFromDock(it.key)}
+                  aria-label={it.label}
+                  title={it.label}
+                  type="button"
+                >
+                  <span className="lo-dock__icon" aria-hidden="true">
+                    <img
+                      src={theme === "nebula" ? it.iconWhite : it.iconBlack}
+                      alt=""
+                      className="lo-dock__icon-img"
+                    />
+                  </span>
+                  <span className="lo-dock__label">{it.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+        ) : (
+          <>
+            <nav className="lo-dock lo-dock--top" aria-label="Workspace tools">
+              {topGroup.map((it) => {
+                const active = wins.some((w) => w.key === it.key);
 
-                    const size = defaultSizeFor(key);
-                    const nextZ = zTop + 1;
-                    setZTop(nextZ);
+                return (
+                  <button
+                    key={it.key}
+                    className={"lo-dock__btn " + (active ? "is-active" : "")}
+                    onClick={() => toggleWindowFromDock(it.key)}
+                    aria-label={it.label}
+                    title={it.label}
+                    type="button"
+                  >
+                    <span className="lo-dock__icon" aria-hidden="true">
+                      <img
+                        src={theme === "nebula" ? it.iconWhite : it.iconBlack}
+                        alt=""
+                        className="lo-dock__icon-img"
+                      />
+                    </span>
+                    <span className="lo-dock__label">{it.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
 
-                    const placed = findNonOverlappingPos({
-                      preferred,
-                      size,
-                      existing: prev.map((w) => ({
-                        x: w.x,
-                        y: w.y,
-                        w: w.w,
-                        h: w.h,
-                      })),
-                    });
+            <nav
+              className="lo-dock lo-dock--bottom"
+              aria-label="Productivity tools"
+            >
+              {bottomGroup.map((it) => {
+                const active = wins.some((w) => w.key === it.key);
 
-                    return [
-                      ...prev,
-                      {
-                        key,
-                        x: placed.x,
-                        y: placed.y,
-                        z: nextZ,
-                        w: size.w,
-                        h: size.h,
-                      },
-                    ];
-                  });
-                }}
-                aria-label={it.label}
-                title={it.label}
-                type="button"
-              >
-                <span className="lo-dock__icon" aria-hidden="true">
-                  <img
-                    src={theme === "nebula" ? it.iconBlack : it.iconWhite}
-                    alt=""
-                    className="lo-dock__icon-img"
-                  />
-                </span>
-                <span className="lo-dock__label">{it.label}</span>
-              </button>
-            );
-          })}
-        </nav>
+                return (
+                  <button
+                    key={it.key}
+                    className={"lo-dock__btn " + (active ? "is-active" : "")}
+                    onClick={(e) => {
+                      const btn = e.currentTarget as HTMLButtonElement;
+                      const r = btn.getBoundingClientRect();
 
-        <nav
-          className="lo-dock lo-dock--bottom"
-          aria-label="Productivity tools"
-        >
-          {bottomGroup.map((it) => {
-            const active = wins.some((w) => w.key === it.key);
-            return (
-              <button
-                key={it.key}
-                className={"lo-dock__btn " + (active ? "is-active" : "")}
-                onClick={(e) => {
-                  const key = it.key;
-                  const btn = e.currentTarget as HTMLButtonElement;
-                  const r = btn.getBoundingClientRect();
-                  const preferred = {
-                    x: Math.round(r.right + 18),
-                    y: Math.round(r.top - 10),
-                  };
-
-                  setWins((prev) => {
-                    const existing = prev.find((w) => w.key === key);
-                    if (existing) return prev.filter((w) => w.key !== key);
-
-                    const size = defaultSizeFor(key);
-                    const nextZ = zTop + 1;
-                    setZTop(nextZ);
-
-                    const placed = findNonOverlappingPos({
-                      preferred,
-                      size,
-                      existing: prev.map((w) => ({
-                        x: w.x,
-                        y: w.y,
-                        w: w.w,
-                        h: w.h,
-                      })),
-                    });
-
-                    return [
-                      ...prev,
-                      {
-                        key,
-                        x: placed.x,
-                        y: placed.y,
-                        z: nextZ,
-                        w: size.w,
-                        h: size.h,
-                      },
-                    ];
-                  });
-                }}
-                aria-label={it.label}
-                title={it.label}
-                type="button"
-              >
-                <span className="lo-dock__icon" aria-hidden="true">
-                  <img
-                    src={theme === "nebula" ? it.iconBlack : it.iconWhite}
-                    alt=""
-                    className="lo-dock__icon-img"
-                  />
-                </span>
-                <span className="lo-dock__label">{it.label}</span>
-              </button>
-            );
-          })}
-        </nav>
+                      toggleWindowFromDock(it.key, {
+                        x: Math.round(r.right + 18),
+                        y: Math.round(r.top - 10),
+                      });
+                    }}
+                    aria-label={it.label}
+                    title={it.label}
+                    type="button"
+                  >
+                    <span className="lo-dock__icon" aria-hidden="true">
+                      <img
+                        src={theme === "nebula" ? it.iconWhite : it.iconBlack}
+                        alt=""
+                        className="lo-dock__icon-img"
+                      />
+                    </span>
+                    <span className="lo-dock__label">{it.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
+          </>
+        )}
       </div>
 
-      {wins.map((w) => (
-        <WindowShell
-          key={w.key}
-          title={titleFor(w.key)}
-          panelKey={w.key}
-          x={w.x}
-          y={w.y}
-          z={w.z}
-          w={w.w}
-          h={w.h}
-          onFocus={() => focusWindow(w.key)}
-          onMove={(x, y) => moveWindow(w.key, x, y)}
-          onResize={(nw, nh) => resizeWindow(w.key, nw, nh)}
-          onClose={() => closeWindow(w.key)}
-        >
-          {w.key === "tasks" && <TasksApp mode="focus" />}
-          {w.key === "notes" && <NotesPanel />}
-          {w.key === "timer" && <TimerPanel />}
-          {w.key === "sounds" && <SoundsPanel />}
-          {w.key === "calendar" && (
-            <DayCalendarPanel
-              compact
-              startHour={7}
-              endHour={22}
-              storageKey="lifeos_focus_calendar_events"
-              providerStorageKey="lifeos_focus_calendar_provider"
-              onDropTask={({ task, dateKey, hour }) => {
-                console.log("Focus task scheduled", { task, dateKey, hour });
-              }}
-            />
-          )}
-          {w.key === "spaces" && <SpacesPanel />}
-          {w.key === "bible" && <DailyBibleVerse />}
-        </WindowShell>
-      ))}
+      {hasCalendarSettingsOpen ? (
+        <div className="lo-modal-backdrop" aria-hidden="true" />
+      ) : null}
+
+      {wins.map((w) => {
+        const isFocusedTopDockWindow =
+          isTopDockPanel(w.key) && w.z === topDockZ;
+
+        return (
+          <WindowShell
+            key={w.key}
+            title={titleFor(w.key)}
+            panelKey={w.key}
+            x={w.x}
+            y={w.y}
+            z={w.z}
+            w={w.w}
+            h={w.h}
+            isFocused={isFocusedTopDockWindow}
+            onClose={() => closeWindow(w.key)}
+            onFocus={() => {
+              if (!isModalPanel(w.key)) focusWindow(w.key);
+            }}
+            onMove={(x, y) => moveWindow(w.key, x, y)}
+            onResize={(width, height) => resizeWindow(w.key, width, height)}
+            resizable={!isTopDockPanel(w.key) && !isModalPanel(w.key)}
+            draggable={!isModalPanel(w.key)}
+          >
+            {w.key === "tasks" && <TasksApp mode="focus" />}
+            {w.key === "notes" && <NotesPanel />}
+            {w.key === "timer" && <TimerPanel />}
+            {w.key === "sounds" && <SoundsPanel />}
+            {w.key === "calendar" && (
+              <DayCalendarPanel
+                compact
+                startHour={7}
+                endHour={22}
+                storageKey="lifeos_calendar_day_events_v1"
+                providerStorageKey="lifeos_calendar_provider_v1"
+                onDropTask={({ task, dateKey, hour }) => {
+                  console.log("Focus task scheduled", { task, dateKey, hour });
+                }}
+              />
+            )}
+            {w.key === "calendar-settings" ? <CalendarSettingsPanel /> : null}
+            {w.key === "spaces" && <SpacesPanel />}
+            {w.key === "bible" && <DailyBibleVerse />}
+          </WindowShell>
+        );
+      })}
     </>
   );
 }

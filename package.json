@@ -14,6 +14,7 @@
   "dependencies": {
     "@astrojs/react": "^4.4.2",
     "@netlify/blobs": "^10.7.0",
+    "@tiptap/extension-placeholder": "^3.22.0",
     "@tiptap/react": "^3.20.1",
     "@tiptap/starter-kit": "^3.20.1",
     "@types/react": "^19.2.14",
@@ -26,6 +27,6 @@
   "devDependencies": {
     "@netlify/functions": "^5.1.2",
     "@types/node": "^25.3.3",
-    "vite-plugin-pwa": "^1.2.0"
+    "vite-plugin-pwa": "^0.19.8"
   }
 }

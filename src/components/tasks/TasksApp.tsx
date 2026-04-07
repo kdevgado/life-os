@@ -15,11 +15,15 @@ import {
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { getJwt, onAuthChange } from "../../lib/identity";
+import { createPortal } from "react-dom";
 
 type Priority = 1 | 2 | 3;
 
 function isoDate(d: Date) {
-  return d.toISOString().slice(0, 10);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 function startOfToday() {
   const d = new Date();
@@ -31,10 +35,60 @@ function endOfWeek() {
   d.setDate(d.getDate() + 7);
   return d;
 }
+function formatDateTime(iso?: string) {
+  if (!iso) return "";
+
+  const d = new Date(iso);
+
+  const today = new Date();
+  const isSameDay =
+    d.getFullYear() === today.getFullYear() &&
+    d.getMonth() === today.getMonth() &&
+    d.getDate() === today.getDate();
+
+  const time = d.toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+
+  if (isSameDay) {
+    return `Today, ${time}`;
+  }
+
+  return d.toLocaleString(undefined, {
+    day: "2-digit",
+    month: "short",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function getTaskDateKey(task: Task) {
+  const raw = task.dueDate ?? task.plannedFor;
+  if (!raw) return null;
+  return String(raw).slice(0, 10);
+}
+
+function isTaskOverdue(task: Task) {
+  if (task.status === "done") return false;
+
+  const raw = task.dueDate ?? task.plannedFor;
+  if (!raw) return false;
+
+  const now = new Date();
+  const due = new Date(raw);
+
+  return due < now;
+}
+
+function getCreatedDateKey(task: Task) {
+  if (!task.createdAt) return null;
+  return isoDate(new Date(task.createdAt));
+}
 
 type TasksMode = "focus" | "plan";
-type FocusFilter = "all-tasks" | "today" | "overdue" | "unscheduled";
-type StatusFilter = "all" | "completed" | "active";
+type FocusFilter = "all" | "today" | "overdue";
+type StatusFilter = "all" | "inprogress" | "completed";
 
 export default function TasksApp({
   mode = "plan",
@@ -62,8 +116,10 @@ export default function TasksApp({
   const [loadError, setLoadError] = useState<string | null>(null);
 
   // ✅ focus mode filter (hide completed)
-  const [focusFilter, setFocusFilter] = useState<FocusFilter>("all-tasks");
+  const [focusFilter, setFocusFilter] = useState<FocusFilter>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [hideCompleted, setHideCompleted] = useState(false);
+  const [showFocusFilter, setShowFocusFilter] = useState(false);
 
   // ✅ context menu state
   const [contextMenu, setContextMenu] = useState<{
@@ -73,9 +129,17 @@ export default function TasksApp({
   } | null>(null);
 
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
-  const [editingValue, setEditingValue] = useState("");
+  const [editorDraft, setEditorDraft] = useState<{
+    title: string;
+    notes: string;
+    dueDate: string;
+    startTime: string;
+    endTime: string;
+  } | null>(null);
 
   const pageRef = useRef<HTMLDivElement | null>(null);
+  const focusFilterWrapRef = useRef<HTMLDivElement | null>(null);
+  const focusFilterMenuRef = useRef<HTMLDivElement | null>(null);
 
   // ✅ helpers for open / close / duplicate / edit save
   const openTaskMenu = useCallback((e: React.MouseEvent, task: Task) => {
@@ -109,6 +173,11 @@ export default function TasksApp({
     });
   }, []);
 
+  const [filterMenuPos, setFilterMenuPos] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
+
   const closeTaskMenu = useCallback(() => {
     setContextMenu(null);
   }, []);
@@ -131,36 +200,92 @@ export default function TasksApp({
   }, []);
 
   const startEditingTask = useCallback((task: Task) => {
+    const start = getTimeParts(task.plannedStart ?? task.plannedFor);
+    const end = getTimeParts(task.plannedEnd);
+
     setEditingTaskId(task.id);
-    setEditingValue(task.title);
+    setEditorDraft({
+      title: task.title ?? "",
+      notes: task.notes ?? "",
+      dueDate: task.dueDate ?? start.date ?? "",
+      startTime: start.time ?? "",
+      endTime: end.time ?? "",
+    });
     setContextMenu(null);
   }, []);
 
-  const saveEditedTask = useCallback((task: Task, nextTitle: string) => {
-    const trimmed = nextTitle.trim();
-    if (!trimmed) {
-      setEditingTaskId(null);
-      setEditingValue("");
-      return;
-    }
-
-    const now = new Date().toISOString();
-
-    setTasks((prev) =>
-      prev.map((t) =>
-        t.id === task.id
-          ? {
-              ...t,
-              title: trimmed,
-              updatedAt: now,
-            }
-          : t,
-      ),
-    );
-
+  const cancelEditingTask = useCallback(() => {
     setEditingTaskId(null);
-    setEditingValue("");
+    setEditorDraft(null);
   }, []);
+
+  const saveEditedTask = useCallback(
+    (task: Task) => {
+      if (!editorDraft) return;
+
+      const trimmed = editorDraft.title.trim();
+      if (!trimmed) {
+        cancelEditingTask();
+        return;
+      }
+
+      const now = new Date().toISOString();
+
+      const patch = {
+        title: trimmed,
+        notes: editorDraft.notes.trim() || undefined,
+        dueDate: editorDraft.dueDate || undefined,
+        plannedFor:
+          combineDateAndTime(editorDraft.dueDate, editorDraft.startTime) ||
+          editorDraft.dueDate ||
+          undefined,
+        plannedStart: combineDateAndTime(
+          editorDraft.dueDate,
+          editorDraft.startTime,
+        ),
+        plannedEnd: combineDateAndTime(
+          editorDraft.dueDate,
+          editorDraft.endTime,
+        ),
+        updatedAt: now,
+      };
+
+      if (authed) {
+        setTasks((prev) =>
+          prev.map((t) => (t.id === task.id ? { ...t, ...patch } : t)),
+        );
+      } else {
+        const updated = updateTask(task.id, patch);
+        if (!updated) return;
+        setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
+      }
+
+      cancelEditingTask();
+    },
+    [authed, editorDraft, cancelEditingTask],
+  );
+
+  function getTimeParts(iso?: string) {
+    if (!iso) return { date: "", time: "" };
+
+    const d = new Date(iso);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    const hh = String(d.getHours()).padStart(2, "0");
+    const min = String(d.getMinutes()).padStart(2, "0");
+
+    return {
+      date: `${yyyy}-${mm}-${dd}`,
+      time: `${hh}:${min}`,
+    };
+  }
+
+  function combineDateAndTime(date?: string, time?: string) {
+    if (!date) return undefined;
+    if (!time) return undefined;
+    return `${date}T${time}:00`;
+  }
 
   const reloadTasks = useCallback(async () => {
     setLoading(true);
@@ -254,6 +379,7 @@ export default function TasksApp({
     const today = isoDate(new Date());
 
     const normalizedQuery = query.trim().toLowerCase();
+
     const searched = !normalizedQuery
       ? tasks
       : tasks.filter((t) => {
@@ -269,49 +395,37 @@ export default function TasksApp({
           );
         });
 
-    const statusFiltered = searched.filter((t) => {
-      if (statusFilter === "completed") return t.status === "done";
-      if (statusFilter === "active") return t.status !== "done";
-      return true;
-    });
-
-    if (mode === "focus") {
-      return statusFiltered.filter((t) => {
-        const due = t.dueDate ?? t.plannedFor;
-        const isToday = due === today;
-        const isOverdue = !!due && due < today;
-        const isUnscheduled = !t.dueDate && !t.plannedFor;
-        const isFocused = t.focus === true;
-        const isDoing = t.status === "doing";
-
-        // keep focus mode scoped to focus/today/doing items
-        const isInFocusScope =
-          isFocused || isDoing || t.plannedFor === today || t.dueDate === today;
-
-        if (!isInFocusScope && !isOverdue && !isUnscheduled) return false;
-
-        if (focusFilter === "all-tasks") {
-          return true;
-        }
-
-        if (focusFilter === "today") {
-          return isToday;
-        }
-
-        if (focusFilter === "overdue") {
-          return isOverdue;
-        }
-
-        if (focusFilter === "unscheduled") {
-          return isUnscheduled;
-        }
-
-        return true;
-      });
+    if (mode !== "focus") {
+      return searched;
     }
 
-    return statusFiltered;
-  }, [tasks, query, mode, focusFilter, statusFilter]);
+    return searched.filter((t) => {
+      const dueDateKey = getTaskDateKey(t);
+      const createdDateKey = getCreatedDateKey(t);
+
+      const isToday = createdDateKey === today;
+      const isOverdue =
+        !!dueDateKey && dueDateKey < today && t.status !== "done";
+
+      const matchesStatus =
+        statusFilter === "all"
+          ? true
+          : statusFilter === "inprogress"
+            ? t.status === "doing"
+            : t.status === "done";
+
+      const matchesFocus =
+        focusFilter === "all"
+          ? true
+          : focusFilter === "today"
+            ? isToday
+            : isOverdue;
+
+      const matchesHideCompleted = hideCompleted ? t.status !== "done" : true;
+
+      return matchesStatus && matchesFocus && matchesHideCompleted;
+    });
+  }, [tasks, query, mode, focusFilter, statusFilter, hideCompleted]);
 
   const canAdd = title.trim().length > 0;
 
@@ -443,8 +557,21 @@ export default function TasksApp({
     window.setTimeout(() => setJustAddedId(null), 1600);
   }
 
+  function playTaskCompleteSound() {
+    if (typeof window === "undefined") return;
+
+    const audio = new Audio("/audio/task-complete.mp3");
+    audio.volume = 0.5;
+    void audio.play().catch(() => {
+      // ignore autoplay restrictions
+    });
+  }
+
   function onToggleDone(task: Task) {
-    const nextStatus = task.status === "done" ? "todo" : "done";
+    const nextStatus: "todo" | "done" =
+      task.status === "done" ? "todo" : "done";
+
+    const shouldPlayCompleteSound = nextStatus === "done";
 
     if (authed) {
       const now = new Date().toISOString();
@@ -453,15 +580,30 @@ export default function TasksApp({
           t.id === task.id ? { ...t, status: nextStatus, updatedAt: now } : t,
         ),
       );
+
+      if (shouldPlayCompleteSound) {
+        playTaskCompleteSound();
+      }
+
+      broadcastTaskStatus(task.id, nextStatus);
       return;
     }
 
     const updated = updateTask(task.id, { status: nextStatus });
     if (!updated) return;
+
     setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
+
+    if (shouldPlayCompleteSound) {
+      playTaskCompleteSound();
+    }
+
+    broadcastTaskStatus(task.id, nextStatus);
   }
 
   function onSetStatus(task: Task, status: "todo" | "doing" | "done") {
+    const shouldPlayCompleteSound = status === "done" && task.status !== "done";
+
     if (authed) {
       const now = new Date().toISOString();
       setTasks((prev) =>
@@ -469,12 +611,25 @@ export default function TasksApp({
           t.id === task.id ? { ...t, status, updatedAt: now } : t,
         ),
       );
+
+      if (shouldPlayCompleteSound) {
+        playTaskCompleteSound();
+      }
+
+      broadcastTaskStatus(task.id, status);
       return;
     }
 
     const updated = updateTask(task.id, { status });
     if (!updated) return;
+
     setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
+
+    if (shouldPlayCompleteSound) {
+      playTaskCompleteSound();
+    }
+
+    broadcastTaskStatus(task.id, status);
   }
 
   function onSetDue(task: Task, dueDate: string) {
@@ -606,6 +761,65 @@ export default function TasksApp({
     });
   }
 
+  function broadcastTaskStatus(
+    taskId: string,
+    status: "todo" | "doing" | "done",
+  ) {
+    if (typeof window === "undefined") return;
+
+    window.dispatchEvent(
+      new CustomEvent("lifeos:task-status-changed", {
+        detail: { taskId, status },
+      }),
+    );
+  }
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    function handleTaskStatusChanged(event: Event) {
+      const customEvent = event as CustomEvent<{
+        taskId: string;
+        status: "todo" | "doing" | "done";
+      }>;
+
+      const taskId = customEvent.detail?.taskId;
+      const status = customEvent.detail?.status;
+
+      if (!taskId || !status) return;
+
+      const now = new Date().toISOString();
+
+      if (authed) {
+        setTasks((prev) =>
+          prev.map((task) =>
+            task.id === taskId ? { ...task, status, updatedAt: now } : task,
+          ),
+        );
+        return;
+      }
+
+      const updated = updateTask(taskId, { status, updatedAt: now });
+      if (!updated) return;
+
+      setTasks((prev) =>
+        prev.map((task) => (task.id === taskId ? updated : task)),
+      );
+    }
+
+    window.addEventListener(
+      "lifeos:task-status-changed",
+      handleTaskStatusChanged as EventListener,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "lifeos:task-status-changed",
+        handleTaskStatusChanged as EventListener,
+      );
+    };
+  }, [authed]);
+
   // Close the menu when clicking elsewhere
   useEffect(() => {
     if (!contextMenu) return;
@@ -675,6 +889,155 @@ export default function TasksApp({
     };
   }, [authed]);
 
+  useEffect(() => {
+    if (!showFocusFilter) return;
+
+    function handleOutsideClick(event: MouseEvent) {
+      const target = event.target as Node;
+
+      if (!focusFilterWrapRef.current?.contains(target)) {
+        setShowFocusFilter(false);
+      }
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setShowFocusFilter(false);
+      }
+    }
+
+    function handleViewportChange() {
+      setShowFocusFilter(false);
+    }
+
+    window.addEventListener("mousedown", handleOutsideClick);
+    window.addEventListener("keydown", handleEscape);
+    window.addEventListener("resize", handleViewportChange);
+    window.addEventListener("scroll", handleViewportChange, true);
+
+    return () => {
+      window.removeEventListener("mousedown", handleOutsideClick);
+      window.removeEventListener("keydown", handleEscape);
+      window.removeEventListener("resize", handleViewportChange);
+      window.removeEventListener("scroll", handleViewportChange, true);
+    };
+  }, [showFocusFilter]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    function handleCalendarTaskCreated(event: Event) {
+      const customEvent = event as CustomEvent<{
+        calendarEventId: string;
+        title: string;
+        date: string;
+        hour: number;
+        minute?: 0 | 15 | 30 | 45;
+      }>;
+
+      const detail = customEvent.detail;
+      if (!detail?.calendarEventId || !detail.date) return;
+
+      const plannedMinute = detail.minute ?? 0;
+      const plannedFor = `${detail.date}T${String(detail.hour).padStart(2, "0")}:${String(plannedMinute).padStart(2, "0")}:00`;
+
+      const now = new Date().toISOString();
+
+      const createdTask = authed
+        ? {
+            id: crypto.randomUUID(),
+            title: detail.title?.trim() || "New task",
+            status: "todo" as const,
+            priority: 3 as const,
+            dueDate: detail.date,
+            plannedFor,
+            plannedStart: plannedFor,
+            plannedEnd: undefined,
+            list: "planner",
+            sortOrder: tasks.length
+              ? Math.max(...tasks.map((t) => t.sortOrder ?? 0)) + 1
+              : 1,
+            createdAt: now,
+            updatedAt: now,
+          }
+        : createTask({
+            title: detail.title?.trim() || "New task",
+            status: "todo",
+            priority: 3,
+            dueDate: detail.date,
+            plannedFor,
+            plannedStart: plannedFor,
+            plannedEnd: undefined,
+            list: "planner",
+            sortOrder: tasks.length
+              ? Math.max(...tasks.map((t) => t.sortOrder ?? 0)) + 1
+              : 1,
+          });
+
+      setTasks((prev) => {
+        const alreadyExists = prev.some(
+          (task) =>
+            task.title === createdTask.title &&
+            task.plannedStart === plannedFor &&
+            task.list === "planner",
+        );
+
+        if (alreadyExists) return prev;
+        return [createdTask, ...prev];
+      });
+
+      window.dispatchEvent(
+        new CustomEvent("lifeos:calendar-link-task", {
+          detail: {
+            calendarEventId: detail.calendarEventId,
+            taskId: createdTask.id,
+            taskStatus: createdTask.status,
+          },
+        }),
+      );
+    }
+
+    window.addEventListener(
+      "lifeos:calendar-task-created",
+      handleCalendarTaskCreated as EventListener,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "lifeos:calendar-task-created",
+        handleCalendarTaskCreated as EventListener,
+      );
+    };
+  }, [authed, tasks]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    function handleCalendarTaskRemoved(event: Event) {
+      const customEvent = event as CustomEvent<{ taskId: string }>;
+      const taskId = customEvent.detail?.taskId;
+      if (!taskId) return;
+
+      if (!authed) {
+        deleteTask(taskId);
+      }
+
+      setTasks((prev) => prev.filter((task) => task.id !== taskId));
+    }
+
+    window.addEventListener(
+      "lifeos:calendar-task-removed",
+      handleCalendarTaskRemoved as EventListener,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "lifeos:calendar-task-removed",
+        handleCalendarTaskRemoved as EventListener,
+      );
+    };
+  }, [authed]);
+
   return (
     <div ref={pageRef} className="lo-page lo-tasks lo-stack lo-tasks-menu-root">
       {loading && <div className="muted">Loading tasks…</div>}
@@ -690,28 +1053,85 @@ export default function TasksApp({
       {!loading && mode === "focus" && (
         <>
           <div className="lo-window-filter-wrap">
-            <select
-              className="lo-window-filter"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-              aria-label="Filter task status"
-            >
-              <option value="all">All</option>
-              <option value="active">Not completed</option>
-              <option value="completed">Completed</option>
-            </select>
+            <div ref={focusFilterWrapRef} className="lo-filter-dropdown">
+              <button
+                type="button"
+                className={`lo-window-filter lo-window-filter--button ${showFocusFilter ? "is-open" : ""}`}
+                onClick={(e) => {
+                  e.stopPropagation();
 
-            <select
-              className="lo-window-filter"
-              value={focusFilter}
-              onChange={(e) => setFocusFilter(e.target.value as FocusFilter)}
-              aria-label="Filter focus tasks"
-            >
-              <option value="all-tasks">All focus tasks</option>
-              <option value="today">Today</option>
-              <option value="overdue">Overdue</option>
-              <option value="unscheduled">Unscheduled</option>
-            </select>
+                  const rect = (
+                    e.currentTarget as HTMLElement
+                  ).getBoundingClientRect();
+
+                  setFilterMenuPos({
+                    top: rect.bottom + 6,
+                    left: rect.right - 200, // align right edge
+                  });
+
+                  setShowFocusFilter((prev) => !prev);
+                }}
+                aria-label="Filter"
+                aria-expanded={showFocusFilter}
+              >
+                <span>Filter</span>
+              </button>
+            </div>
+            {showFocusFilter &&
+              filterMenuPos &&
+              createPortal(
+                <div
+                  ref={focusFilterMenuRef}
+                  className="lo-filter-menu"
+                  style={{
+                    position: "fixed",
+                    top: filterMenuPos.top,
+                    left: filterMenuPos.left,
+                    zIndex: 9999,
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="lo-filter-group">
+                    <div className="lo-filter-label">Progress:</div>
+
+                    <label className="lo-filter-option lo-filter-option--checkbox">
+                      <input
+                        type="checkbox"
+                        checked={hideCompleted}
+                        onChange={() => setHideCompleted((prev) => !prev)}
+                      />
+                      <span>Hide Completed</span>
+                    </label>
+
+                    <label className="lo-filter-option lo-filter-option--checkbox">
+                      <input
+                        type="checkbox"
+                        checked={focusFilter === "today"}
+                        onChange={() =>
+                          setFocusFilter((prev) =>
+                            prev === "today" ? "all" : "today",
+                          )
+                        }
+                      />
+                      <span>Today</span>
+                    </label>
+
+                    <label className="lo-filter-option lo-filter-option--checkbox">
+                      <input
+                        type="checkbox"
+                        checked={focusFilter === "overdue"}
+                        onChange={() =>
+                          setFocusFilter((prev) =>
+                            prev === "overdue" ? "all" : "overdue",
+                          )
+                        }
+                      />
+                      <span>Overdue</span>
+                    </label>
+                  </div>
+                </div>,
+                document.body,
+              )}
           </div>
 
           <FocusTasksView
@@ -725,11 +1145,12 @@ export default function TasksApp({
             onReorderTask={reorderFocusTasks}
             onMoveTaskToColumnEnd={moveFocusTaskToEnd}
             onOpenTaskMenu={openTaskMenu}
+            startEditingTask={startEditingTask}
             editingTaskId={editingTaskId}
-            editingValue={editingValue}
-            setEditingValue={setEditingValue}
+            editorDraft={editorDraft}
+            setEditorDraft={setEditorDraft}
             saveEditedTask={saveEditedTask}
-            setEditingTaskId={setEditingTaskId}
+            cancelEditingTask={cancelEditingTask}
           />
         </>
       )}
@@ -833,11 +1254,12 @@ function FocusTasksView({
   onReorderTask,
   onMoveTaskToColumnEnd,
   onOpenTaskMenu,
+  startEditingTask,
   editingTaskId,
-  editingValue,
-  setEditingValue,
+  editorDraft,
+  setEditorDraft,
   saveEditedTask,
-  setEditingTaskId,
+  cancelEditingTask,
 }: {
   onCreateDraftTask: () => void;
   onSaveDraftTask: (id: string, title: string) => void;
@@ -857,15 +1279,49 @@ function FocusTasksView({
   ) => void;
   onOpenTaskMenu: (e: React.MouseEvent, task: Task) => void;
   editingTaskId: string | null;
-  editingValue: string;
-  setEditingValue: (v: string) => void;
-  saveEditedTask: (task: Task, v: string) => void;
-  setEditingTaskId: (id: string | null) => void;
+  editorDraft: {
+    title: string;
+    notes: string;
+    dueDate: string;
+    startTime: string;
+    endTime: string;
+  } | null;
+  setEditorDraft: React.Dispatch<
+    React.SetStateAction<{
+      title: string;
+      notes: string;
+      dueDate: string;
+      startTime: string;
+      endTime: string;
+    } | null>
+  >;
+  saveEditedTask: (task: Task) => void;
+  cancelEditingTask: () => void;
+  startEditingTask: (task: Task) => void;
 }) {
   const [draggingTaskId, setDraggingTaskId] = React.useState<string | null>(
     null,
   );
   const [dropTargetId, setDropTargetId] = React.useState<string | null>(null);
+  const [inlineEditId, setInlineEditId] = React.useState<string | null>(null);
+  const [inlineValue, setInlineValue] = React.useState("");
+  function saveInlineEdit(task: Task) {
+    const trimmed = inlineValue.trim();
+
+    if (!trimmed) {
+      setInlineEditId(null);
+      setInlineValue("");
+      return;
+    }
+
+    onSaveDraftTask(task.id, trimmed);
+    setInlineEditId(null);
+    setInlineValue("");
+  }
+  function autoResizeTextarea(el: HTMLTextAreaElement) {
+    el.style.height = "0px";
+    el.style.height = `${el.scrollHeight}px`;
+  }
   const doing = [...tasks]
     .filter((t) => t.status === "doing")
     .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
@@ -915,6 +1371,10 @@ function FocusTasksView({
             className={`lo-task lo-task-focus ${task.id === justAddedId ? "is-new" : ""}`}
             draggable={task.title.trim() !== ""}
             onContextMenu={(e) => onOpenTaskMenu(e, task)}
+            onDoubleClick={() => {
+              if (!task.title.trim()) return;
+              startEditingTask(task);
+            }}
             onDragStart={(e) => {
               if (!task.title.trim()) return;
               setDraggingTaskId(task.id);
@@ -971,24 +1431,143 @@ function FocusTasksView({
                 <div className="lo-task-main">
                   <span className="lo-task-drag">⋮⋮</span>
 
-                  {editingTaskId === task.id ? (
-                    <input
-                      className="lo-task-edit-input"
-                      value={editingValue}
-                      onChange={(e) => setEditingValue(e.target.value)}
+                  {editingTaskId === task.id && editorDraft ? (
+                    <div
+                      className="lo-task-editor"
+                      onClick={(e) => e.stopPropagation()}
+                      onDoubleClick={(e) => e.stopPropagation()}
+                    >
+                      <input
+                        className="lo-task-edit-input"
+                        value={editorDraft.title}
+                        onChange={(e) =>
+                          setEditorDraft((prev) =>
+                            prev ? { ...prev, title: e.target.value } : prev,
+                          )
+                        }
+                        autoFocus
+                        placeholder="Task title"
+                      />
+
+                      <textarea
+                        className="lo-task-editor-textarea"
+                        value={editorDraft.notes}
+                        onChange={(e) =>
+                          setEditorDraft((prev) =>
+                            prev ? { ...prev, notes: e.target.value } : prev,
+                          )
+                        }
+                        placeholder="Task description"
+                        rows={3}
+                      />
+
+                      <div className="lo-task-editor-grid">
+                        <label>
+                          <span>Date</span>
+                          <input
+                            type="date"
+                            value={editorDraft.dueDate}
+                            onChange={(e) =>
+                              setEditorDraft((prev) =>
+                                prev
+                                  ? { ...prev, dueDate: e.target.value }
+                                  : prev,
+                              )
+                            }
+                          />
+                        </label>
+
+                        <label>
+                          <span>Start</span>
+                          <input
+                            type="time"
+                            value={editorDraft.startTime}
+                            onChange={(e) =>
+                              setEditorDraft((prev) =>
+                                prev
+                                  ? { ...prev, startTime: e.target.value }
+                                  : prev,
+                              )
+                            }
+                          />
+                        </label>
+
+                        <label>
+                          <span>End</span>
+                          <input
+                            type="time"
+                            value={editorDraft.endTime}
+                            onChange={(e) =>
+                              setEditorDraft((prev) =>
+                                prev
+                                  ? { ...prev, endTime: e.target.value }
+                                  : prev,
+                              )
+                            }
+                          />
+                        </label>
+                      </div>
+
+                      <div className="lo-task-editor-actions">
+                        <button
+                          type="button"
+                          className="lo-task-editor-btn"
+                          onClick={() => cancelEditingTask()}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          className="lo-task-editor-btn is-primary"
+                          onClick={() => saveEditedTask(task)}
+                        >
+                          Save
+                        </button>
+                      </div>
+                    </div>
+                  ) : inlineEditId === task.id ? (
+                    <textarea
+                      className="lo-task-inline-edit"
+                      value={inlineValue}
                       autoFocus
+                      rows={1}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={(e) => {
+                        setInlineValue(e.target.value);
+                        autoResizeTextarea(e.currentTarget);
+                      }}
+                      onFocus={(e) => {
+                        const el = e.currentTarget;
+                        autoResizeTextarea(el);
+
+                        // move cursor to end
+                        const length = el.value.length;
+                        el.setSelectionRange(length, length);
+                      }}
+                      onBlur={() => saveInlineEdit(task)}
                       onKeyDown={(e) => {
-                        if (e.key === "Enter")
-                          saveEditedTask(task, editingValue);
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          saveInlineEdit(task);
+                        }
                         if (e.key === "Escape") {
-                          setEditingTaskId(null);
-                          setEditingValue("");
+                          setInlineEditId(null);
+                          setInlineValue("");
                         }
                       }}
-                      onBlur={() => saveEditedTask(task, editingValue)}
                     />
                   ) : (
-                    <div className="lo-task-title">{task.title}</div>
+                    <div
+                      className="lo-task-title lo-task-title-editable"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setInlineEditId(task.id);
+                        setInlineValue(task.title);
+                      }}
+                      title="Edit task title"
+                    >
+                      {task.title}
+                    </div>
                   )}
                 </div>
               )}
@@ -1002,6 +1581,13 @@ function FocusTasksView({
               >
                 ⋯
               </button>
+            </div>
+
+            <div
+              className={`lo-task-meta-left ${isTaskOverdue(task) ? "is-overdue" : ""}`}
+            >
+              <img src="/icons/white/calendar.png" alt="Created" />
+              <span>{formatDateTime(task.createdAt)}</span>
             </div>
           </Card>
         ))}
@@ -1033,6 +1619,10 @@ function FocusTasksView({
             className={`lo-task lo-task-focus ${task.id === justAddedId ? "is-new" : ""}`}
             draggable={task.title.trim() !== ""}
             onContextMenu={(e) => onOpenTaskMenu(e, task)}
+            onDoubleClick={() => {
+              if (!task.title.trim()) return;
+              startEditingTask(task);
+            }}
             onDragStart={(e) => {
               if (!task.title.trim()) return;
               setDraggingTaskId(task.id);
@@ -1088,24 +1678,143 @@ function FocusTasksView({
               ) : (
                 <div className="lo-task-main">
                   <span className="lo-task-drag">⋮⋮</span>
-                  {editingTaskId === task.id ? (
-                    <input
-                      className="lo-task-edit-input"
-                      value={editingValue}
-                      onChange={(e) => setEditingValue(e.target.value)}
+                  {editingTaskId === task.id && editorDraft ? (
+                    <div
+                      className="lo-task-editor"
+                      onClick={(e) => e.stopPropagation()}
+                      onDoubleClick={(e) => e.stopPropagation()}
+                    >
+                      <input
+                        className="lo-task-edit-input"
+                        value={editorDraft.title}
+                        onChange={(e) =>
+                          setEditorDraft((prev) =>
+                            prev ? { ...prev, title: e.target.value } : prev,
+                          )
+                        }
+                        autoFocus
+                        placeholder="Task title"
+                      />
+
+                      <textarea
+                        className="lo-task-editor-textarea"
+                        value={editorDraft.notes}
+                        onChange={(e) =>
+                          setEditorDraft((prev) =>
+                            prev ? { ...prev, notes: e.target.value } : prev,
+                          )
+                        }
+                        placeholder="Task description"
+                        rows={3}
+                      />
+
+                      <div className="lo-task-editor-grid">
+                        <label>
+                          <span>Date</span>
+                          <input
+                            type="date"
+                            value={editorDraft.dueDate}
+                            onChange={(e) =>
+                              setEditorDraft((prev) =>
+                                prev
+                                  ? { ...prev, dueDate: e.target.value }
+                                  : prev,
+                              )
+                            }
+                          />
+                        </label>
+
+                        <label>
+                          <span>Start</span>
+                          <input
+                            type="time"
+                            value={editorDraft.startTime}
+                            onChange={(e) =>
+                              setEditorDraft((prev) =>
+                                prev
+                                  ? { ...prev, startTime: e.target.value }
+                                  : prev,
+                              )
+                            }
+                          />
+                        </label>
+
+                        <label>
+                          <span>End</span>
+                          <input
+                            type="time"
+                            value={editorDraft.endTime}
+                            onChange={(e) =>
+                              setEditorDraft((prev) =>
+                                prev
+                                  ? { ...prev, endTime: e.target.value }
+                                  : prev,
+                              )
+                            }
+                          />
+                        </label>
+                      </div>
+
+                      <div className="lo-task-editor-actions">
+                        <button
+                          type="button"
+                          className="lo-task-editor-btn"
+                          onClick={cancelEditingTask}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          className="lo-task-editor-btn is-primary"
+                          onClick={() => saveEditedTask(task)}
+                        >
+                          Save
+                        </button>
+                      </div>
+                    </div>
+                  ) : inlineEditId === task.id ? (
+                    <textarea
+                      className="lo-task-inline-edit"
+                      value={inlineValue}
                       autoFocus
+                      rows={1}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={(e) => {
+                        setInlineValue(e.target.value);
+                        autoResizeTextarea(e.currentTarget);
+                      }}
+                      onFocus={(e) => {
+                        const el = e.currentTarget;
+                        autoResizeTextarea(el);
+
+                        // move cursor to end
+                        const length = el.value.length;
+                        el.setSelectionRange(length, length);
+                      }}
+                      onBlur={() => saveInlineEdit(task)}
                       onKeyDown={(e) => {
-                        if (e.key === "Enter")
-                          saveEditedTask(task, editingValue);
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          saveInlineEdit(task);
+                        }
                         if (e.key === "Escape") {
-                          setEditingTaskId(null);
-                          setEditingValue("");
+                          setInlineEditId(null);
+                          setInlineValue("");
                         }
                       }}
-                      onBlur={() => saveEditedTask(task, editingValue)}
                     />
                   ) : (
-                    <div className="lo-task-title">{task.title}</div>
+                    <div
+                      className="lo-task-title lo-task-title-editable"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setInlineEditId(task.id);
+                        setInlineValue(task.title);
+                      }}
+                      title="Edit task title"
+                    >
+                      {task.title}
+                    </div>
                   )}
                 </div>
               )}
@@ -1122,6 +1831,12 @@ function FocusTasksView({
             </div>
 
             <div className="lo-task-subrow">
+              <div
+                className={`lo-task-meta-left ${isTaskOverdue(task) ? "is-overdue" : ""}`}
+              >
+                <img src="/icons/white/calendar.png" alt="Created" />
+                <span>{formatDateTime(task.createdAt)}</span>
+              </div>
               <button
                 className="lo-task-action-btn lo-task-start-btn"
                 onClick={() => onSetStatus(task, "doing")}
@@ -1146,6 +1861,10 @@ function FocusTasksView({
             key={task.id}
             className={`lo-task lo-task-focus ${task.id === justAddedId ? "is-new" : ""}`}
             onContextMenu={(e) => onOpenTaskMenu(e, task)}
+            onDoubleClick={() => {
+              if (!task.title.trim()) return;
+              startEditingTask(task);
+            }}
           >
             {dropTargetId === task.id && draggingTaskId !== task.id && (
               <div className="lo-task-drop-indicator" />
@@ -1170,6 +1889,17 @@ function FocusTasksView({
               >
                 ⋯
               </button>
+            </div>
+
+            <div
+              className={`lo-task-meta-left ${isTaskOverdue(task) ? "is-overdue" : ""}`}
+            >
+              <img
+                src="/icons/white/calendar.png"
+                alt="Created"
+                className="lo-task-meta-icon"
+              />
+              <span>{formatDateTime(task.createdAt)}</span>
             </div>
           </Card>
         ))}

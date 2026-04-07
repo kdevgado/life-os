@@ -16,5 +16,7 @@ export type Task = {
   tags?: string[];
   focus?: boolean;
   plannedFor?: string;
+  plannedStart?: string;
+  plannedEnd?: string;
   sortOrder?: number;
 };
