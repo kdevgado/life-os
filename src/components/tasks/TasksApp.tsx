@@ -201,7 +201,7 @@ export default function TasksApp({
 
   const startEditingTask = useCallback((task: Task) => {
     const start = getTimeParts(task.plannedStart ?? task.plannedFor);
-    const end = getTimeParts(task.plannedEnd);
+    const end = getDefaultEndTime(task);
 
     setEditingTaskId(task.id);
     setEditorDraft({
@@ -282,6 +282,31 @@ export default function TasksApp({
     const dd = String(d.getDate()).padStart(2, "0");
     const hh = String(d.getHours()).padStart(2, "0");
     const min = String(d.getMinutes()).padStart(2, "0");
+
+    return {
+      date: `${yyyy}-${mm}-${dd}`,
+      time: `${hh}:${min}`,
+    };
+  }
+
+  function getDefaultEndTime(task: Task) {
+    if (task.plannedEnd) {
+      return getTimeParts(task.plannedEnd);
+    }
+
+    const startIso = task.plannedStart ?? task.plannedFor;
+    if (!startIso) {
+      return { date: "", time: "" };
+    }
+
+    const start = new Date(startIso);
+    const end = new Date(start.getTime() + 30 * 60 * 1000);
+
+    const yyyy = end.getFullYear();
+    const mm = String(end.getMonth() + 1).padStart(2, "0");
+    const dd = String(end.getDate()).padStart(2, "0");
+    const hh = String(end.getHours()).padStart(2, "0");
+    const min = String(end.getMinutes()).padStart(2, "0");
 
     return {
       date: `${yyyy}-${mm}-${dd}`,
@@ -1084,6 +1109,11 @@ export default function TasksApp({
     };
   }, [authed]);
 
+  const editingTask =
+    editingTaskId && editorDraft
+      ? (tasks.find((task) => task.id === editingTaskId) ?? null)
+      : null;
+
   return (
     <div ref={pageRef} className="lo-page lo-tasks lo-stack lo-tasks-menu-root">
       {loading && <div className="muted">Loading tasks…</div>}
@@ -1098,106 +1128,123 @@ export default function TasksApp({
 
       {!loading && mode === "focus" && (
         <>
-          <div className="lo-window-filter-wrap">
-            <div ref={focusFilterWrapRef} className="lo-filter-dropdown">
-              <button
-                type="button"
-                className={`lo-window-filter lo-window-filter--button ${showFocusFilter ? "is-open" : ""}`}
-                onClick={(e) => {
-                  e.stopPropagation();
+          {editingTask && editorDraft ? (
+            <FocusTaskEditorView
+              task={editingTask}
+              editorDraft={editorDraft}
+              setEditorDraft={setEditorDraft}
+              onSave={() => saveEditedTask(editingTask)}
+              onCancel={cancelEditingTask}
+            />
+          ) : (
+            <>
+              <div className="lo-window-filter-wrap">
+                <div ref={focusFilterWrapRef} className="lo-filter-dropdown">
+                  <button
+                    type="button"
+                    className={`lo-window-filter--button ${showFocusFilter ? "is-open" : ""}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
 
-                  const rect = (
-                    e.currentTarget as HTMLElement
-                  ).getBoundingClientRect();
+                      const rect = (
+                        e.currentTarget as HTMLElement
+                      ).getBoundingClientRect();
 
-                  setFilterMenuPos({
-                    top: rect.bottom + 6,
-                    left: rect.right - 200, // align right edge
-                  });
+                      setFilterMenuPos({
+                        top: rect.bottom + 6,
+                        left: rect.right - 200,
+                      });
 
-                  setShowFocusFilter((prev) => !prev);
-                }}
-                aria-label="Filter"
-                aria-expanded={showFocusFilter}
-              >
-                <span>Filter</span>
-              </button>
-            </div>
-            {showFocusFilter &&
-              filterMenuPos &&
-              createPortal(
-                <div
-                  ref={focusFilterMenuRef}
-                  className="lo-filter-menu"
-                  style={{
-                    position: "fixed",
-                    top: filterMenuPos.top,
-                    left: filterMenuPos.left,
-                    zIndex: 9999,
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className="lo-filter-group">
-                    <div className="lo-filter-label">Progress:</div>
+                      setShowFocusFilter((prev) => !prev);
+                    }}
+                    aria-label="Filter"
+                    aria-expanded={showFocusFilter}
+                  >
+                    <span>Filter</span>
+                    <span
+                      className="lo-window-filter__arrow"
+                      aria-hidden="true"
+                    />
+                  </button>
+                </div>
 
-                    <label className="lo-filter-option lo-filter-option--checkbox">
-                      <input
-                        type="checkbox"
-                        checked={hideCompleted}
-                        onChange={() => setHideCompleted((prev) => !prev)}
-                      />
-                      <span>Hide Completed</span>
-                    </label>
+                {showFocusFilter &&
+                  filterMenuPos &&
+                  createPortal(
+                    <div
+                      ref={focusFilterMenuRef}
+                      className="lo-filter-menu"
+                      style={{
+                        position: "fixed",
+                        top: filterMenuPos.top,
+                        left: filterMenuPos.left,
+                        zIndex: 9999,
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="lo-filter-group">
+                        <div className="lo-filter-label">Progress:</div>
 
-                    <label className="lo-filter-option lo-filter-option--checkbox">
-                      <input
-                        type="checkbox"
-                        checked={focusFilter === "today"}
-                        onChange={() =>
-                          setFocusFilter((prev) =>
-                            prev === "today" ? "all" : "today",
-                          )
-                        }
-                      />
-                      <span>Today</span>
-                    </label>
+                        <label className="lo-filter-option lo-filter-option--checkbox">
+                          <input
+                            type="checkbox"
+                            checked={hideCompleted}
+                            onChange={() => setHideCompleted((prev) => !prev)}
+                          />
+                          <span>Hide Completed</span>
+                        </label>
 
-                    <label className="lo-filter-option lo-filter-option--checkbox">
-                      <input
-                        type="checkbox"
-                        checked={focusFilter === "overdue"}
-                        onChange={() =>
-                          setFocusFilter((prev) =>
-                            prev === "overdue" ? "all" : "overdue",
-                          )
-                        }
-                      />
-                      <span>Overdue</span>
-                    </label>
-                  </div>
-                </div>,
-                document.body,
-              )}
-          </div>
+                        <label className="lo-filter-option lo-filter-option--checkbox">
+                          <input
+                            type="checkbox"
+                            checked={focusFilter === "today"}
+                            onChange={() =>
+                              setFocusFilter((prev) =>
+                                prev === "today" ? "all" : "today",
+                              )
+                            }
+                          />
+                          <span>Today</span>
+                        </label>
 
-          <FocusTasksView
-            onCreateDraftTask={onCreateDraftTask}
-            onSaveDraftTask={onSaveDraftTask}
-            tasks={filtered}
-            justAddedId={justAddedId}
-            onToggleDone={onToggleDone}
-            onSetStatus={onSetStatus}
-            onRemove={onRemove}
-            onReorderTask={reorderFocusTasks}
-            onMoveTaskToColumnEnd={moveFocusTaskToEnd}
-            onOpenTaskMenu={openTaskMenu}
-            startEditingTask={startEditingTask}
-            editingTaskId={editingTaskId}
-            editorDraft={editorDraft}
-            setEditorDraft={setEditorDraft}
-            saveEditedTask={saveEditedTask}
-            cancelEditingTask={cancelEditingTask}
-          />
+                        <label className="lo-filter-option lo-filter-option--checkbox">
+                          <input
+                            type="checkbox"
+                            checked={focusFilter === "overdue"}
+                            onChange={() =>
+                              setFocusFilter((prev) =>
+                                prev === "overdue" ? "all" : "overdue",
+                              )
+                            }
+                          />
+                          <span>Overdue</span>
+                        </label>
+                      </div>
+                    </div>,
+                    document.body,
+                  )}
+              </div>
+
+              <FocusTasksView
+                onCreateDraftTask={onCreateDraftTask}
+                onSaveDraftTask={onSaveDraftTask}
+                tasks={filtered}
+                justAddedId={justAddedId}
+                onToggleDone={onToggleDone}
+                onSetStatus={onSetStatus}
+                onRemove={onRemove}
+                onReorderTask={reorderFocusTasks}
+                onMoveTaskToColumnEnd={moveFocusTaskToEnd}
+                onOpenTaskMenu={openTaskMenu}
+                startEditingTask={startEditingTask}
+                editingTaskId={editingTaskId}
+                editorDraft={editorDraft}
+                setEditorDraft={setEditorDraft}
+                saveEditedTask={saveEditedTask}
+                cancelEditingTask={cancelEditingTask}
+              />
+            </>
+          )}
         </>
       )}
 
@@ -1487,101 +1534,7 @@ function FocusTasksView({
                 <div className="lo-task-main">
                   <span className="lo-task-drag">⋮⋮</span>
 
-                  {editingTaskId === task.id && editorDraft ? (
-                    <div
-                      className="lo-task-editor"
-                      onClick={(e) => e.stopPropagation()}
-                      onDoubleClick={(e) => e.stopPropagation()}
-                    >
-                      <input
-                        className="lo-task-edit-input"
-                        value={editorDraft.title}
-                        onChange={(e) =>
-                          setEditorDraft((prev) =>
-                            prev ? { ...prev, title: e.target.value } : prev,
-                          )
-                        }
-                        autoFocus
-                        placeholder="Task title"
-                      />
-
-                      <textarea
-                        className="lo-task-editor-textarea"
-                        value={editorDraft.notes}
-                        onChange={(e) =>
-                          setEditorDraft((prev) =>
-                            prev ? { ...prev, notes: e.target.value } : prev,
-                          )
-                        }
-                        placeholder="Task description"
-                        rows={3}
-                      />
-
-                      <div className="lo-task-editor-grid">
-                        <label>
-                          <span>Date</span>
-                          <input
-                            type="date"
-                            value={editorDraft.dueDate}
-                            onChange={(e) =>
-                              setEditorDraft((prev) =>
-                                prev
-                                  ? { ...prev, dueDate: e.target.value }
-                                  : prev,
-                              )
-                            }
-                          />
-                        </label>
-
-                        <label>
-                          <span>Start</span>
-                          <input
-                            type="time"
-                            value={editorDraft.startTime}
-                            onChange={(e) =>
-                              setEditorDraft((prev) =>
-                                prev
-                                  ? { ...prev, startTime: e.target.value }
-                                  : prev,
-                              )
-                            }
-                          />
-                        </label>
-
-                        <label>
-                          <span>End</span>
-                          <input
-                            type="time"
-                            value={editorDraft.endTime}
-                            onChange={(e) =>
-                              setEditorDraft((prev) =>
-                                prev
-                                  ? { ...prev, endTime: e.target.value }
-                                  : prev,
-                              )
-                            }
-                          />
-                        </label>
-                      </div>
-
-                      <div className="lo-task-editor-actions">
-                        <button
-                          type="button"
-                          className="lo-task-editor-btn"
-                          onClick={() => cancelEditingTask()}
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="button"
-                          className="lo-task-editor-btn is-primary"
-                          onClick={() => saveEditedTask(task)}
-                        >
-                          Save
-                        </button>
-                      </div>
-                    </div>
-                  ) : inlineEditId === task.id ? (
+                  {inlineEditId === task.id ? (
                     <textarea
                       className="lo-task-inline-edit"
                       value={inlineValue}
@@ -1738,101 +1691,7 @@ function FocusTasksView({
               ) : (
                 <div className="lo-task-main">
                   <span className="lo-task-drag">⋮⋮</span>
-                  {editingTaskId === task.id && editorDraft ? (
-                    <div
-                      className="lo-task-editor"
-                      onClick={(e) => e.stopPropagation()}
-                      onDoubleClick={(e) => e.stopPropagation()}
-                    >
-                      <input
-                        className="lo-task-edit-input"
-                        value={editorDraft.title}
-                        onChange={(e) =>
-                          setEditorDraft((prev) =>
-                            prev ? { ...prev, title: e.target.value } : prev,
-                          )
-                        }
-                        autoFocus
-                        placeholder="Task title"
-                      />
-
-                      <textarea
-                        className="lo-task-editor-textarea"
-                        value={editorDraft.notes}
-                        onChange={(e) =>
-                          setEditorDraft((prev) =>
-                            prev ? { ...prev, notes: e.target.value } : prev,
-                          )
-                        }
-                        placeholder="Task description"
-                        rows={3}
-                      />
-
-                      <div className="lo-task-editor-grid">
-                        <label>
-                          <span>Date</span>
-                          <input
-                            type="date"
-                            value={editorDraft.dueDate}
-                            onChange={(e) =>
-                              setEditorDraft((prev) =>
-                                prev
-                                  ? { ...prev, dueDate: e.target.value }
-                                  : prev,
-                              )
-                            }
-                          />
-                        </label>
-
-                        <label>
-                          <span>Start</span>
-                          <input
-                            type="time"
-                            value={editorDraft.startTime}
-                            onChange={(e) =>
-                              setEditorDraft((prev) =>
-                                prev
-                                  ? { ...prev, startTime: e.target.value }
-                                  : prev,
-                              )
-                            }
-                          />
-                        </label>
-
-                        <label>
-                          <span>End</span>
-                          <input
-                            type="time"
-                            value={editorDraft.endTime}
-                            onChange={(e) =>
-                              setEditorDraft((prev) =>
-                                prev
-                                  ? { ...prev, endTime: e.target.value }
-                                  : prev,
-                              )
-                            }
-                          />
-                        </label>
-                      </div>
-
-                      <div className="lo-task-editor-actions">
-                        <button
-                          type="button"
-                          className="lo-task-editor-btn"
-                          onClick={cancelEditingTask}
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="button"
-                          className="lo-task-editor-btn is-primary"
-                          onClick={() => saveEditedTask(task)}
-                        >
-                          Save
-                        </button>
-                      </div>
-                    </div>
-                  ) : inlineEditId === task.id ? (
+                  {inlineEditId === task.id ? (
                     <textarea
                       className="lo-task-inline-edit"
                       value={inlineValue}
@@ -1965,6 +1824,148 @@ function FocusTasksView({
         ))}
       </section>
     </>
+  );
+}
+
+function FocusTaskEditorView({
+  task,
+  editorDraft,
+  setEditorDraft,
+  onSave,
+  onCancel,
+}: {
+  task: Task;
+  editorDraft: {
+    title: string;
+    notes: string;
+    dueDate: string;
+    startTime: string;
+    endTime: string;
+  };
+  setEditorDraft: React.Dispatch<
+    React.SetStateAction<{
+      title: string;
+      notes: string;
+      dueDate: string;
+      startTime: string;
+      endTime: string;
+    } | null>
+  >;
+  onSave: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <section className="lo-task-edit-panel">
+      <div className="lo-task-edit-panel__head">
+        <div>
+          <div className="lo-section-title">Edit Task</div>
+          <h3 className="lo-task-edit-panel__title">Update task details</h3>
+        </div>
+
+        <button
+          type="button"
+          className="lo-task-editor-btn"
+          onClick={onCancel}
+        >
+          Back
+        </button>
+      </div>
+
+      <div className="lo-task-edit-panel__body">
+        <label className="lo-task-edit-panel__field">
+          <span>Task title</span>
+          <textarea
+            className="lo-task-edit-title"
+            value={editorDraft.title}
+            rows={3}
+            onChange={(e) =>
+              setEditorDraft((prev) =>
+                prev ? { ...prev, title: e.target.value } : prev,
+              )
+            }
+            placeholder="Task title"
+            autoFocus
+          />
+        </label>
+
+        <label className="lo-task-edit-panel__field">
+          <span>Description</span>
+          <textarea
+            className="lo-task-editor-textarea"
+            value={editorDraft.notes}
+            rows={6}
+            onChange={(e) =>
+              setEditorDraft((prev) =>
+                prev ? { ...prev, notes: e.target.value } : prev,
+              )
+            }
+            placeholder="Task description"
+          />
+        </label>
+
+        <div className="lo-task-editor-grid lo-task-editor-grid--panel">
+          <label>
+            <span>Date</span>
+            <input
+              type="date"
+              value={editorDraft.dueDate}
+              onChange={(e) =>
+                setEditorDraft((prev) =>
+                  prev ? { ...prev, dueDate: e.target.value } : prev,
+                )
+              }
+            />
+          </label>
+
+          <label>
+            <span>Start</span>
+            <input
+              type="time"
+              value={editorDraft.startTime}
+              onChange={(e) =>
+                setEditorDraft((prev) =>
+                  prev ? { ...prev, startTime: e.target.value } : prev,
+                )
+              }
+            />
+          </label>
+
+          <label>
+            <span>End</span>
+            <input
+              type="time"
+              value={editorDraft.endTime}
+              onChange={(e) =>
+                setEditorDraft((prev) =>
+                  prev ? { ...prev, endTime: e.target.value } : prev,
+                )
+              }
+            />
+          </label>
+        </div>
+
+        <div className="lo-task-edit-panel__hint">
+          Changes to date and time will sync to the linked calendar event.
+        </div>
+      </div>
+
+      <div className="lo-task-editor-actions">
+        <button
+          type="button"
+          className="lo-task-editor-btn"
+          onClick={onCancel}
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          className="lo-task-editor-btn is-primary"
+          onClick={onSave}
+        >
+          Save
+        </button>
+      </div>
+    </section>
   );
 }
 
