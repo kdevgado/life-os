@@ -90,6 +90,21 @@ type TasksMode = "focus" | "plan";
 type FocusFilter = "all" | "today" | "overdue";
 type StatusFilter = "all" | "inprogress" | "completed";
 
+function formatDateForEditor(date?: string) {
+  if (!date) return "";
+  const [yyyy, mm, dd] = String(date).slice(0, 10).split("-");
+  if (!yyyy || !mm || !dd) return "";
+  return `${dd}/${mm}/${yyyy}`;
+}
+
+function parseEditorDate(value: string) {
+  const trimmed = value.trim();
+  const match = trimmed.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!match) return "";
+  const [, dd, mm, yyyy] = match;
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 export default function TasksApp({
   mode = "plan",
   setWindowHeader,
@@ -133,6 +148,7 @@ export default function TasksApp({
     title: string;
     notes: string;
     dueDate: string;
+    dueDateDisplay: string;
     startTime: string;
     endTime: string;
   } | null>(null);
@@ -208,8 +224,9 @@ export default function TasksApp({
       title: task.title ?? "",
       notes: task.notes ?? "",
       dueDate: task.dueDate ?? start.date ?? "",
-      startTime: start.time ?? "",
-      endTime: end.time ?? "",
+      dueDateDisplay: formatDateForEditor(task.dueDate ?? start.date ?? ""),
+      startTime: start.time || "00:00",
+      endTime: end.time || "00:30",
     });
     setContextMenu(null);
   }, []);
@@ -274,7 +291,7 @@ export default function TasksApp({
   );
 
   function getTimeParts(iso?: string) {
-    if (!iso) return { date: "", time: "" };
+    if (!iso) return { date: "", time: "00:00" };
 
     const d = new Date(iso);
     const yyyy = d.getFullYear();
@@ -296,7 +313,7 @@ export default function TasksApp({
 
     const startIso = task.plannedStart ?? task.plannedFor;
     if (!startIso) {
-      return { date: "", time: "" };
+      return { date: "", time: "00:30" };
     }
 
     const start = new Date(startIso);
@@ -880,6 +897,20 @@ export default function TasksApp({
     };
   }, [authed]);
 
+  function toTimeValue(hour?: number, minute?: number) {
+    const safeHour = typeof hour === "number" ? hour : 0;
+    const safeMinute = typeof minute === "number" ? minute : 0;
+    return `${String(safeHour).padStart(2, "0")}:${String(safeMinute).padStart(2, "0")}`;
+  }
+
+  function addMinutesToTimeString(time: string, minutesToAdd: number) {
+    const [hours, minutes] = time.split(":").map(Number);
+    const total = hours * 60 + minutes + minutesToAdd;
+    const nextHours = Math.floor(total / 60) % 24;
+    const nextMinutes = total % 60;
+    return `${String(nextHours).padStart(2, "0")}:${String(nextMinutes).padStart(2, "0")}`;
+  }
+
   // Close the menu when clicking elsewhere
   useEffect(() => {
     if (!contextMenu) return;
@@ -904,6 +935,7 @@ export default function TasksApp({
         title: string;
         date: string;
         hour: number;
+        minute?: 0 | 15 | 30 | 45;
       }>;
 
       const taskId = customEvent.detail?.taskId;
@@ -915,10 +947,19 @@ export default function TasksApp({
         prev.map((task) => {
           if (task.id !== taskId) return task;
 
+          const plannedMinute = customEvent.detail?.minute ?? 0;
+          const startTime = toTimeValue(
+            customEvent.detail?.hour,
+            plannedMinute,
+          );
+          const endTime = addMinutesToTimeString(startTime, 30);
+
           const nextTask = {
             ...task,
-            plannedFor: date,
             dueDate: task.dueDate ?? date,
+            plannedFor: combineDateAndTime(date, startTime) ?? date,
+            plannedStart: combineDateAndTime(date, startTime),
+            plannedEnd: task.plannedEnd ?? combineDateAndTime(date, endTime),
             list: "planner",
             status: "doing" as const,
             updatedAt: new Date().toISOString(),
@@ -926,8 +967,10 @@ export default function TasksApp({
 
           if (!authed) {
             updateTask(task.id, {
-              plannedFor: nextTask.plannedFor,
               dueDate: nextTask.dueDate,
+              plannedFor: nextTask.plannedFor,
+              plannedStart: nextTask.plannedStart,
+              plannedEnd: nextTask.plannedEnd,
               list: nextTask.list,
               status: nextTask.status,
             });
@@ -1130,7 +1173,6 @@ export default function TasksApp({
         <>
           {editingTask && editorDraft ? (
             <FocusTaskEditorView
-              task={editingTask}
               editorDraft={editorDraft}
               setEditorDraft={setEditorDraft}
               onSave={() => saveEditedTask(editingTask)}
@@ -1376,6 +1418,7 @@ function FocusTasksView({
     title: string;
     notes: string;
     dueDate: string;
+    dueDateDisplay: string;
     startTime: string;
     endTime: string;
   } | null;
@@ -1384,6 +1427,7 @@ function FocusTasksView({
       title: string;
       notes: string;
       dueDate: string;
+      dueDateDisplay: string;
       startTime: string;
       endTime: string;
     } | null>
@@ -1828,17 +1872,16 @@ function FocusTasksView({
 }
 
 function FocusTaskEditorView({
-  task,
   editorDraft,
   setEditorDraft,
   onSave,
   onCancel,
 }: {
-  task: Task;
   editorDraft: {
     title: string;
     notes: string;
     dueDate: string;
+    dueDateDisplay: string;
     startTime: string;
     endTime: string;
   };
@@ -1847,6 +1890,7 @@ function FocusTaskEditorView({
       title: string;
       notes: string;
       dueDate: string;
+      dueDateDisplay: string;
       startTime: string;
       endTime: string;
     } | null>
@@ -1862,11 +1906,7 @@ function FocusTaskEditorView({
           <h3 className="lo-task-edit-panel__title">Update task details</h3>
         </div>
 
-        <button
-          type="button"
-          className="lo-task-editor-btn"
-          onClick={onCancel}
-        >
+        <button type="button" className="lo-task-editor-btn" onClick={onCancel}>
           Back
         </button>
       </div>
@@ -1893,7 +1933,7 @@ function FocusTaskEditorView({
           <textarea
             className="lo-task-editor-textarea"
             value={editorDraft.notes}
-            rows={6}
+            rows={4}
             onChange={(e) =>
               setEditorDraft((prev) =>
                 prev ? { ...prev, notes: e.target.value } : prev,
@@ -1903,45 +1943,61 @@ function FocusTaskEditorView({
           />
         </label>
 
-        <div className="lo-task-editor-grid lo-task-editor-grid--panel">
-          <label>
-            <span>Date</span>
+        <div className="lo-task-edit-rows">
+          <label className="lo-task-edit-row">
+            <span className="lo-task-edit-row__label">Date</span>
             <input
-              type="date"
-              value={editorDraft.dueDate}
-              onChange={(e) =>
+              type="text"
+              className="lo-task-edit-row__input lo-task-edit-row__input--date"
+              value={editorDraft.dueDateDisplay}
+              onChange={(e) => {
+                const nextDisplay = e.target.value;
+                const nextIso = parseEditorDate(nextDisplay);
+
                 setEditorDraft((prev) =>
-                  prev ? { ...prev, dueDate: e.target.value } : prev,
-                )
-              }
+                  prev
+                    ? {
+                        ...prev,
+                        dueDateDisplay: nextDisplay,
+                        dueDate: nextIso || prev.dueDate,
+                      }
+                    : prev,
+                );
+              }}
+              placeholder="dd/mm/yyyy"
+              inputMode="numeric"
             />
           </label>
 
-          <label>
-            <span>Start</span>
+          <div className="lo-task-edit-row lo-task-edit-row--time">
+            <span className="lo-task-edit-row__label">Time</span>
+
             <input
               type="time"
+              className="lo-task-edit-row__input"
               value={editorDraft.startTime}
               onChange={(e) =>
                 setEditorDraft((prev) =>
-                  prev ? { ...prev, startTime: e.target.value } : prev,
+                  prev
+                    ? { ...prev, startTime: e.target.value || "00:00" }
+                    : prev,
                 )
               }
             />
-          </label>
 
-          <label>
-            <span>End</span>
+            <span className="lo-task-edit-row__arrow">→</span>
+
             <input
               type="time"
+              className="lo-task-edit-row__input"
               value={editorDraft.endTime}
               onChange={(e) =>
                 setEditorDraft((prev) =>
-                  prev ? { ...prev, endTime: e.target.value } : prev,
+                  prev ? { ...prev, endTime: e.target.value || "00:30" } : prev,
                 )
               }
             />
-          </label>
+          </div>
         </div>
 
         <div className="lo-task-edit-panel__hint">
@@ -1950,11 +2006,7 @@ function FocusTaskEditorView({
       </div>
 
       <div className="lo-task-editor-actions">
-        <button
-          type="button"
-          className="lo-task-editor-btn"
-          onClick={onCancel}
-        >
+        <button type="button" className="lo-task-editor-btn" onClick={onCancel}>
           Cancel
         </button>
         <button
