@@ -499,31 +499,18 @@ export default function TasksApp({
       return;
     }
 
-    const now = new Date().toISOString();
+    const task = tasks.find((t) => t.id === id);
+    if (!task) return;
 
-    if (authed) {
-      setTasks((prev) =>
-        prev.map((t) =>
-          t.id === id ? { ...t, title: trimmed, updatedAt: now } : t,
-        ),
-      );
-
-      broadcastTaskUpdated(id, {
+    applyTaskPatch(
+      task,
+      {
         title: trimmed,
-      });
-
-      window.setTimeout(() => setJustAddedId(null), 300);
-      return;
-    }
-
-    const updated = updateTask(id, { title: trimmed, updatedAt: now });
-    if (!updated) return;
-
-    setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)));
-
-    broadcastTaskUpdated(id, {
-      title: trimmed,
-    });
+      },
+      {
+        broadcastUpdate: true,
+      },
+    );
 
     window.setTimeout(() => setJustAddedId(null), 300);
   }
@@ -590,97 +577,55 @@ export default function TasksApp({
 
     const shouldPlayCompleteSound = nextStatus === "done";
 
-    if (authed) {
-      const now = new Date().toISOString();
-      setTasks((prev) =>
-        prev.map((t) =>
-          t.id === task.id ? { ...t, status: nextStatus, updatedAt: now } : t,
-        ),
-      );
-
-      if (shouldPlayCompleteSound) {
-        playTaskCompleteSound();
-      }
-
-      broadcastTaskStatus(task.id, nextStatus);
-      return;
-    }
-
-    const updated = updateTask(task.id, { status: nextStatus });
-    if (!updated) return;
-
-    setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
+    applyTaskPatch(
+      task,
+      {
+        status: nextStatus,
+      },
+      {
+        broadcastStatus: true,
+      },
+    );
 
     if (shouldPlayCompleteSound) {
       playTaskCompleteSound();
     }
-
-    broadcastTaskStatus(task.id, nextStatus);
   }
 
   function onSetStatus(task: Task, status: "todo" | "doing" | "done") {
     const shouldPlayCompleteSound = status === "done" && task.status !== "done";
 
-    if (authed) {
-      const now = new Date().toISOString();
-      setTasks((prev) =>
-        prev.map((t) =>
-          t.id === task.id ? { ...t, status, updatedAt: now } : t,
-        ),
-      );
-
-      if (shouldPlayCompleteSound) {
-        playTaskCompleteSound();
-      }
-
-      broadcastTaskStatus(task.id, status);
-      return;
-    }
-
-    const updated = updateTask(task.id, { status });
-    if (!updated) return;
-
-    setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
+    applyTaskPatch(
+      task,
+      {
+        status,
+      },
+      {
+        broadcastStatus: true,
+      },
+    );
 
     if (shouldPlayCompleteSound) {
       playTaskCompleteSound();
     }
-
-    broadcastTaskStatus(task.id, status);
   }
 
   function onSetDue(task: Task, dueDate: string) {
     const nextDue = dueDate || undefined;
 
-    if (authed) {
-      const now = new Date().toISOString();
-      setTasks((prev) =>
-        prev.map((t) =>
-          t.id === task.id ? { ...t, dueDate: nextDue, updatedAt: now } : t,
-        ),
-      );
-      return;
-    }
-
-    const updated = updateTask(task.id, { dueDate: nextDue });
-    if (!updated) return;
-    setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
+    applyTaskPatch(
+      task,
+      {
+        dueDate: nextDue,
+      },
+      {
+        broadcastUpdate: true,
+      },
+    );
   }
 
   function onSetPriority(task: Task, p: Priority) {
-    if (authed) {
-      const now = new Date().toISOString();
-      setTasks((prev) =>
-        prev.map((t) =>
-          t.id === task.id ? { ...t, priority: p, updatedAt: now } : t,
-        ),
-      );
-      return;
-    }
-
-    const updated = updateTask(task.id, { priority: p });
-    if (!updated) return;
-    setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
+    applyTaskPatch(task, { priority: p });
   }
 
   function onRemove(task: Task) {
@@ -813,6 +758,57 @@ export default function TasksApp({
     );
   }
 
+  function applyTaskPatch(
+    task: Task,
+    patch: Partial<Task>,
+    options?: {
+      broadcastStatus?: boolean;
+      broadcastUpdate?: boolean;
+    },
+  ) {
+    const nextUpdatedAt =
+      typeof patch.updatedAt === "string"
+        ? patch.updatedAt
+        : new Date().toISOString();
+
+    const nextTask = {
+      ...task,
+      ...patch,
+      updatedAt: nextUpdatedAt,
+    };
+
+    if (authed) {
+      setTasks((prev) => prev.map((t) => (t.id === task.id ? nextTask : t)));
+    } else {
+      const updated = updateTask(task.id, {
+        ...patch,
+        updatedAt: nextUpdatedAt,
+      });
+      if (!updated) return null;
+
+      setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
+    }
+
+    if (options?.broadcastStatus && nextTask.status) {
+      broadcastTaskStatus(
+        task.id,
+        nextTask.status as "todo" | "doing" | "done",
+      );
+    }
+
+    if (options?.broadcastUpdate) {
+      broadcastTaskUpdated(task.id, {
+        title: nextTask.title,
+        dueDate: nextTask.dueDate,
+        plannedFor: nextTask.plannedFor,
+        plannedStart: nextTask.plannedStart,
+        plannedEnd: nextTask.plannedEnd,
+      });
+    }
+
+    return nextTask;
+  }
+
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -911,6 +907,15 @@ export default function TasksApp({
               status: nextTask.status,
             });
           }
+
+          broadcastTaskStatus(task.id, nextTask.status);
+          broadcastTaskUpdated(task.id, {
+            title: nextTask.title,
+            dueDate: nextTask.dueDate,
+            plannedFor: nextTask.plannedFor,
+            plannedStart: nextTask.plannedStart,
+            plannedEnd: nextTask.plannedEnd,
+          });
 
           return nextTask;
         }),
