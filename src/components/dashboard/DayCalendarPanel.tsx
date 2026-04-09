@@ -177,6 +177,15 @@ export default function DayCalendarPanel({
     minute: 0 | 15 | 30 | 45;
   } | null>(null);
   const dragPointerOffsetRef = React.useRef(0);
+  const pointerDownEventRef = React.useRef<{
+    id: string;
+    taskId?: string;
+    startX: number;
+    startY: number;
+    offsetY: number;
+  } | null>(null);
+
+  const hasDraggedRef = React.useRef(false);
 
   const [resizingEventId, setResizingEventId] = React.useState<string | null>(
     null,
@@ -775,9 +784,33 @@ export default function DayCalendarPanel({
   }, [dragPreview]);
 
   React.useEffect(() => {
-    if (!draggingEventId) return;
-
     function handlePointerMove(ev: PointerEvent) {
+      if (!draggingEventIdRef.current) {
+        const pending = pointerDownEventRef.current;
+        if (!pending) return;
+
+        const dx = ev.clientX - pending.startX;
+        const dy = ev.clientY - pending.startY;
+        const distance = Math.hypot(dx, dy);
+
+        if (distance < 6) return;
+
+        const pendingEvent = dayEvents.find((item) => item.id === pending.id);
+        if (!pendingEvent) return;
+
+        hasDraggedRef.current = true;
+        dragPointerOffsetRef.current = pending.offsetY;
+
+        setDraggingEventId(pending.id);
+        setDragPreview({
+          id: pending.id,
+          hour: pendingEvent.startHour,
+          minute: (pendingEvent.startMinute || 0) as 0 | 15 | 30 | 45,
+        });
+
+        return;
+      }
+
       const activeId = draggingEventIdRef.current;
       if (!activeId) return;
 
@@ -823,13 +856,18 @@ export default function DayCalendarPanel({
     }
 
     function handlePointerUp() {
+      const pending = pointerDownEventRef.current;
       const activeId = draggingEventIdRef.current;
       const preview = dragPreviewRef.current;
 
-      if (activeId && preview?.id === activeId) {
+      if (!hasDraggedRef.current && pending?.taskId) {
+        openLinkedTaskEditor(pending.taskId);
+      } else if (activeId && preview?.id === activeId) {
         moveEventToTime(activeId, preview.hour, preview.minute);
       }
 
+      pointerDownEventRef.current = null;
+      hasDraggedRef.current = false;
       setDraggingEventId(null);
       setDragPreview(null);
       setDragOverHour(null);
@@ -837,6 +875,8 @@ export default function DayCalendarPanel({
     }
 
     function handlePointerCancel() {
+      pointerDownEventRef.current = null;
+      hasDraggedRef.current = false;
       cancelDragAndResize();
       dragPointerOffsetRef.current = 0;
     }
@@ -850,7 +890,7 @@ export default function DayCalendarPanel({
       window.removeEventListener("pointerup", handlePointerUp);
       window.removeEventListener("pointercancel", handlePointerCancel);
     };
-  }, [draggingEventId]);
+  }, [dayEvents]);
 
   function getTimeFromTrackPointer(
     clientY: number,
@@ -949,6 +989,16 @@ export default function DayCalendarPanel({
         durationHours,
       });
     }
+  }
+
+  function openLinkedTaskEditor(taskId?: string) {
+    if (typeof window === "undefined" || !taskId) return;
+
+    window.dispatchEvent(
+      new CustomEvent("lifeos:open-task-editor", {
+        detail: { taskId },
+      }),
+    );
   }
 
   function getResizePreviewFromTrackPointer(
@@ -1545,10 +1595,19 @@ export default function DayCalendarPanel({
                               "--daycal-line-clamp": lineClamp,
                             } as React.CSSProperties
                           }
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }}
+                          onDoubleClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }}
                           onPointerDown={(e) => {
                             if (isReadOnlyEvent) return;
 
                             const target = e.target as HTMLElement;
+
                             if (
                               target.closest(
                                 "button, input, textarea, .lo-daycal__event-resize",
@@ -1562,14 +1621,16 @@ export default function DayCalendarPanel({
                             const rect = (
                               e.currentTarget as HTMLDivElement
                             ).getBoundingClientRect();
-                            dragPointerOffsetRef.current = e.clientY - rect.top;
 
-                            setDraggingEventId(event.id);
-                            setDragPreview({
+                            pointerDownEventRef.current = {
                               id: event.id,
-                              hour: getRenderedHourForEvent(event),
-                              minute: getRenderedMinuteForEvent(event),
-                            });
+                              taskId: event.sourceTaskId,
+                              startX: e.clientX,
+                              startY: e.clientY,
+                              offsetY: e.clientY - rect.top,
+                            };
+
+                            hasDraggedRef.current = false;
                           }}
                         >
                           <div className="lo-daycal__event-main">

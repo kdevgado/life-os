@@ -447,6 +447,7 @@ export default function SpacesPanel() {
         )}
       </div>
 
+    {!isMobile && (
       <div className="lo-spaces__footer">
         <div className="lo-spaces__current">
           <div className="lo-spaces__current-label">Selected wallpaper</div>
@@ -481,6 +482,7 @@ export default function SpacesPanel() {
           </div>
         ) : null}
       </div>
+    )}
     </div>
   );
 }

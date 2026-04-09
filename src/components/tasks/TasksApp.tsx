@@ -1242,6 +1242,60 @@ export default function TasksApp({
     };
   }, [authed]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    function handleOpenTaskEditor(event: Event) {
+      const customEvent = event as CustomEvent<{ taskId: string }>;
+      const taskId = customEvent.detail?.taskId;
+      if (!taskId) return;
+
+      const task = tasks.find((t) => t.id === taskId);
+      if (!task) return;
+
+      startEditingTask(task);
+    }
+
+    window.addEventListener(
+      "lifeos:open-task-editor",
+      handleOpenTaskEditor as EventListener,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "lifeos:open-task-editor",
+        handleOpenTaskEditor as EventListener,
+      );
+    };
+  }, [tasks, startEditingTask]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    function handleOpenTaskEditor(event: Event) {
+      const customEvent = event as CustomEvent<{ taskId: string }>;
+      const taskId = customEvent.detail?.taskId;
+      if (!taskId) return;
+
+      const task = tasks.find((t) => t.id === taskId);
+      if (!task) return;
+
+      startEditingTask(task);
+    }
+
+    window.addEventListener(
+      "lifeos:open-task-editor",
+      handleOpenTaskEditor as EventListener,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "lifeos:open-task-editor",
+        handleOpenTaskEditor as EventListener,
+      );
+    };
+  }, [tasks, startEditingTask]);
+
   const editingTask =
     editingTaskId && editorDraft
       ? (tasks.find((task) => task.id === editingTaskId) ?? null)
