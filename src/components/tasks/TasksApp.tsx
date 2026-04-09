@@ -1282,9 +1282,22 @@ export default function TasksApp({
                         e.currentTarget as HTMLElement
                       ).getBoundingClientRect();
 
+                      const menuWidth = 200;
+                      const viewportPadding = 10;
+
+                      const nextLeft = Math.min(
+                        Math.max(viewportPadding, rect.right - menuWidth),
+                        window.innerWidth - menuWidth - viewportPadding,
+                      );
+
+                      const nextTop = Math.min(
+                        rect.bottom + 6,
+                        window.innerHeight - 220,
+                      );
+
                       setFilterMenuPos({
-                        top: rect.bottom + 6,
-                        left: rect.right - 200,
+                        top: nextTop,
+                        left: nextLeft,
                       });
 
                       setShowFocusFilter((prev) => !prev);
