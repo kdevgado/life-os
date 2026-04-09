@@ -294,6 +294,49 @@ export default function DayCalendarPanel({
     const durationMinutes = Math.max(15, endTotal - startTotal);
     return clampDurationToQuarter(durationMinutes / 60);
   }
+
+  function syncLinkedTaskFromCalendar(
+    event: DayCalendarEvent,
+    dateKey: string,
+    overrides?: {
+      startHour?: number;
+      startMinute?: 0 | 15 | 30 | 45;
+      durationHours?: number;
+    },
+  ) {
+    if (typeof window === "undefined" || !event.sourceTaskId) return;
+
+    const startHour = overrides?.startHour ?? event.startHour;
+    const startMinute = overrides?.startMinute ?? event.startMinute ?? 0;
+    const durationHours =
+      overrides?.durationHours ?? event.durationHours ?? 0.5;
+
+    const startTotalMinutes = startHour * 60 + startMinute;
+    const durationMinutes = Math.max(15, Math.round(durationHours * 60));
+    const endTotalMinutes = startTotalMinutes + durationMinutes;
+
+    const endHour = Math.floor(endTotalMinutes / 60);
+    const endMinute = clampMinuteToQuarter(endTotalMinutes % 60);
+
+    const startIso = `${dateKey}T${String(startHour).padStart(2, "0")}:${String(startMinute).padStart(2, "0")}:00`;
+    const endIso = `${dateKey}T${String(endHour).padStart(2, "0")}:${String(endMinute).padStart(2, "0")}:00`;
+
+    window.dispatchEvent(
+      new CustomEvent("lifeos:task-updated", {
+        detail: {
+          taskId: event.sourceTaskId,
+          patch: {
+            title: event.title,
+            dueDate: dateKey,
+            plannedFor: startIso,
+            plannedStart: startIso,
+            plannedEnd: endIso,
+          },
+        },
+      }),
+    );
+  }
+
   function handleDropOnSlot(
     ev: React.DragEvent,
     hour: number,
@@ -327,6 +370,12 @@ export default function DayCalendarPanel({
 
     onDropTask?.({ task, dateKey: dayKey, hour });
 
+    const durationMinutes = Math.round((newEvent.durationHours ?? 0.5) * 60);
+    const startTotalMinutes = hour * 60 + minute;
+    const endTotalMinutes = startTotalMinutes + durationMinutes;
+    const endHour = Math.floor(endTotalMinutes / 60);
+    const endMinute = clampMinuteToQuarter(endTotalMinutes % 60);
+
     if (typeof window !== "undefined") {
       window.dispatchEvent(
         new CustomEvent("lifeos:task-scheduled", {
@@ -336,6 +385,8 @@ export default function DayCalendarPanel({
             date: dayKey,
             hour,
             minute,
+            endHour,
+            endMinute,
           },
         }),
       );
@@ -414,88 +465,87 @@ export default function DayCalendarPanel({
   }, [storageKey]);
 
   React.useEffect(() => {
-  if (typeof window === "undefined") return;
+    if (typeof window === "undefined") return;
 
-  function handleTaskUpdated(event: Event) {
-    const custom = event as CustomEvent<{
-      taskId: string;
-      patch: {
-        title?: string;
-        dueDate?: string;
-        plannedFor?: string;
-        plannedStart?: string;
-        plannedEnd?: string;
-      };
-    }>;
+    function handleTaskUpdated(event: Event) {
+      const custom = event as CustomEvent<{
+        taskId: string;
+        patch: {
+          title?: string;
+          dueDate?: string;
+          plannedFor?: string;
+          plannedStart?: string;
+          plannedEnd?: string;
+        };
+      }>;
 
-    const taskId = custom.detail?.taskId;
-    const patch = custom.detail?.patch;
+      const taskId = custom.detail?.taskId;
+      const patch = custom.detail?.patch;
 
-    if (!taskId || !patch) return;
+      if (!taskId || !patch) return;
 
-    setEventsByDay((prev) => {
-      let changed = false;
+      setEventsByDay((prev) => {
+        let changed = false;
 
-      const next = Object.fromEntries(
-        Object.entries(prev).map(([dateKey, events]) => {
-          const updatedEvents = events.map((item) => {
-            if (item.sourceTaskId !== taskId) return item;
+        const next = Object.fromEntries(
+          Object.entries(prev).map(([dateKey, events]) => {
+            const updatedEvents = events.map((item) => {
+              if (item.sourceTaskId !== taskId) return item;
 
-            changed = true;
+              changed = true;
 
-            const startIso = patch.plannedStart ?? patch.plannedFor;
-            const endIso = patch.plannedEnd;
+              const startIso = patch.plannedStart ?? patch.plannedFor;
+              const endIso = patch.plannedEnd;
 
-            let nextStartHour = item.startHour;
-            let nextStartMinute = item.startMinute ?? 0;
-            let nextDurationHours = item.durationHours ?? 0.5;
+              let nextStartHour = item.startHour;
+              let nextStartMinute = item.startMinute ?? 0;
+              let nextDurationHours = item.durationHours ?? 0.5;
 
-            if (startIso) {
-              const start = new Date(startIso);
-              nextStartHour = start.getHours();
-              nextStartMinute = clampMinuteToQuarter(start.getMinutes());
-            }
+              if (startIso) {
+                const start = new Date(startIso);
+                nextStartHour = start.getHours();
+                nextStartMinute = clampMinuteToQuarter(start.getMinutes());
+              }
 
-            if (startIso && endIso) {
-              const start = new Date(startIso);
-              const end = new Date(endIso);
-              const duration =
-                (end.getTime() - start.getTime()) / 3600000;
+              if (startIso && endIso) {
+                const start = new Date(startIso);
+                const end = new Date(endIso);
+                const duration = (end.getTime() - start.getTime()) / 3600000;
 
-              nextDurationHours = clampDurationToQuarter(
-                Math.max(0.25, duration),
-              );
-            }
+                nextDurationHours = clampDurationToQuarter(
+                  Math.max(0.25, duration),
+                );
+              }
 
-            return {
-              ...item,
-              title: patch.title ?? item.title,
-              startHour: nextStartHour,
-              startMinute: nextStartMinute,
-              durationHours: nextDurationHours,
-            };
-          });
+              return {
+                ...item,
+                title: patch.title ?? item.title,
+                startHour: nextStartHour,
+                startMinute: nextStartMinute,
+                durationHours: nextDurationHours,
+              };
+            });
 
-          return [dateKey, updatedEvents];
-        }),
-      ) as Record<string, DayCalendarEvent[]>;
+            return [dateKey, updatedEvents];
+          }),
+        ) as Record<string, DayCalendarEvent[]>;
 
-      return changed ? next : prev;
-    });
-  }
+        return changed ? next : prev;
+      });
+    }
 
-  window.addEventListener(
-    "lifeos:task-updated",
-    handleTaskUpdated as EventListener,
-  );
-
-  return () => {
-    window.removeEventListener(
+    window.addEventListener(
       "lifeos:task-updated",
       handleTaskUpdated as EventListener,
     );
-  };
-}, []);
+
+    return () => {
+      window.removeEventListener(
+        "lifeos:task-updated",
+        handleTaskUpdated as EventListener,
+      );
+    };
+  }, []);
 
   React.useEffect(() => {
     onEventsChange?.(eventsByDay);
@@ -833,6 +883,10 @@ export default function DayCalendarPanel({
     nextHour: number,
     nextMinute: 0 | 15 | 30 | 45,
   ) {
+    const targetEvent = (eventsByDay[dayKey] || []).find(
+      (item) => item.id === id,
+    );
+
     setEventsByDay((prev) => ({
       ...prev,
       [dayKey]: (prev[dayKey] || [])
@@ -847,6 +901,13 @@ export default function DayCalendarPanel({
           return aValue - bValue;
         }),
     }));
+
+    if (targetEvent) {
+      syncLinkedTaskFromCalendar(targetEvent, dayKey, {
+        startHour: nextHour,
+        startMinute: nextMinute,
+      });
+    }
   }
 
   function getRenderedDurationForEvent(event: DayCalendarEvent) {
@@ -862,6 +923,10 @@ export default function DayCalendarPanel({
     startMinute: 0 | 15 | 30 | 45,
     durationHours: number,
   ) {
+    const targetEvent = (eventsByDay[dayKey] || []).find(
+      (item) => item.id === id,
+    );
+
     setEventsByDay((prev) => ({
       ...prev,
       [dayKey]: (prev[dayKey] || [])
@@ -876,6 +941,14 @@ export default function DayCalendarPanel({
           return aValue - bValue;
         }),
     }));
+
+    if (targetEvent) {
+      syncLinkedTaskFromCalendar(targetEvent, dayKey, {
+        startHour,
+        startMinute,
+        durationHours,
+      });
+    }
   }
 
   function getResizePreviewFromTrackPointer(

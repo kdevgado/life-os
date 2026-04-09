@@ -425,6 +425,64 @@ export default function TasksApp({
     };
   }, [tasks]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    function handleTaskUpdated(event: Event) {
+      const customEvent = event as CustomEvent<{
+        taskId: string;
+        patch: {
+          title?: string;
+          dueDate?: string;
+          plannedFor?: string;
+          plannedStart?: string;
+          plannedEnd?: string;
+        };
+      }>;
+
+      const taskId = customEvent.detail?.taskId;
+      const patch = customEvent.detail?.patch;
+
+      if (!taskId || !patch) return;
+
+      const nextUpdatedAt = new Date().toISOString();
+
+      if (authed) {
+        setTasks((prev) =>
+          prev.map((task) =>
+            task.id === taskId
+              ? { ...task, ...patch, updatedAt: nextUpdatedAt }
+              : task,
+          ),
+        );
+        return;
+      }
+
+      const updated = updateTask(taskId, {
+        ...patch,
+        updatedAt: nextUpdatedAt,
+      });
+
+      if (!updated) return;
+
+      setTasks((prev) =>
+        prev.map((task) => (task.id === taskId ? updated : task)),
+      );
+    }
+
+    window.addEventListener(
+      "lifeos:task-updated",
+      handleTaskUpdated as EventListener,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "lifeos:task-updated",
+        handleTaskUpdated as EventListener,
+      );
+    };
+  }, [authed]);
+
   const filtered = useMemo(() => {
     const today = isoDate(new Date());
 
@@ -936,6 +994,8 @@ export default function TasksApp({
         date: string;
         hour: number;
         minute?: 0 | 15 | 30 | 45;
+        endHour?: number;
+        endMinute?: 0 | 15 | 30 | 45;
       }>;
 
       const taskId = customEvent.detail?.taskId;
@@ -952,14 +1012,44 @@ export default function TasksApp({
             customEvent.detail?.hour,
             plannedMinute,
           );
-          const endTime = addMinutesToTimeString(startTime, 30);
+          const nextPlannedStart = combineDateAndTime(date, startTime);
+
+          const hasExplicitEnd =
+            typeof customEvent.detail?.endHour === "number";
+
+          let nextPlannedEnd: string | undefined;
+
+          if (hasExplicitEnd) {
+            const endTime = toTimeValue(
+              customEvent.detail.endHour,
+              customEvent.detail.endMinute ?? 0,
+            );
+            nextPlannedEnd = combineDateAndTime(date, endTime);
+          } else if (task.plannedStart && task.plannedEnd && nextPlannedStart) {
+            const previousStart = new Date(task.plannedStart);
+            const previousEnd = new Date(task.plannedEnd);
+            const nextStart = new Date(nextPlannedStart);
+
+            const durationMs = Math.max(
+              15 * 60 * 1000,
+              previousEnd.getTime() - previousStart.getTime(),
+            );
+
+            nextPlannedEnd = new Date(
+              nextStart.getTime() + durationMs,
+            ).toISOString();
+          } else if (nextPlannedStart) {
+            nextPlannedEnd = new Date(
+              new Date(nextPlannedStart).getTime() + 30 * 60 * 1000,
+            ).toISOString();
+          }
 
           const nextTask = {
             ...task,
-            dueDate: task.dueDate ?? date,
-            plannedFor: combineDateAndTime(date, startTime) ?? date,
-            plannedStart: combineDateAndTime(date, startTime),
-            plannedEnd: task.plannedEnd ?? combineDateAndTime(date, endTime),
+            dueDate: date,
+            plannedFor: nextPlannedStart ?? date,
+            plannedStart: nextPlannedStart,
+            plannedEnd: nextPlannedEnd,
             list: "planner",
             status: "doing" as const,
             updatedAt: new Date().toISOString(),
