@@ -1109,38 +1109,37 @@ export default function FloatingWorkspace() {
 
   React.useEffect(() => {
     const syncTopDockWindows = () => {
-      const hidden = document.documentElement.classList.contains(
-        "is-focus-mode-hidden",
-      );
+      if (typeof window === "undefined") return;
 
       setWins((prev) =>
         prev.map((w) => {
           if (!isTopDockPanel(w.key)) return w;
+          if (isMobile) return w;
 
-          if (hidden) {
-            return { ...w, x: 7, y: 7, h: window.innerHeight };
-          }
+          const size = defaultSizeFor(w.key);
+          const fixedH = fixedHeightFor(w.key);
+          const nextH = fixedH ?? w.h ?? size.h;
 
-          return { ...w, x: 110, y: 86 };
+          return {
+            ...w,
+            x: w.x,
+            y: w.y,
+            w: w.w || size.w,
+            h: nextH,
+          };
         }),
       );
     };
 
     syncTopDockWindows();
 
-    const observer = new MutationObserver(syncTopDockWindows);
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
-    });
-
-    window.addEventListener("resize", syncTopDockWindows);
+    const onResize = () => syncTopDockWindows();
+    window.addEventListener("resize", onResize);
 
     return () => {
-      observer.disconnect();
-      window.removeEventListener("resize", syncTopDockWindows);
+      window.removeEventListener("resize", onResize);
     };
-  }, []);
+  }, [isMobile]);
 
   const topDockZ = Math.max(
     0,
