@@ -1425,6 +1425,12 @@ export default function FloatingWorkspace() {
         iconBlack: "/icons/black/timer.png",
       },
       {
+        key: "notes" as const,
+        label: "Notes",
+        iconWhite: "/icons/white/notes.png",
+        iconBlack: "/icons/black/notes.png",
+      },
+      {
         key: "tasks" as const,
         label: "Tasks",
         iconWhite: "/icons/white/tasks.png",
@@ -1541,24 +1547,24 @@ export default function FloatingWorkspace() {
   );
 
   React.useEffect(() => {
-  if (!hasCalendarSettingsOpen) return;
+    if (!hasCalendarSettingsOpen) return;
 
-  function handleOutsideClick(e: MouseEvent) {
-    const target = e.target as HTMLElement;
+    function handleOutsideClick(e: MouseEvent) {
+      const target = e.target as HTMLElement;
 
-    // if clicking inside the calendar settings window, ignore
-    if (target.closest(".lo-window--calendar-settings")) return;
+      // if clicking inside the calendar settings window, ignore
+      if (target.closest(".lo-window--calendar-settings")) return;
 
-    // otherwise close it
-    setWins((prev) => prev.filter((w) => w.key !== "calendar-settings"));
-  }
+      // otherwise close it
+      setWins((prev) => prev.filter((w) => w.key !== "calendar-settings"));
+    }
 
-  window.addEventListener("mousedown", handleOutsideClick);
+    window.addEventListener("mousedown", handleOutsideClick);
 
-  return () => {
-    window.removeEventListener("mousedown", handleOutsideClick);
-  };
-}, [hasCalendarSettingsOpen]);
+    return () => {
+      window.removeEventListener("mousedown", handleOutsideClick);
+    };
+  }, [hasCalendarSettingsOpen]);
 
   React.useEffect(() => {
     const syncTopDockWindows = () => {
@@ -1688,7 +1694,9 @@ export default function FloatingWorkspace() {
     setWins((prev) =>
       prev
         .filter((w) =>
-          ["spaces", "timer", "tasks", "calendar-settings"].includes(w.key),
+          ["spaces", "timer", "tasks", "notes", "calendar-settings"].includes(
+            w.key,
+          ),
         )
         .map((w) => {
           if (w.key === "calendar-settings") return w;
@@ -1845,7 +1853,9 @@ export default function FloatingWorkspace() {
             }}
             onMove={(x, y) => moveWindow(w.key, x, y)}
             onResize={(width, height) => resizeWindow(w.key, width, height)}
-            resizable={!isMobile && !isTopDockPanel(w.key) && !isModalPanel(w.key)}
+            resizable={
+              !isMobile && !isTopDockPanel(w.key) && !isModalPanel(w.key)
+            }
             draggable={!isMobile && !isModalPanel(w.key)}
           >
             {w.key === "tasks" && <TasksApp mode="focus" />}

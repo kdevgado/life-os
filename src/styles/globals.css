@@ -1741,6 +1741,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   opacity: 0.95;
 }
 
+/* Mobile dock: fixed bottom, full-width, more spaced out */
 .lo-docks--mobile {
   position: fixed;
   left: 12px;
