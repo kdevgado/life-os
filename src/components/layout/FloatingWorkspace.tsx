@@ -156,17 +156,15 @@ function getIsMobileViewport() {
 
 function mobileWindowPos(w: number, h: number) {
   if (typeof window === "undefined") {
-    return { x: 12, y: 100 };
+    return { x: 12, y: 72 };
   }
 
-  const dockHeight = 92;
   const topOffset = 72;
   const sideGap = 12;
-  const bottomGap = 12;
 
   return {
     x: Math.max(sideGap, Math.round((window.innerWidth - w) / 2)),
-    y: Math.max(topOffset, window.innerHeight - h - dockHeight - bottomGap),
+    y: topOffset,
   };
 }
 
@@ -1847,8 +1845,8 @@ export default function FloatingWorkspace() {
             }}
             onMove={(x, y) => moveWindow(w.key, x, y)}
             onResize={(width, height) => resizeWindow(w.key, width, height)}
-            resizable={!isTopDockPanel(w.key) && !isModalPanel(w.key)}
-            draggable={!isModalPanel(w.key)}
+            resizable={!isMobile && !isTopDockPanel(w.key) && !isModalPanel(w.key)}
+            draggable={!isMobile && !isModalPanel(w.key)}
           >
             {w.key === "tasks" && <TasksApp mode="focus" />}
             {w.key === "notes" && <NotesPanel />}

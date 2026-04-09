@@ -1818,8 +1818,12 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   .lo-window__bar {
     touch-action: none;
   }
-}
 
+  .lo-window__bar--draggable {
+    cursor: default;
+    touch-action: auto;
+  }
+}
 /* Floating window */
 .lo-window{
   position: fixed;
