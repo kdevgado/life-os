@@ -14,8 +14,12 @@ const { title = "Life OS" } = Astro.props;
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#ffffff" />
 
-    <script type="module">
-      import "/src/scripts/pwa.ts";
+    <script>
+      import { registerSW } from "virtual:pwa-register";
+
+      registerSW({
+        immediate: true,
+      });
     </script>
 
     <script is:inline>
