@@ -1742,24 +1742,53 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 }
 
 .lo-docks--mobile {
-  left: 50%;
-  right: auto;
+  position: fixed;
+  left: 12px;
+  right: 12px;
   top: auto;
   bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
-  transform: translateX(-50%);
-  width: calc(100vw - 24px);
+  width: auto;
   max-width: 420px;
+  margin: 0 auto;
+  transform: none;
   z-index: 120;
+  box-sizing: border-box;
 }
 
 .lo-dock--mobile {
   width: 100%;
+  max-width: 100%;
   flex-direction: row;
-  justify-content: space-around;
+  justify-content: space-between;
   align-items: stretch;
   gap: 8px;
   padding: 8px;
   border-radius: 22px;
+  box-sizing: border-box;
+}
+
+.lo-dock--mobile .lo-dock__btn {
+  flex: 1 1 0;
+  min-width: 0;
+  width: auto;
+  min-height: 60px;
+  padding: 8px 6px;
+}
+
+@media (max-width: 380px) {
+  .lo-dock--mobile {
+    gap: 6px;
+    padding: 6px;
+  }
+
+  .lo-dock--mobile .lo-dock__btn {
+    min-height: 56px;
+    padding: 6px 4px;
+  }
+
+  .lo-dock__label {
+    font-size: 11px;
+  }
 }
 
 .lo-dock--mobile .lo-dock__btn {
