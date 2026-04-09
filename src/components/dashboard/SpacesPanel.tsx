@@ -135,6 +135,18 @@ export default function SpacesPanel() {
   >("all");
   const [searchQuery, setSearchQuery] = React.useState("");
 
+  const [isMobile, setIsMobile] = React.useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth <= 720;
+  });
+
+  React.useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth <= 720);
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
   React.useEffect(() => {
     const savedMuted = localStorage.getItem("lifeos_wallpaper_muted");
     const savedVolume = localStorage.getItem("lifeos_wallpaper_volume");
@@ -263,26 +275,28 @@ export default function SpacesPanel() {
   return (
     <div className="lo-spaces">
       <div className="lo-spaces__top">
-        <div className="lo-spaces__section">
-          <div className="lo-spaces__label">
-            <strong>Theme</strong>
-            <span>Duna / Nebula</span>
-          </div>
+        {!isMobile && (
+          <div className="lo-spaces__section">
+            <div className="lo-spaces__label">
+              <strong>Theme</strong>
+              <span>Duna / Nebula</span>
+            </div>
 
-          <select
-            className="lo-spaces__select"
-            value={theme}
-            onChange={(e) => {
-              const v = e.target.value === "nebula" ? "nebula" : "duna";
-              setTheme(v);
-              localStorage.setItem("lifeos_theme", v);
-              document.documentElement.setAttribute("data-theme", v);
-            }}
-          >
-            <option value="duna">Duna</option>
-            <option value="nebula">Nebula</option>
-          </select>
-        </div>
+            <select
+              className="lo-spaces__select"
+              value={theme}
+              onChange={(e) => {
+                const v = e.target.value === "nebula" ? "nebula" : "duna";
+                setTheme(v);
+                localStorage.setItem("lifeos_theme", v);
+                document.documentElement.setAttribute("data-theme", v);
+              }}
+            >
+              <option value="duna">Duna</option>
+              <option value="nebula">Nebula</option>
+            </select>
+          </div>
+        )}
 
         <div
           className="lo-spaces__tabs"
