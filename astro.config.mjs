@@ -30,20 +30,47 @@ export default defineConfig({
           theme_color: "#ffffff",
           icons: [
             {
-              src: "/icons/pwa-192.ico",
+              src: "/icons/pwa-192.png",
               sizes: "192x192",
-              type: "image/x-icon",
-              purpose: "any maskable"
+              type: "image/png",
+              purpose: "any",
             },
             {
-              src: "/icons/pwa-512.ico",
+              src: "/icons/pwa-512.png",
               sizes: "512x512",
-              type: "image/x-icon",
-              purpose: "any maskable"
-            }
-          ]
-        }
-      })
-    ]
-  }
+              type: "image/png",
+              purpose: "any",
+            },
+            {
+              src: "/icons/pwa-192-maskable.png",
+              sizes: "192x192",
+              type: "image/png",
+              purpose: "maskable",
+            },
+            {
+              src: "/icons/pwa-512-maskable.png",
+              sizes: "512x512",
+              type: "image/png",
+              purpose: "maskable",
+            },
+          ],
+          screenshots: [
+            {
+              src: "/screenshots/desktop-wide.png",
+              sizes: "1280x720",
+              type: "image/png",
+              form_factor: "wide",
+              label: "LifeOS desktop workspace",
+            },
+            {
+              src: "/screenshots/mobile-home.png",
+              sizes: "540x1200",
+              type: "image/png",
+              label: "LifeOS mobile workspace",
+            },
+          ],
+        },
+      }),
+    ],
+  },
 });
