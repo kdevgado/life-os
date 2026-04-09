@@ -192,6 +192,11 @@ function mobileSizeFor(key: Exclude<PanelKey, null>) {
         w: Math.min(520, maxW),
         h: Math.min(maxH, Math.max(360, Math.round(window.innerHeight * 0.62))),
       };
+    case "notes":
+      return {
+        w: Math.min(380, maxW),
+        h: Math.min(maxH, Math.max(320, Math.round(window.innerHeight * 0.56))),
+      };
     default:
       return {
         w: Math.min(defaultSizeFor(key).w, maxW),

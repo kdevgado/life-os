@@ -1741,7 +1741,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   opacity: 0.95;
 }
 
-/* Mobile dock: fixed bottom, full-width, more spaced out */
+/* Mobile dock: fixed at bottom, full-width, more spaced out */
 .lo-docks--mobile {
   position: fixed;
   left: 12px;
@@ -1825,7 +1825,94 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
     touch-action: auto;
   }
 }
-/* Floating window */
+
+@media (max-width: 720px) {
+  .lo-plan {
+    inset: 0;
+    padding: 76px 10px 10px;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .lo-plan__shell {
+    min-height: calc(100vh - 86px);
+    border-radius: 18px;
+    padding: 14px;
+  }
+
+  .lo-plan__header {
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .lo-plan__title {
+    font-size: 1.8rem;
+    line-height: 1;
+  }
+
+  .lo-plan__tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    gap: 8px;
+    padding: 0;
+    background: transparent;
+  }
+
+  .lo-plan__tabs button {
+    width: 100%;
+    min-height: 42px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: rgba(15, 23, 42, 0.06);
+  }
+
+  :root[data-theme="nebula"] .lo-plan__tabs button {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .lo-plan__tabs button.is-active {
+    background: rgba(15, 23, 42, 0.92);
+    color: #fff;
+  }
+
+  :root[data-theme="nebula"] .lo-plan__tabs button.is-active {
+    background: rgba(255, 255, 255, 0.92);
+    color: #0f172a;
+  }
+
+  .lo-plan__content {
+    min-height: 0;
+  }
+
+  .lo-plan__panel,
+  .lo-plan__placeholder {
+    min-height: 0;
+    border-radius: 18px;
+    padding: 14px;
+    overflow: visible;
+  }
+
+  .lo-plan__panel[hidden],
+  .lo-plan__placeholder[hidden] {
+    display: none !important;
+  }
+
+  .lo-plan .lo-page {
+    max-width: 100%;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .lo-plan .lo-page.lo-tasks {
+    padding: 0;
+  }
+}
+
+/* =========================
+   Floating windows (for planner and tasks)
+   ========================= */
 .lo-window{
   position: fixed;
   overflow: visible;
