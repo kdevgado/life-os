@@ -26,8 +26,6 @@ export default function AccountMenu() {
   const menuRef = useRef<HTMLDivElement | null>(null);
   const hideTimerRef = useRef<number | null>(null);
 
-  const [accountWindowOpen, setAccountWindowOpen] = useState(false);
-
   const iconSrc = useMemo(() => {
     return theme === "nebula"
       ? "/icons/white/account.png"
@@ -265,7 +263,6 @@ export default function AccountMenu() {
       setUser(null);
       setProfileEmail("");
       setProfileName("");
-      setAccountWindowOpen(false);
     } catch (error) {
       console.error("Account delete failed:", error);
     }
@@ -314,96 +311,16 @@ export default function AccountMenu() {
                 type="button"
                 className="lo-account-menu__item"
                 onClick={() => {
-                  setAccountWindowOpen(true);
+                  window.dispatchEvent(
+                    new CustomEvent("lifeos:open-account-settings"),
+                  );
                   setOpen(false);
                 }}
               >
-                Open account
+                My account
               </button>
             )}
           </section>
-
-          {accountWindowOpen && user && (
-            <div
-              className="lo-account-window__backdrop"
-              onClick={() => setAccountWindowOpen(false)}
-            >
-              <div
-                className="lo-account-window"
-                role="dialog"
-                aria-modal="true"
-                aria-label="My account"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="lo-account-window__header">
-                  <h2 className="lo-account-window__title">My account</h2>
-                  <button
-                    type="button"
-                    className="lo-account-window__close"
-                    onClick={() => setAccountWindowOpen(false)}
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                <div className="lo-account-window__body">
-                  <label className="lo-account-menu__field">
-                    <span>Name</span>
-                    <input
-                      value={profileName}
-                      onChange={(e) => setProfileName(e.target.value)}
-                      placeholder="Your name"
-                    />
-                  </label>
-
-                  <label className="lo-account-menu__field">
-                    <span>Email</span>
-                    <input
-                      value={profileEmail}
-                      onChange={(e) => setProfileEmail(e.target.value)}
-                      placeholder="you@example.com"
-                    />
-                  </label>
-
-                  <div className="lo-account-window__meta">
-                    <div>
-                      <strong>Signed in as:</strong>
-                    </div>
-                    <div>{user.email || "No email available"}</div>
-                  </div>
-                </div>
-
-                <div className="lo-account-window__footer">
-                  <button
-                    type="button"
-                    className="lo-account-menu__item"
-                    onClick={handleSaveProfile}
-                  >
-                    Save changes
-                  </button>
-
-                  <button
-                    type="button"
-                    className="lo-account-menu__item"
-                    onClick={() => {
-                      identity?.logout();
-                      setAccountWindowOpen(false);
-                    }}
-                  >
-                    Sign out
-                  </button>
-
-                  <button
-                    type="button"
-                    className="lo-account-menu__item is-danger"
-                    onClick={handleDeleteAccount}
-                  >
-                    Delete account
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
 
           <section className="lo-account-menu__section">
             <div className="lo-account-menu__heading">Appearance</div>
