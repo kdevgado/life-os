@@ -5166,65 +5166,52 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 :root[data-theme="nebula"] .lo-account-menu__range::-moz-range-track {
   background: rgba(255, 255, 255, 0.14);
 }
-
-.lo-account-window__backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 1200;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  background: rgba(8, 12, 20, 0.45);
-  backdrop-filter: blur(10px);
+.lo-window--account-settings {
+  z-index: 5001 !important;
 }
 
-.lo-account-window {
-  width: min(100%, 460px);
-  border-radius: 20px;
-  background: var(--lo-surface, rgba(255, 255, 255, 0.92));
-  border: 1px solid var(--lo-border, rgba(255, 255, 255, 0.16));
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.25);
-  overflow: hidden;
-}
-
-.lo-account-window__header {
+.lo-account-settings {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 18px;
-  border-bottom: 1px solid var(--lo-border, rgba(255, 255, 255, 0.12));
+  flex-direction: column;
+  gap: 18px;
 }
 
-.lo-account-window__title {
-  margin: 0;
-  font-size: 1rem;
+.lo-account-settings__section {
+  display: grid;
+  gap: 12px;
+}
+
+.lo-account-settings__heading {
+  font-size: 0.9rem;
   font-weight: 700;
 }
 
-.lo-account-window__close {
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-  font-size: 1rem;
-}
-
-.lo-account-window__body {
-  display: grid;
-  gap: 14px;
-  padding: 18px;
-}
-
-.lo-account-window__meta {
+.lo-account-settings__meta {
   display: grid;
   gap: 4px;
-  font-size: 0.92rem;
-  opacity: 0.82;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--shell-surface-soft);
+  border: 1px solid var(--shell-border);
 }
 
-.lo-account-window__footer {
+.lo-account-settings__meta strong {
+  font-size: 0.82rem;
+}
+
+.lo-account-settings__meta span {
+  font-size: 0.9rem;
+  color: var(--shell-text);
+}
+
+.lo-account-settings__footer {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
-  padding: 18px;
-  border-top: 1px solid var(--lo-border, rgba(255, 255, 255, 0.12));
+  padding-top: 6px;
+  border-top: 1px solid var(--shell-border);
+}
+
+.lo-account-settings__danger {
+  color: #c0392b;
 }

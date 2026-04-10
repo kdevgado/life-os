@@ -113,16 +113,25 @@ export default function AccountMenu() {
   }, []);
 
   useEffect(() => {
-    if (window.matchMedia("(display-mode: standalone)").matches) {
+    const standalone = window.matchMedia("(display-mode: standalone)").matches;
+    console.log("[PWA] display-mode standalone:", standalone);
+    console.log("[PWA] navigator.standalone:", (navigator as any).standalone);
+
+    if (standalone) {
+      console.log("[PWA] App appears installed via display-mode");
       setInstalled(true);
+    } else {
+      setInstalled(false);
     }
 
     const onBeforeInstallPrompt = (e: Event) => {
+      console.log("[PWA] beforeinstallprompt fired", e);
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
     };
 
     const onAppInstalled = () => {
+      console.log("[PWA] appinstalled fired");
       setInstalled(true);
       setDeferredPrompt(null);
     };
@@ -135,6 +144,11 @@ export default function AccountMenu() {
       window.removeEventListener("appinstalled", onAppInstalled);
     };
   }, []);
+
+  useEffect(() => {
+    console.log("[PWA] installed =", installed);
+    console.log("[PWA] deferredPrompt =", deferredPrompt);
+  }, [installed, deferredPrompt]);
 
   useEffect(() => {
     const onPointerDown = (event: MouseEvent) => {
@@ -204,9 +218,17 @@ export default function AccountMenu() {
   };
 
   const handleInstall = async () => {
+    console.log("[PWA] Install clicked", {
+      installed,
+      hasPrompt: !!deferredPrompt,
+    });
+
     if (!deferredPrompt || installed) return;
+
     await deferredPrompt.prompt();
-    await deferredPrompt.userChoice;
+    const choice = await deferredPrompt.userChoice;
+    console.log("[PWA] userChoice =", choice);
+
     setDeferredPrompt(null);
   };
 
@@ -376,6 +398,11 @@ export default function AccountMenu() {
             >
               Toggle fullscreen
             </button>
+
+            <div className="lo-account-menu__debug">
+              installed: {String(installed)} | prompt:{" "}
+              {deferredPrompt ? "yes" : "no"}
+            </div>
 
             <button
               type="button"
