@@ -259,7 +259,14 @@ export default function AccountMenu() {
       >
         <img src={iconSrc} alt="" className="lo-account-menu__icon" />
         <span className="lo-account-menu__label">
-          {user?.email ? "Account" : "Sign in"}
+          {user
+            ? `Hello, ${
+                profileName ||
+                user.user_metadata?.full_name ||
+                user.email?.split("@")[0] ||
+                "there"
+              }`
+            : "Sign in"}
         </span>
         <span className="lo-account-menu__caret" aria-hidden="true">
           {open ? "▴" : "▾"}
