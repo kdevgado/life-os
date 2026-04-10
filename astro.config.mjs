@@ -9,15 +9,9 @@ export default defineConfig({
       VitePWA({
         registerType: "autoUpdate",
         injectRegister: false,
-
         devOptions: {
           enabled: true,
         },
-
-        workbox: {
-          globPatterns: ["**/*"], // simpler, avoids mismatch warning
-        },
-
         manifest: {
           id: "/",
           name: "LifeOS",

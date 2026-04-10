@@ -26,6 +26,8 @@ export default function AccountMenu() {
   const menuRef = useRef<HTMLDivElement | null>(null);
   const hideTimerRef = useRef<number | null>(null);
 
+  const [accountWindowOpen, setAccountWindowOpen] = useState(false);
+
   const iconSrc = useMemo(() => {
     return theme === "nebula"
       ? "/icons/white/account.png"
@@ -248,6 +250,27 @@ export default function AccountMenu() {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    if (!identity?.currentUser?.()) return;
+
+    const confirmed = window.confirm(
+      "Are you sure you want to delete your account? This cannot be undone.",
+    );
+
+    if (!confirmed) return;
+
+    try {
+      const currentUser = identity.currentUser();
+      await currentUser?.delete?.();
+      setUser(null);
+      setProfileEmail("");
+      setProfileName("");
+      setAccountWindowOpen(false);
+    } catch (error) {
+      console.error("Account delete failed:", error);
+    }
+  };
+
   return (
     <div className="lo-account-menu" ref={menuRef}>
       <button
@@ -287,45 +310,100 @@ export default function AccountMenu() {
                 Sign in
               </button>
             ) : (
-              <>
-                <label className="lo-account-menu__field">
-                  <span>Name</span>
-                  <input
-                    value={profileName}
-                    onChange={(e) => setProfileName(e.target.value)}
-                    placeholder="Your name"
-                  />
-                </label>
+              <button
+                type="button"
+                className="lo-account-menu__item"
+                onClick={() => {
+                  setAccountWindowOpen(true);
+                  setOpen(false);
+                }}
+              >
+                Open account
+              </button>
+            )}
+          </section>
 
-                <label className="lo-account-menu__field">
-                  <span>Email</span>
-                  <input
-                    value={profileEmail}
-                    onChange={(e) => setProfileEmail(e.target.value)}
-                    placeholder="you@example.com"
-                  />
-                </label>
+          {accountWindowOpen && user && (
+            <div
+              className="lo-account-window__backdrop"
+              onClick={() => setAccountWindowOpen(false)}
+            >
+              <div
+                className="lo-account-window"
+                role="dialog"
+                aria-modal="true"
+                aria-label="My account"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="lo-account-window__header">
+                  <h2 className="lo-account-window__title">My account</h2>
+                  <button
+                    type="button"
+                    className="lo-account-window__close"
+                    onClick={() => setAccountWindowOpen(false)}
+                  >
+                    ✕
+                  </button>
+                </div>
 
-                <div className="lo-account-menu__row">
+                <div className="lo-account-window__body">
+                  <label className="lo-account-menu__field">
+                    <span>Name</span>
+                    <input
+                      value={profileName}
+                      onChange={(e) => setProfileName(e.target.value)}
+                      placeholder="Your name"
+                    />
+                  </label>
+
+                  <label className="lo-account-menu__field">
+                    <span>Email</span>
+                    <input
+                      value={profileEmail}
+                      onChange={(e) => setProfileEmail(e.target.value)}
+                      placeholder="you@example.com"
+                    />
+                  </label>
+
+                  <div className="lo-account-window__meta">
+                    <div>
+                      <strong>Signed in as:</strong>
+                    </div>
+                    <div>{user.email || "No email available"}</div>
+                  </div>
+                </div>
+
+                <div className="lo-account-window__footer">
                   <button
                     type="button"
                     className="lo-account-menu__item"
                     onClick={handleSaveProfile}
                   >
-                    Save account
+                    Save changes
+                  </button>
+
+                  <button
+                    type="button"
+                    className="lo-account-menu__item"
+                    onClick={() => {
+                      identity?.logout();
+                      setAccountWindowOpen(false);
+                    }}
+                  >
+                    Sign out
                   </button>
 
                   <button
                     type="button"
                     className="lo-account-menu__item is-danger"
-                    onClick={() => identity?.logout()}
+                    onClick={handleDeleteAccount}
                   >
-                    Sign out
+                    Delete account
                   </button>
                 </div>
-              </>
-            )}
-          </section>
+              </div>
+            </div>
+          )}
 
           <section className="lo-account-menu__section">
             <div className="lo-account-menu__heading">Appearance</div>
