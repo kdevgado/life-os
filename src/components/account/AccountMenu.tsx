@@ -120,8 +120,6 @@ export default function AccountMenu() {
 
   useEffect(() => {
     const standalone = window.matchMedia("(display-mode: standalone)").matches;
-    console.log("[PWA] display-mode standalone:", standalone);
-    console.log("[PWA] navigator.standalone:", (navigator as any).standalone);
 
     setInstalled(standalone);
 
@@ -154,11 +152,6 @@ export default function AccountMenu() {
       window.removeEventListener("lifeos:installed", onInstalled);
     };
   }, []);
-
-  useEffect(() => {
-    console.log("[PWA] installed =", installed);
-    console.log("[PWA] deferredPrompt =", deferredPrompt);
-  }, [installed, deferredPrompt]);
 
   useEffect(() => {
     const onPointerDown = (event: MouseEvent) => {
@@ -229,11 +222,6 @@ export default function AccountMenu() {
 
   const handleInstall = async () => {
     const promptEvent = deferredPrompt || window.__lifeosDeferredPrompt;
-
-    console.log("[PWA] Install clicked", {
-      installed,
-      hasPrompt: !!promptEvent,
-    });
 
     if (!promptEvent || installed) return;
 
@@ -411,11 +399,6 @@ export default function AccountMenu() {
             >
               Toggle fullscreen
             </button>
-
-            <div className="lo-account-menu__debug">
-              installed: {String(installed)} | prompt:{" "}
-              {deferredPrompt ? "yes" : "no"}
-            </div>
 
             <button
               type="button"
