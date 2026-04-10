@@ -7,6 +7,12 @@ type BeforeInstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
 };
 
+declare global {
+  interface Window {
+    __lifeosDeferredPrompt: BeforeInstallPromptEvent | null;
+  }
+}
+
 export default function AccountMenu() {
   const [open, setOpen] = useState(false);
   const [theme, setTheme] = useState<"duna" | "nebula">("duna");
@@ -117,31 +123,35 @@ export default function AccountMenu() {
     console.log("[PWA] display-mode standalone:", standalone);
     console.log("[PWA] navigator.standalone:", (navigator as any).standalone);
 
-    if (standalone) {
-      console.log("[PWA] App appears installed via display-mode");
-      setInstalled(true);
+    setInstalled(standalone);
+
+    if (window.__lifeosDeferredPrompt) {
+      console.log("[PWA] found saved deferred prompt");
+      setDeferredPrompt(window.__lifeosDeferredPrompt);
     } else {
-      setInstalled(false);
+      setDeferredPrompt(null);
     }
 
-    const onBeforeInstallPrompt = (e: Event) => {
-      console.log("[PWA] beforeinstallprompt fired", e);
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
+    const onInstallAvailable = () => {
+      console.log("[PWA] install available event received");
+      setDeferredPrompt(window.__lifeosDeferredPrompt ?? null);
     };
 
-    const onAppInstalled = () => {
-      console.log("[PWA] appinstalled fired");
+    const onInstalled = () => {
+      console.log("[PWA] installed event received");
       setInstalled(true);
       setDeferredPrompt(null);
     };
 
-    window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
-    window.addEventListener("appinstalled", onAppInstalled);
+    window.addEventListener("lifeos:install-available", onInstallAvailable);
+    window.addEventListener("lifeos:installed", onInstalled);
 
     return () => {
-      window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
-      window.removeEventListener("appinstalled", onAppInstalled);
+      window.removeEventListener(
+        "lifeos:install-available",
+        onInstallAvailable,
+      );
+      window.removeEventListener("lifeos:installed", onInstalled);
     };
   }, []);
 
@@ -218,17 +228,20 @@ export default function AccountMenu() {
   };
 
   const handleInstall = async () => {
+    const promptEvent = deferredPrompt || window.__lifeosDeferredPrompt;
+
     console.log("[PWA] Install clicked", {
       installed,
-      hasPrompt: !!deferredPrompt,
+      hasPrompt: !!promptEvent,
     });
 
-    if (!deferredPrompt || installed) return;
+    if (!promptEvent || installed) return;
 
-    await deferredPrompt.prompt();
-    const choice = await deferredPrompt.userChoice;
+    await promptEvent.prompt();
+    const choice = await promptEvent.userChoice;
     console.log("[PWA] userChoice =", choice);
 
+    window.__lifeosDeferredPrompt = null;
     setDeferredPrompt(null);
   };
 

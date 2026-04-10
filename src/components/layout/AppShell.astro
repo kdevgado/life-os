@@ -23,6 +23,23 @@ const { title = "Life OS" } = Astro.props;
     </script>
 
     <script is:inline>
+      window.__lifeosDeferredPrompt = null;
+
+      window.addEventListener("beforeinstallprompt", (e) => {
+        console.log("[PWA] captured early in AppShell", e);
+        e.preventDefault();
+        window.__lifeosDeferredPrompt = e;
+        window.dispatchEvent(new CustomEvent("lifeos:install-available"));
+      });
+
+      window.addEventListener("appinstalled", () => {
+        console.log("[PWA] appinstalled fired");
+        window.__lifeosDeferredPrompt = null;
+        window.dispatchEvent(new CustomEvent("lifeos:installed"));
+      });
+    </script>
+
+    <script is:inline>
       try {
         const raw = localStorage.getItem("lifeos_theme") || "duna";
         const t = String(raw).trim().toLowerCase();
