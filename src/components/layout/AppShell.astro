@@ -14,8 +14,29 @@ const { title = "Life OS" } = Astro.props;
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#ffffff" />
 
-    <script type="module">
-      import "/src/scripts/pwa.ts";
+    <script>
+      import { registerSW } from "virtual:pwa-register";
+
+      registerSW({
+        immediate: true,
+      });
+    </script>
+
+    <script is:inline>
+      window.__lifeosDeferredPrompt = null;
+
+      window.addEventListener("beforeinstallprompt", (e) => {
+        console.log("[PWA] captured early in AppShell", e);
+        e.preventDefault();
+        window.__lifeosDeferredPrompt = e;
+        window.dispatchEvent(new CustomEvent("lifeos:install-available"));
+      });
+
+      window.addEventListener("appinstalled", () => {
+        console.log("[PWA] appinstalled fired");
+        window.__lifeosDeferredPrompt = null;
+        window.dispatchEvent(new CustomEvent("lifeos:installed"));
+      });
     </script>
 
     <script is:inline>

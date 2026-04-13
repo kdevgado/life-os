@@ -1,0 +1,115 @@
+* [33m30889d0[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mnewTheme[m[33m)[m Clean up google -auth -callback
+* [33mf5038a5[m feat(mobile view): Adjust mobile workspace layout with bottom dock and limited tools
+* [33m648a3ad[m feat(calendar): sync created calendar items with tasks window
+* [33m441f098[m feat(notes): add more functionality for slash command
+* [33m8658d3e[m feat(notes): add slash command menu and replace placeholder text
+* [33mdcd8854[m[33m ([m[1;31morigin/newTheme[m[33m)[m feat(calendar): Add Google connectivity functionality
+* [33m12473b3[m Refine focus filter dropdown behavior and close on outside click
+* [33m8afc14f[m feat(tasks+calendar): Add task completion sound cue when marking tasks done
+* [33m6a6de7f[m feat(sounds): Redesign sounds panel with themed UI, master volume, wallpaper audio, YouTube link, sound icons, and per-sound sliders
+* [33m1814bac[m refine(calendar): aligned calendar event checkbox with first line of task title
+* [33m0f310bd[m refactor(tasks): Add inline task title editing in focus view
+* [33m4112745[m Fix overdue styling not applying in Up Next section
+* [33m3ba3a63[m Refactor(Tasks):Display 'Today' for tasks created on current day instead of full date
+* [33m754e56e[m Pass startEditingTask into focus tasks view so double-click edit works
+* [33mc910db0[m Hide task drag handle and menu trigger until hover while keeping focus start button visible
+* [33m4b162e8[m Use shared calendar storage keys in focus workspace so focus and plan calendars stay in sync
+* [33mdf2b63a[m Fix calendar drag offset to keep cursor aligned with grabbed position instead of snapping to top + Keep calendar drag pointer centered within task while moving events
+* [33m5eafc0e[m feat(wallpapers): add countries category and new wallpapers
+* [33m7d3aeea[m fix(spaces): dedupe wallpapers before filtering and rendering across tabs
+* [33m3828feb[m fix(windows): repair focused top-dock window class logic and restore dock navuse active window focus to change top dock max-height
+* [33m4b70545[m feat(spaces): add category icons, wallpaper search, and sticky footer with scrollable gallery
+* [33m8e1cc88[m feat(spaces): serve wallpapers from jsdelivr CDN via GitHub assets repo
+* [33me5cee5c[m refactor(spaces): move wallpaper collection into separate data file
+* [33mde51bf6[m fix(focus-mode): hide only docks and account controls, keep open windows visible + move top dock windows to top-left and expand height in hidden state
+* [33mb62f636[m feat(calendar): add larger resize handles and support resizing events from top and bottom
+* [33mc17c636[m style(calendar): let event text expand as resized items grow taller
+* [33me07211a[m fix(calendar): allow event resize across multiple hours using track-level pointer handling
+* [33mc6fc9d4[m feat(calendar): support partial overlap layout for calendar events
+* [33m8e8118c[m fix(calendar): move event dragging to window-level pointer tracking
+* [33m79cfd8e[m refactor(calendar): turn day view into one continuous time track
+* [33ma11d4cb[m fix(tasks): clean up focus filters for in progress completed today and overdue
+* [33m9759214[m feat(tasks): add created date/time subrow with calendar icon
+* [33m4611b31[m refactor(calendar): Prevent text highlighting during calendar drag and add 15-minute event resize handles
+* [33m8bc30ca[m refactor(calendar): Make calendar drag preview snap visibly to 15-minute slots without drop overlay
+* [33m37a7146[m fix(FloatingWorkspace): Cleanup top bar to not auto lock in open space and fixed location
+* [33m29a80a5[m refactor(calendar): Add 15-minute drag snapping for calendar events
+* [33md55a465[m refactor(calendar): Add live time line colour picker to calendar settings
+* [33m2f01750[m refactor(calendar): Add live current time line and label to day calendar
+* [33m8a26332[m refactor(calendar): Add bottom spacing buffer to calendar hour slots to prevent cramped layout with multiple events
+* [33m1f30008[m refactor(calendar): Convert calendar settings into centered modal with blocking backdrop and reset confirmation
+* [33m756a56d[m Replace calendar gear icon with theme-aware PNG and dynamic switching
+* [33m32bf59d[m Refactor calendar to single-hour rows with 30-minute positioned events and remove internal slot divider
+* [33ma8473bf[m refactor(DayCalendar): Add inline editing for calendar events on double click
+* [33m6465fce[m refactor(Floating Workspace): Make top dock panels switch exclusively instead of opening multiple windows
+* [33md0249e6[m Lock top dock panels to fixed height, disable resizing, and keep them above other windows
+* [33m04ab5d1[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m Update globals.css
+* [33ma2b5719[m Refactor(task): add start button icon and fix icon alignment
+* [33m8ff95e2[m refactor(tasks): Add toggle behaviour to task menu trigger
+* [33mc736849[m refactor(tasks): Add drop indicator bar and positioning within task lists
+* [33mf6cc353[m fix(task): enable right click task menu + context menu positioning and improve right-click UX
+* [33m14828e1[m Refactor(Tasks): Clean up filters + clean up redundant CSS
+* [33m1da513f[m fix(tasks): text wrapping
+* [33m0386621[m feat(tasks): add focus filter dropdown to window header
+* [33mace5167[m fix(tasks): persist first logged-in task change after initial load
+* [33m29109d8[m fix(tasks): save focus draft tasks correctly for logged-in users
+* [33m6c3875c[m feat(tasks): add drag handle icon for reorderable focus tasks
+* [33mca16939[m fix(tasks): repair focus drag reorder and draft sort ordering
+* [33m4ce30fe[m refactor(tasks): assign sortOrder when creating new tasks
+* [33mb5c3f28[m feat(tasks): enable drag-and-drop reordering for Focus tasks
+* [33m510d3f3[m refactor(tasks): simplify focus tasks UI and add inline draft task creation
+* [33m8c14b24[m refactor(tasks): split focus and plan task UIs and remove redundant code
+* [33m13df65c[m Replace focus mode hide timer input with slider control
+* [33m366277d[m Remove number input spinner arrows from focus mode hide timer
+* [33md09ba04[m Group fullscreen and account menu in top-right dock with divider
+* [33me66e85c[m Replace FloatingWorkspace top-right auth controls with unified utility dock
+* [33md832f50[m Update install button to use theme-based icons and show installed state
+* [33mf8e0aab[m Enable PWA installation by registering service worker and loading pwa.ts in AppShell head
+* [33mb4b9857[m Fix PWA install flow and restyle install button as Desktop App action
+* [33mb3fd193[m feat(workspace): add fullscreen toggle, install button, and theme-aware icons
+* [33m7001ea2[m feat(spaces): add hover animation, selected wallpaper footer, and video audio controls
+* [33m570a2f0[m change planner destination
+* [33m0d91ffb[m feat(board): center on today and throttle infinite day generation
+* [33mae9c1ea[m feat(plan-board): convert board into horizontal daily task planner
+* [33m3ccb210[m feat(plan-board): convert board into horizontal daily task planner
+* [33mee402e2[m feat(ui): add floating daily bible verse widget with panel auto-rotate hourly with fade animation and content-sized layout
+* [33md9965ef[m feat: add Plan and Focus workspace modes with fullscreen planning view
+* [33m2e4eeac[m feat(notes): add click-outside menu behavior and icon toolbar for undo redo and list controls
+* [33m595ef7c[m feat(notes): move note management into dropdown with hover rename and delete actions
+* [33m781dea7[m feat(notes): add floating notes editor with tabs, rich text toolbar, and undo/redo
+* [33m10a6e5f[m refactor(ui): remove inline styles from wallpaper picker and use global css classes
+* [33m4b686d1[m feat(ui): increase tasks window minimum width to 600px
+* [33m0c52ac8[m refactor: remove legacy theme assets and unused layout components
+* [33m1f0cdaa[m feat(ui): theme dock and floating windows for duna light and nebula dark modes
+* [33mb2d3d5c[m feat(ui): replace dock emojis with stacked PNG icon buttons + switch dock icons between black and white based on theme
+* [33m24050ba[m feat(ui): split dock into two floating groups and add ambient audio panel paths
+* [33mf3d221a[m feat(ui): add grouped dock sections with sounds, calendar, and timer panels
+* [33m472f4e9[m feat(ui): auto-place new floating windows to avoid overlap
+* [33m11ecb56[m feat(ui): toggle floating windows from dock icons (click to open/close)
+* [33m2a2d2db[m fix(ui): restore window resizing and improve floating app sizing behavior
+* [33m652a6e7[m fix(ui): multiple windows manager
+* [33mf04d628[m fix(ui): fix window close button and improve login button styling
+* [33m053bb2d[m[33m ([m[1;32mkBranch[m[33m)[m Fix wallpaper flicker and dropdown styling
+* [33m37ccefe[m fix(ui): flickering when changing pages
+* [33m4ed9761[m feat(ui): switch to immersive app shell with wallpaper background, sidebar nav, and widget rail
+* [33m24d9c39[m[33m ([m[1;31morigin/kBranch[m[33m)[m refactor(planner.ts): fix planner get key
+* [33m73416b5[m fix(tasks): prevent task list from disappearing when signed in
+* [33m45dd029[m fix(blobs): resolve 502 error for planner deploys
+* [33me55baed[m fix: index and timeline words
+* [33m5f5c769[m feat(planner): include FHSS contributions in deposit goal projections
+* [33m84f2ff4[m feat(planner): add goals with funding sources and projections
+* [33mff4f575[m fix(blobs): resolve 502 error by configuring Netlify Blobs for branch deploys
+* [33m1318941[m style(planner): align Duna planner theme with Tasks design system
+* [33ma9a130a[m feat(planner): cadence support + improved budget panel UI
+* [33md65705c[m feat(auth): add user-scoped autosave with live switching for Tasks and Planner
+* [33m8f6160f[m feat(login): task + planner have function with login + auto save
+* [33m999bdf2[m fix: remove /src in settings
+* [33mc01a9f9[m fix: remove /src
+* [33m894202e[m fix: make theme switch work on Netlify by bundling settings import
+* [33mec4dfa3[m feat(login): Implement login
+* [33m243ccde[m feat(wallpaper): fix css style
+* [33mbc7ed67[m feat(dune theme): Add a white theme background
+* [33m39ba4d3[m feat(tasks): add Tasks, today/weekly/all views, dashboard:top 3 tasks + upcoming
+* [33m90786c9[m feat(nav): add interactive Command Palette navigation
+* [33m5996af6[m chore: init Life OS scaffold
+* [33m9bd04b2[m Initial commit from Astro

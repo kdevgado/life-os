@@ -13,6 +13,7 @@ type PanelKey =
   | "sounds"
   | "calendar"
   | "calendar-settings"
+  | "account-settings"
   | "timer"
   | "tasks"
   | "notes"
@@ -33,6 +34,8 @@ function titleFor(k: Exclude<PanelKey, null>) {
       return "Calendar";
     case "calendar-settings":
       return "Calendar Settings";
+    case "account-settings":
+      return "My Account";
     case "timer":
       return "Timer";
     case "tasks":
@@ -54,6 +57,8 @@ function defaultSizeFor(key: Exclude<PanelKey, null>) {
       return { w: 450, h: 1150 };
     case "calendar-settings":
       return { w: 500, h: 350 };
+    case "account-settings":
+      return { w: 500, h: 420 };
     case "timer":
       return { w: 360, h: 260 };
     case "tasks":
@@ -75,6 +80,8 @@ function minSizeFor(key: Exclude<PanelKey, null>) {
       return { w: 450, h: 1150 };
     case "calendar-settings":
       return { w: 500, h: 350 };
+    case "account-settings":
+      return { w: 500, h: 420 };
     case "timer":
       return { w: 300, h: 230 };
     case "tasks":
@@ -97,7 +104,7 @@ function isTopDockPanel(key: Exclude<PanelKey, null>) {
 }
 
 function isModalPanel(key: Exclude<PanelKey, null>) {
-  return key === "calendar-settings";
+  return key === "calendar-settings" || key === "account-settings";
 }
 
 function isFocusModeHidden() {
@@ -858,6 +865,181 @@ function CalendarSettingsPanel() {
   );
 }
 
+type IdentityUser = {
+  email?: string;
+  user_metadata?: {
+    full_name?: string;
+  };
+  update?: (data: any) => Promise<any>;
+  delete?: () => Promise<any>;
+} | null;
+
+function AccountSettingsPanel() {
+  const [identity, setIdentity] = React.useState<any>(null);
+  const [user, setUser] = React.useState<IdentityUser>(null);
+
+  const [profileName, setProfileName] = React.useState("");
+  const [profileEmail, setProfileEmail] = React.useState("");
+
+  React.useEffect(() => {
+    let mounted = true;
+
+    (async () => {
+      const mod = await import("netlify-identity-widget");
+      const netlifyIdentity = mod.default;
+
+      const APIUrl =
+        (import.meta as any).env?.PUBLIC_NETLIFY_IDENTITY_URL ||
+        `${window.location.origin}/.netlify/identity`;
+
+      netlifyIdentity.init({ APIUrl });
+
+      const current = netlifyIdentity.currentUser() as IdentityUser;
+
+      if (!mounted) return;
+
+      setIdentity(netlifyIdentity);
+      setUser(current || null);
+      setProfileEmail(current?.email || "");
+      setProfileName(current?.user_metadata?.full_name || "");
+
+      netlifyIdentity.on("login", (nextUser: unknown) => {
+        const typedUser = (nextUser as IdentityUser) || null;
+        setUser(typedUser);
+        setProfileEmail(typedUser?.email || "");
+        setProfileName(typedUser?.user_metadata?.full_name || "");
+      });
+
+      netlifyIdentity.on("logout", () => {
+        setUser(null);
+        setProfileEmail("");
+        setProfileName("");
+      });
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const handleSaveProfile = async () => {
+    if (!user || !identity?.currentUser?.()) return;
+
+    try {
+      const currentUser = identity.currentUser();
+
+      await currentUser.update({
+        data: {
+          full_name: profileName,
+        },
+      });
+
+      if (profileEmail && profileEmail !== currentUser.email) {
+        await currentUser.update({
+          email: profileEmail,
+        });
+      }
+
+      const refreshed = identity.currentUser();
+      setUser(refreshed || null);
+    } catch (error) {
+      console.error("Profile update failed:", error);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await identity?.logout?.();
+      window.dispatchEvent(new CustomEvent("lifeos:close-account-settings"));
+    } catch (error) {
+      console.error("Sign out failed:", error);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete your account? This cannot be undone.",
+    );
+
+    if (!confirmed) return;
+
+    try {
+      const currentUser = identity?.currentUser?.();
+      await currentUser?.delete?.();
+      window.dispatchEvent(new CustomEvent("lifeos:close-account-settings"));
+    } catch (error) {
+      console.error("Account delete failed:", error);
+    }
+  };
+
+  if (!user) {
+    return (
+      <div className="lo-account-settings">
+        <div className="lo-account-settings__section">
+          <div className="lo-account-settings__heading">Account</div>
+          <div className="lo-muted">You are not signed in.</div>
+          <button
+            type="button"
+            className="lo-btn"
+            onClick={() => identity?.open?.("login")}
+          >
+            Sign in
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="lo-account-settings">
+      <div className="lo-account-settings__section">
+        <div className="lo-account-settings__heading">Profile</div>
+
+        <label className="lo-account-menu__field">
+          <span>Name</span>
+          <input
+            value={profileName}
+            onChange={(e) => setProfileName(e.target.value)}
+            placeholder="Your name"
+          />
+        </label>
+
+        <label className="lo-account-menu__field">
+          <span>Email</span>
+          <input
+            value={profileEmail}
+            onChange={(e) => setProfileEmail(e.target.value)}
+            placeholder="you@example.com"
+          />
+        </label>
+
+        <div className="lo-account-settings__meta">
+          <strong>Signed in as</strong>
+          <span>{user.email || "No email available"}</span>
+        </div>
+      </div>
+
+      <div className="lo-account-settings__footer">
+        <button type="button" className="lo-btn" onClick={handleSaveProfile}>
+          Save changes
+        </button>
+
+        <button type="button" className="lo-btn" onClick={handleSignOut}>
+          Sign out
+        </button>
+
+        <button
+          type="button"
+          className="lo-btn lo-account-settings__danger"
+          onClick={handleDeleteAccount}
+        >
+          Delete account
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function FloatingWorkspace() {
   type Win = {
     key: Exclude<PanelKey, null>;
@@ -1083,21 +1265,29 @@ export default function FloatingWorkspace() {
     };
   }, []);
 
-  const hasCalendarSettingsOpen = wins.some(
-    (w) => w.key === "calendar-settings",
+  const hasModalWindowOpen = wins.some(
+    (w) => w.key === "calendar-settings" || w.key === "account-settings",
   );
 
   React.useEffect(() => {
-    if (!hasCalendarSettingsOpen) return;
+    if (!hasModalWindowOpen) return;
 
     function handleOutsideClick(e: MouseEvent) {
       const target = e.target as HTMLElement;
 
-      // if clicking inside the calendar settings window, ignore
-      if (target.closest(".lo-window--calendar-settings")) return;
+      // if clicking inside the modal window, ignore
+      if (
+        target.closest(".lo-window--calendar-settings") ||
+        target.closest(".lo-window--account-settings")
+      )
+        return;
 
       // otherwise close it
-      setWins((prev) => prev.filter((w) => w.key !== "calendar-settings"));
+      setWins((prev) =>
+        prev.filter(
+          (w) => !["calendar-settings", "account-settings"].includes(w.key),
+        ),
+      );
     }
 
     window.addEventListener("mousedown", handleOutsideClick);
@@ -1105,7 +1295,7 @@ export default function FloatingWorkspace() {
     return () => {
       window.removeEventListener("mousedown", handleOutsideClick);
     };
-  }, [hasCalendarSettingsOpen]);
+  }, [hasModalWindowOpen]);
 
   React.useEffect(() => {
     const syncTopDockWindows = () => {
@@ -1255,6 +1445,68 @@ export default function FloatingWorkspace() {
     );
   }, [isMobile]);
 
+  React.useEffect(() => {
+    function openAccountSettingsWindow() {
+      setWins((prev) => {
+        const size = defaultSizeFor("account-settings");
+        const centered = centeredWindowPos(size.w, size.h);
+        const existing = prev.find((w) => w.key === "account-settings");
+
+        if (existing) {
+          return prev.map((w) =>
+            w.key === "account-settings"
+              ? {
+                  ...w,
+                  x: centered.x,
+                  y: centered.y,
+                  z: 5001,
+                  w: size.w,
+                  h: size.h,
+                }
+              : w,
+          );
+        }
+
+        return [
+          ...prev,
+          {
+            key: "account-settings",
+            x: centered.x,
+            y: centered.y,
+            z: 5001,
+            w: size.w,
+            h: size.h,
+          },
+        ];
+      });
+    }
+
+    function closeAccountSettingsWindow() {
+      setWins((prev) => prev.filter((w) => w.key !== "account-settings"));
+    }
+
+    window.addEventListener(
+      "lifeos:open-account-settings",
+      openAccountSettingsWindow as EventListener,
+    );
+
+    window.addEventListener(
+      "lifeos:close-account-settings",
+      closeAccountSettingsWindow as EventListener,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "lifeos:open-account-settings",
+        openAccountSettingsWindow as EventListener,
+      );
+      window.removeEventListener(
+        "lifeos:close-account-settings",
+        closeAccountSettingsWindow as EventListener,
+      );
+    };
+  }, []);
+
   return (
     <>
       {/* Top-right login */}
@@ -1368,7 +1620,7 @@ export default function FloatingWorkspace() {
         )}
       </div>
 
-      {hasCalendarSettingsOpen ? (
+      {hasModalWindowOpen ? (
         <div className="lo-modal-backdrop" aria-hidden="true" />
       ) : null}
 
@@ -1415,6 +1667,7 @@ export default function FloatingWorkspace() {
               />
             )}
             {w.key === "calendar-settings" ? <CalendarSettingsPanel /> : null}
+            {w.key === "account-settings" ? <AccountSettingsPanel /> : null}
             {w.key === "spaces" && <SpacesPanel />}
             {w.key === "bible" && <DailyBibleVerse />}
           </WindowShell>

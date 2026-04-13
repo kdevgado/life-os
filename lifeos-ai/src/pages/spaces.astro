@@ -1,0 +1,60 @@
+---
+import AppShell from "../components/layout/AppShell.astro";
+import WallpaperPicker from "../components/dashboard/WallpaperPicker";
+---
+
+<AppShell title="Settings • Life OS">
+    <section class="settings">
+        <h1>Settings</h1>
+
+        <div class="settings-card">
+            <div class="settings-row">
+            <div class="settings-label">
+                <strong>Theme</strong>
+                <span>Switch between Duna (default) and Nebula.</span>
+            </div>
+
+            <select id="themeSelect" class="settings-select">
+                <option value="duna">Duna (default)</option>
+                <option value="nebula">Nebula</option>
+            </select>
+            </div>
+        </div>
+        <WallpaperPicker client:load />
+    </section>
+
+  <script is:inline>
+    (function () {
+        try {
+        const KEY = "lifeos_theme";
+
+        const sel = document.getElementById("themeSelect");
+        if (sel) {
+            // init select from storage
+            const t = (localStorage.getItem(KEY) || "duna").toLowerCase();
+            sel.value = t === "nebula" ? "nebula" : "duna";
+
+            // apply immediately on change
+            sel.addEventListener("change", () => {
+            const v = sel.value === "nebula" ? "nebula" : "duna";
+            localStorage.setItem(KEY, v);
+            document.documentElement.setAttribute("data-theme", v);
+            });
+        }
+
+        // nav scroll select (only if it exists)
+        const NAV_KEY = "lifeos_nav_scroll";
+        const navSel = document.getElementById("navScrollSelect");
+        if (navSel) {
+            navSel.value = localStorage.getItem(NAV_KEY) || "on";
+            navSel.addEventListener("change", () => {
+            localStorage.setItem(NAV_KEY, navSel.value);
+            if (navSel.value === "off") document.documentElement.classList.remove("nav-scrolled");
+            });
+        }
+        } catch (e) {
+        console.warn("settings script failed", e);
+        }
+    })();
+    </script>
+</AppShell>

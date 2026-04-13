@@ -5166,3 +5166,52 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 :root[data-theme="nebula"] .lo-account-menu__range::-moz-range-track {
   background: rgba(255, 255, 255, 0.14);
 }
+.lo-window--account-settings {
+  z-index: 5001 !important;
+}
+
+.lo-account-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.lo-account-settings__section {
+  display: grid;
+  gap: 12px;
+}
+
+.lo-account-settings__heading {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.lo-account-settings__meta {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--shell-surface-soft);
+  border: 1px solid var(--shell-border);
+}
+
+.lo-account-settings__meta strong {
+  font-size: 0.82rem;
+}
+
+.lo-account-settings__meta span {
+  font-size: 0.9rem;
+  color: var(--shell-text);
+}
+
+.lo-account-settings__footer {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 6px;
+  border-top: 1px solid var(--shell-border);
+}
+
+.lo-account-settings__danger {
+  color: #c0392b;
+}

@@ -7,6 +7,12 @@ type BeforeInstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
 };
 
+declare global {
+  interface Window {
+    __lifeosDeferredPrompt: BeforeInstallPromptEvent | null;
+  }
+}
+
 export default function AccountMenu() {
   const [open, setOpen] = useState(false);
   const [theme, setTheme] = useState<"duna" | "nebula">("duna");
@@ -113,26 +119,37 @@ export default function AccountMenu() {
   }, []);
 
   useEffect(() => {
-    if (window.matchMedia("(display-mode: standalone)").matches) {
-      setInstalled(true);
+    const standalone = window.matchMedia("(display-mode: standalone)").matches;
+
+    setInstalled(standalone);
+
+    if (window.__lifeosDeferredPrompt) {
+      console.log("[PWA] found saved deferred prompt");
+      setDeferredPrompt(window.__lifeosDeferredPrompt);
+    } else {
+      setDeferredPrompt(null);
     }
 
-    const onBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
+    const onInstallAvailable = () => {
+      console.log("[PWA] install available event received");
+      setDeferredPrompt(window.__lifeosDeferredPrompt ?? null);
     };
 
-    const onAppInstalled = () => {
+    const onInstalled = () => {
+      console.log("[PWA] installed event received");
       setInstalled(true);
       setDeferredPrompt(null);
     };
 
-    window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
-    window.addEventListener("appinstalled", onAppInstalled);
+    window.addEventListener("lifeos:install-available", onInstallAvailable);
+    window.addEventListener("lifeos:installed", onInstalled);
 
     return () => {
-      window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
-      window.removeEventListener("appinstalled", onAppInstalled);
+      window.removeEventListener(
+        "lifeos:install-available",
+        onInstallAvailable,
+      );
+      window.removeEventListener("lifeos:installed", onInstalled);
     };
   }, []);
 
@@ -204,9 +221,15 @@ export default function AccountMenu() {
   };
 
   const handleInstall = async () => {
-    if (!deferredPrompt || installed) return;
-    await deferredPrompt.prompt();
-    await deferredPrompt.userChoice;
+    const promptEvent = deferredPrompt || window.__lifeosDeferredPrompt;
+
+    if (!promptEvent || installed) return;
+
+    await promptEvent.prompt();
+    const choice = await promptEvent.userChoice;
+    console.log("[PWA] userChoice =", choice);
+
+    window.__lifeosDeferredPrompt = null;
     setDeferredPrompt(null);
   };
 
@@ -248,6 +271,26 @@ export default function AccountMenu() {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    if (!identity?.currentUser?.()) return;
+
+    const confirmed = window.confirm(
+      "Are you sure you want to delete your account? This cannot be undone.",
+    );
+
+    if (!confirmed) return;
+
+    try {
+      const currentUser = identity.currentUser();
+      await currentUser?.delete?.();
+      setUser(null);
+      setProfileEmail("");
+      setProfileName("");
+    } catch (error) {
+      console.error("Account delete failed:", error);
+    }
+  };
+
   return (
     <div className="lo-account-menu" ref={menuRef}>
       <button
@@ -259,7 +302,14 @@ export default function AccountMenu() {
       >
         <img src={iconSrc} alt="" className="lo-account-menu__icon" />
         <span className="lo-account-menu__label">
-          {user?.email ? "Account" : "Sign in"}
+          {user
+            ? `Hello, ${
+                profileName ||
+                user.user_metadata?.full_name ||
+                user.email?.split("@")[0] ||
+                "there"
+              }`
+            : "Sign in"}
         </span>
         <span className="lo-account-menu__caret" aria-hidden="true">
           {open ? "▴" : "▾"}
@@ -280,43 +330,18 @@ export default function AccountMenu() {
                 Sign in
               </button>
             ) : (
-              <>
-                <label className="lo-account-menu__field">
-                  <span>Name</span>
-                  <input
-                    value={profileName}
-                    onChange={(e) => setProfileName(e.target.value)}
-                    placeholder="Your name"
-                  />
-                </label>
-
-                <label className="lo-account-menu__field">
-                  <span>Email</span>
-                  <input
-                    value={profileEmail}
-                    onChange={(e) => setProfileEmail(e.target.value)}
-                    placeholder="you@example.com"
-                  />
-                </label>
-
-                <div className="lo-account-menu__row">
-                  <button
-                    type="button"
-                    className="lo-account-menu__item"
-                    onClick={handleSaveProfile}
-                  >
-                    Save account
-                  </button>
-
-                  <button
-                    type="button"
-                    className="lo-account-menu__item is-danger"
-                    onClick={() => identity?.logout()}
-                  >
-                    Sign out
-                  </button>
-                </div>
-              </>
+              <button
+                type="button"
+                className="lo-account-menu__item"
+                onClick={() => {
+                  window.dispatchEvent(
+                    new CustomEvent("lifeos:open-account-settings"),
+                  );
+                  setOpen(false);
+                }}
+              >
+                My account
+              </button>
             )}
           </section>
 
