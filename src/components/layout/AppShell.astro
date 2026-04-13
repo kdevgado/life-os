@@ -10,17 +10,7 @@ const { title = "Life OS" } = Astro.props;
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
-
-    <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#ffffff" />
-
-    <script>
-      import { registerSW } from "virtual:pwa-register";
-
-      registerSW({
-        immediate: true,
-      });
-    </script>
 
     <script is:inline>
       window.__lifeosDeferredPrompt = null;

@@ -1,4 +1,5 @@
 import * as React from "react";
+import { getJwt, onAuthChange } from "../../lib/identity";
 
 export type CalendarProvider = "google" | "outlook" | null;
 
@@ -137,7 +138,7 @@ export default function DayCalendarPanel({
 
   const [eventsByDay, setEventsByDay] = React.useState<
     Record<string, DayCalendarEvent[]>
-  >(() => readJson<Record<string, DayCalendarEvent[]>>(storageKey, {}));
+  >({});
 
   const [connectedProvider, setConnectedProvider] =
     React.useState<CalendarProvider>(() =>
@@ -248,6 +249,46 @@ export default function DayCalendarPanel({
   const eventLayout = React.useMemo(() => {
     return buildEventLayout(dayEvents);
   }, [dayEvents, dragPreview, resizePreview]);
+
+  const ignoreNextRemoteSaveRef = React.useRef(false);
+  const hydratedRemoteRef = React.useRef(false);
+  const remoteSaveTimerRef = React.useRef<number | null>(null);
+
+  const reloadCalendar = React.useCallback(async () => {
+    try {
+      const jwt = await getJwt();
+
+      ignoreNextRemoteSaveRef.current = true;
+
+      if (!jwt) {
+        setEventsByDay(
+          readJson<Record<string, DayCalendarEvent[]>>(storageKey, {}),
+        );
+        return;
+      }
+
+      const res = await fetch("/.netlify/functions/calendar", {
+        headers: {
+          Authorization: `Bearer ${jwt}`,
+        },
+      });
+
+      if (!res.ok) {
+        setEventsByDay(
+          readJson<Record<string, DayCalendarEvent[]>>(storageKey, {}),
+        );
+        return;
+      }
+
+      const remote = await res.json();
+
+      setEventsByDay(remote && typeof remote === "object" ? remote : {});
+    } catch {
+      setEventsByDay(
+        readJson<Record<string, DayCalendarEvent[]>>(storageKey, {}),
+      );
+    }
+  }, [storageKey]);
 
   function removeEvent(id: string) {
     let linkedTaskId: string | undefined;

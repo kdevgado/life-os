@@ -8,13 +8,13 @@ export default defineConfig({
     plugins: [
       VitePWA({
         registerType: "autoUpdate",
-        injectRegister: false,
+        injectRegister: "script",
         devOptions: {
-          enabled: true,
+          enabled: false,
         },
         workbox: {
           globPatterns: ["**/*.{html,js,css,png,svg,ico,webp}"],
-          navigateFallback: null,
+          navigateFallback: "index.html",
         },
         manifest: {
           id: "/",
@@ -38,33 +38,6 @@ export default defineConfig({
               sizes: "512x512",
               type: "image/png",
               purpose: "any",
-            },
-            {
-              src: "/icons/pwa-192-maskable.png",
-              sizes: "192x192",
-              type: "image/png",
-              purpose: "maskable",
-            },
-            {
-              src: "/icons/pwa-512-maskable.png",
-              sizes: "512x512",
-              type: "image/png",
-              purpose: "maskable",
-            },
-          ],
-          screenshots: [
-            {
-              src: "/screenshots/desktop-wide.png",
-              sizes: "1280x720",
-              type: "image/png",
-              form_factor: "wide",
-              label: "LifeOS desktop workspace",
-            },
-            {
-              src: "/screenshots/mobile-home.png",
-              sizes: "540x1200",
-              type: "image/png",
-              label: "LifeOS mobile workspace",
             },
           ],
         },
