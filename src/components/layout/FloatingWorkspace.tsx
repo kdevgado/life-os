@@ -89,7 +89,7 @@ function minSizeFor(key: Exclude<PanelKey, null>) {
     case "notes":
       return { w: 460, h: 150 };
     case "bible":
-      return { w: 0, h: 0 };
+      return { w: 280, h: 160 };
   }
 }
 
@@ -1078,6 +1078,38 @@ export default function FloatingWorkspace() {
       localStorage.setItem("lifeos_windows_v2", JSON.stringify(wins));
     } catch {}
   }, [wins]);
+
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const alreadyOpened = localStorage.getItem("lifeos_bible_autoload_v1");
+    if (alreadyOpened) return;
+
+    const size = defaultSizeFor("bible");
+
+    const margin = 20;
+
+    const x = window.innerWidth - size.w - margin;
+    const y = window.innerHeight - size.h - margin;
+
+    setWins((prev) => {
+      if (prev.some((w) => w.key === "bible")) return prev;
+
+      return [
+        ...prev,
+        {
+          key: "bible",
+          x,
+          y,
+          z: 9999,
+          w: size.w,
+          h: size.h,
+        },
+      ];
+    });
+
+    localStorage.setItem("lifeos_bible_autoload_v1", "true");
+  }, []);
 
   const topGroup = useMemo(
     () => [
