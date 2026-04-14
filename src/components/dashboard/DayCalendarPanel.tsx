@@ -138,7 +138,7 @@ export default function DayCalendarPanel({
 
   const [eventsByDay, setEventsByDay] = React.useState<
     Record<string, DayCalendarEvent[]>
-  >({});
+  >(() => readJson<Record<string, DayCalendarEvent[]>>(storageKey, {}));
 
   const [connectedProvider, setConnectedProvider] =
     React.useState<CalendarProvider>(() =>
@@ -254,11 +254,18 @@ export default function DayCalendarPanel({
   const hydratedRemoteRef = React.useRef(false);
   const remoteSaveTimerRef = React.useRef<number | null>(null);
 
+  const [contextMenu, setContextMenu] = React.useState<{
+    x: number;
+    y: number;
+    eventId: string;
+  } | null>(null);
+  const panelRef = React.useRef<HTMLElement | null>(null);
+
   const reloadCalendar = React.useCallback(async () => {
+    ignoreNextRemoteSaveRef.current = true;
+
     try {
       const jwt = await getJwt();
-
-      ignoreNextRemoteSaveRef.current = true;
 
       if (!jwt) {
         setEventsByDay(
@@ -281,8 +288,14 @@ export default function DayCalendarPanel({
       }
 
       const remote = await res.json();
+      const local = readJson<Record<string, DayCalendarEvent[]>>(
+        storageKey,
+        {},
+      );
+      const hasRemoteData =
+        remote && typeof remote === "object" && Object.keys(remote).length > 0;
 
-      setEventsByDay(remote && typeof remote === "object" ? remote : {});
+      setEventsByDay(hasRemoteData ? remote : local);
     } catch {
       setEventsByDay(
         readJson<Record<string, DayCalendarEvent[]>>(storageKey, {}),
@@ -446,10 +459,29 @@ export default function DayCalendarPanel({
   const CALENDAR_SYNC_EVENT = "lifeos:calendar-events-sync";
 
   React.useEffect(() => {
+    void reloadCalendar();
+  }, [reloadCalendar]);
+
+  React.useEffect(() => {
+    let unsub: (() => void) | null = null;
+
+    (async () => {
+      unsub = await onAuthChange(() => {
+        void reloadCalendar();
+      });
+    })();
+
+    return () => {
+      if (unsub) unsub();
+    };
+  }, [reloadCalendar]);
+
+  React.useEffect(() => {
     if (typeof window === "undefined") return;
 
     try {
       const serialized = JSON.stringify(eventsByDay);
+
       window.localStorage.setItem(storageKey, serialized);
 
       window.dispatchEvent(
@@ -462,6 +494,52 @@ export default function DayCalendarPanel({
       );
     } catch {}
   }, [eventsByDay, storageKey]);
+
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    if (ignoreNextRemoteSaveRef.current) {
+      ignoreNextRemoteSaveRef.current = false;
+      hydratedRemoteRef.current = true;
+      return;
+    }
+
+    if (!hydratedRemoteRef.current) {
+      hydratedRemoteRef.current = true;
+      return;
+    }
+
+    if (remoteSaveTimerRef.current) {
+      window.clearTimeout(remoteSaveTimerRef.current);
+    }
+
+    remoteSaveTimerRef.current = window.setTimeout(async () => {
+      try {
+        const jwt = await getJwt();
+
+        if (!jwt) {
+          return;
+        }
+
+        await fetch("/.netlify/functions/calendar", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${jwt}`,
+          },
+          body: JSON.stringify(eventsByDay),
+        });
+      } catch {
+        // keep local fallback only
+      }
+    }, 700);
+
+    return () => {
+      if (remoteSaveTimerRef.current) {
+        window.clearTimeout(remoteSaveTimerRef.current);
+      }
+    };
+  }, [eventsByDay]);
 
   React.useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1425,8 +1503,18 @@ export default function DayCalendarPanel({
     };
   }, []);
 
+  React.useEffect(() => {
+    function handleClick() {
+      setContextMenu(null);
+    }
+
+    window.addEventListener("click", handleClick);
+    return () => window.removeEventListener("click", handleClick);
+  }, []);
+
   return (
     <section
+      ref={panelRef}
       className={`lo-daycal ${compact ? "is-compact" : ""} ${className}`.trim()}
     >
       <div className="lo-daycal__top">
@@ -1644,6 +1732,21 @@ export default function DayCalendarPanel({
                             e.preventDefault();
                             e.stopPropagation();
                           }}
+                          onContextMenu={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+
+                            const panelRect =
+                              panelRef.current?.getBoundingClientRect();
+
+                            if (!panelRect) return;
+
+                            setContextMenu({
+                              x: e.clientX - panelRect.left + 12, // move right
+                              y: e.clientY - panelRect.top + 12, // move down
+                              eventId: event.id,
+                            });
+                          }}
                           onPointerDown={(e) => {
                             if (isReadOnlyEvent) return;
 
@@ -1757,23 +1860,6 @@ export default function DayCalendarPanel({
                             </div>
                           </div>
 
-                          {!isAdjusting && !isReadOnlyEvent ? (
-                            <button
-                              type="button"
-                              className="lo-daycal__event-remove"
-                              onPointerDown={(e) => {
-                                e.stopPropagation();
-                              }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                removeEvent(event.id);
-                              }}
-                              aria-label={`Remove ${event.title || "event"}`}
-                            >
-                              ×
-                            </button>
-                          ) : null}
-
                           {!isReadOnlyEvent ? (
                             <div
                               className="lo-daycal__event-resize lo-daycal__event-resize--top"
@@ -1834,6 +1920,26 @@ export default function DayCalendarPanel({
           </div>
         </div>
       </div>
+      {contextMenu && (
+        <div
+          className="lo-daycal__context"
+          style={{
+            top: contextMenu.y,
+            left: contextMenu.x,
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            className="lo-daycal__context-item lo-daycal__context-item--danger"
+            onClick={() => {
+              removeEvent(contextMenu.eventId);
+              setContextMenu(null);
+            }}
+          >
+            Delete
+          </button>
+        </div>
+      )}
     </section>
   );
 }
