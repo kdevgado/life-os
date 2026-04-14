@@ -1301,6 +1301,11 @@ export default function TasksApp({
       ? (tasks.find((task) => task.id === editingTaskId) ?? null)
       : null;
 
+  const activeFocusFilterCount =
+    (hideCompleted ? 1 : 0) +
+    (focusFilter === "today" ? 1 : 0) +
+    (focusFilter === "overdue" ? 1 : 0);
+
   return (
     <div ref={pageRef} className="lo-page lo-tasks lo-stack lo-tasks-menu-root">
       {loading && <div className="muted">Loading tasks…</div>}
@@ -1359,7 +1364,14 @@ export default function TasksApp({
                     aria-label="Filter"
                     aria-expanded={showFocusFilter}
                   >
-                    <span>Filter</span>
+                    <span className="lo-window-filter__label">
+                      Filter
+                      {activeFocusFilterCount > 0 ? (
+                        <span className="lo-window-filter__count">
+                          {activeFocusFilterCount}
+                        </span>
+                      ) : null}
+                    </span>
                     <span
                       className="lo-window-filter__arrow"
                       aria-hidden="true"
