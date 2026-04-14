@@ -278,6 +278,45 @@ function NotesMenu({
   );
 }
 
+function getSlashMatch(editor: {
+  state: {
+    selection: { from: number };
+    doc: {
+      textBetween: (
+        from: number,
+        to: number,
+        blockSeparator?: string,
+        leafText?: string,
+      ) => string;
+    };
+  };
+}) {
+  const { from } = editor.state.selection;
+  const textBefore = editor.state.doc.textBetween(
+    Math.max(0, from - 50),
+    from,
+    "\n",
+    "\n",
+  );
+
+  // match "/something" only at the end of the current text before cursor
+  const match = textBefore.match(/(?:^|\s)\/([^\s]*)$/);
+  if (!match) return null;
+
+  const query = match[1] ?? "";
+  const fullMatch = match[0];
+  const slashOffset = fullMatch.lastIndexOf("/");
+  const slashFrom =
+    from -
+    (textBefore.length - (textBefore.length - fullMatch.length + slashOffset));
+
+  return {
+    query,
+    slashFrom,
+    from,
+  };
+}
+
 export default function NotesPanel() {
   const [notes, setNotes] = React.useState<NoteTab[]>([]);
   const [activeId, setActiveId] = React.useState<string>("");
@@ -288,6 +327,11 @@ export default function NotesPanel() {
   const [slashIndex, setSlashIndex] = React.useState(0);
   const slashOpenRef = React.useRef(false);
   const slashIndexRef = React.useRef(0);
+
+  const [slashItems, setSlashItems] =
+    React.useState<Array<{ label: string; type: SlashCommand }>>(SLASH_ITEMS);
+
+  const slashItemsRef = React.useRef(SLASH_ITEMS);
 
   const noteActions = React.useMemo(
     () => ({
@@ -339,6 +383,10 @@ export default function NotesPanel() {
   React.useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  React.useEffect(() => {
+    slashItemsRef.current = slashItems;
+  }, [slashItems]);
 
   const ignoreNextSaveRef = React.useRef(false);
   const hydratedRef = React.useRef(false);
@@ -490,12 +538,66 @@ export default function NotesPanel() {
   function closeSlashMenu() {
     setSlashOpen(false);
     setSlashIndex(0);
+    setSlashItems(SLASH_ITEMS);
+    slashIndexRef.current = 0;
+    slashItemsRef.current = SLASH_ITEMS;
   }
 
   const activeNote = React.useMemo(
     () => notes.find((n) => n.id === activeId) ?? notes[0] ?? null,
     [notes, activeId],
   );
+
+  function updateSlashMenuState(view: {
+    state: {
+      selection: { from: number };
+      doc: {
+        textBetween: (
+          from: number,
+          to: number,
+          blockSeparator?: string,
+          leafText?: string,
+        ) => string;
+      };
+    };
+    coordsAtPos: (pos: number) => {
+      top: number;
+      bottom: number;
+      left: number;
+      right: number;
+    };
+  }) {
+    const match = getSlashMatch(view);
+
+    if (!match) {
+      closeSlashMenu();
+      return;
+    }
+
+    const query = match.query.toLowerCase();
+
+    const nextItems = SLASH_ITEMS.filter((item) =>
+      item.label.toLowerCase().includes(query),
+    );
+
+    if (!nextItems.length) {
+      closeSlashMenu();
+      return;
+    }
+
+    const coords = view.coordsAtPos(match.from);
+
+    slashItemsRef.current = nextItems;
+    slashIndexRef.current = 0;
+
+    setSlashItems(nextItems);
+    setSlashIndex(0);
+    setSlashPos({
+      top: coords.bottom + 6,
+      left: coords.left,
+    });
+    setSlashOpen(true);
+  }
 
   const editor = useEditor(
     {
@@ -512,62 +614,74 @@ export default function NotesPanel() {
         handleKeyDown(view, event) {
           if (event.key === "/") {
             requestAnimationFrame(() => {
-              const { from } = view.state.selection;
-              const coords = view.coordsAtPos(from);
-
-              setSlashPos({
-                top: coords.bottom + 6,
-                left: coords.left,
-              });
-              setSlashIndex(0);
-              setSlashOpen(true);
+              updateSlashMenuState(view);
             });
             return false;
           }
 
-          if (event.key === "Escape" && slashOpenRef.current) {
+          if (!slashOpenRef.current) {
+            return false;
+          }
+
+          if (event.key === "Escape") {
             event.preventDefault();
             closeSlashMenu();
             return true;
           }
 
-          if (slashOpenRef.current) {
-            if (event.key === "ArrowDown") {
-              event.preventDefault();
-              setSlashIndex((prev) => {
-                const next = (prev + 1) % SLASH_ITEMS.length;
-                slashIndexRef.current = next;
-                return next;
-              });
-              return true;
-            }
+          if (event.key === "Tab" || event.key === "ArrowDown") {
+            event.preventDefault();
+            const items = slashItemsRef.current;
+            if (!items.length) return true;
 
-            if (event.key === "ArrowUp") {
-              event.preventDefault();
-              setSlashIndex((prev) => {
-                const next = prev === 0 ? SLASH_ITEMS.length - 1 : prev - 1;
-                slashIndexRef.current = next;
-                return next;
-              });
-              return true;
-            }
+            setSlashIndex((prev) => {
+              const next = (prev + 1) % items.length;
+              slashIndexRef.current = next;
+              return next;
+            });
+            return true;
+          }
 
-            if (event.key === "Enter") {
-              event.preventDefault();
-              const item = SLASH_ITEMS[slashIndexRef.current];
-              if (item) {
-                runSlashCommand(
-                  item.type as
-                    | "paragraph"
-                    | "h1"
-                    | "h2"
-                    | "h3"
-                    | "bullet"
-                    | "number",
-                );
-              }
-              return true;
-            }
+          if (event.key === "ArrowUp") {
+            event.preventDefault();
+            const items = slashItemsRef.current;
+            if (!items.length) return true;
+
+            setSlashIndex((prev) => {
+              const next = prev === 0 ? items.length - 1 : prev - 1;
+              slashIndexRef.current = next;
+              return next;
+            });
+            return true;
+          }
+
+          if (event.key === "Enter") {
+            event.preventDefault();
+            const items = slashItemsRef.current;
+            const selected = items[slashIndexRef.current];
+            if (!selected) return true;
+
+            runSlashCommand(selected.type);
+            return true;
+          }
+
+          // if user keeps typing after "/", close slash menu
+          if (
+            event.key.length === 1 &&
+            event.key !== "/" &&
+            !event.metaKey &&
+            !event.ctrlKey &&
+            !event.altKey
+          ) {
+            closeSlashMenu();
+            return false;
+          }
+
+          if (event.key === "Backspace" || event.key === "Delete") {
+            requestAnimationFrame(() => {
+              updateSlashMenuState(view);
+            });
+            return false;
           }
 
           return false;
@@ -583,16 +697,8 @@ export default function NotesPanel() {
           ),
         );
 
-        const { from } = editor.state.selection;
-        const textBefore = editor.state.doc.textBetween(
-          Math.max(0, from - 20),
-          from,
-          "\n",
-          "\n",
-        );
-
-        if (slashOpenRef.current && !textBefore.includes("/")) {
-          closeSlashMenu();
+        if (slashOpenRef.current) {
+          updateSlashMenuState(editor.view);
         }
       },
     },
@@ -626,29 +732,15 @@ export default function NotesPanel() {
         ? "h3"
         : "p";
 
-  function runSlashCommand(
-    type: "paragraph" | "h1" | "h2" | "h3" | "bullet" | "number",
-  ) {
+  function runSlashCommand(type: SlashCommand) {
     if (!editor) return;
 
-    const { state } = editor;
-    const { from } = state.selection;
-
-    const textBefore = state.doc.textBetween(
-      Math.max(0, from - 20),
-      from,
-      "\n",
-      "\n",
-    );
-
-    const slashIndex = textBefore.lastIndexOf("/");
-
-    if (slashIndex !== -1) {
-      const slashFrom = from - (textBefore.length - slashIndex);
-      editor.chain().focus().deleteRange({ from: slashFrom, to: from }).run();
-    }
-
+    const match = getSlashMatch(editor);
     const chain = editor.chain().focus();
+
+    if (match) {
+      chain.deleteRange({ from: match.slashFrom, to: match.from });
+    }
 
     switch (type) {
       case "paragraph":
@@ -671,7 +763,7 @@ export default function NotesPanel() {
         break;
     }
 
-    setSlashOpen(false);
+    closeSlashMenu();
   }
 
   return (
@@ -818,23 +910,13 @@ export default function NotesPanel() {
                 left: slashPos.left,
               }}
             >
-              {SLASH_ITEMS.map((item, index) => (
+              {slashItems.map((item, index) => (
                 <button
                   key={item.type}
                   type="button"
                   className={index === slashIndex ? "is-active" : ""}
                   onMouseEnter={() => setSlashIndex(index)}
-                  onClick={() =>
-                    runSlashCommand(
-                      item.type as
-                        | "paragraph"
-                        | "h1"
-                        | "h2"
-                        | "h3"
-                        | "bullet"
-                        | "number",
-                    )
-                  }
+                  onClick={() => runSlashCommand(item.type)}
                 >
                   {item.label}
                 </button>
