@@ -4,6 +4,7 @@ import StarterKit from "@tiptap/starter-kit";
 import { useClickOutside } from "../../lib/useClickOutside";
 import Placeholder from "@tiptap/extension-placeholder";
 import { createPortal } from "react-dom";
+import { getJwt, onAuthChange } from "../../lib/identity";
 
 type NoteTab = {
   id: string;
@@ -11,8 +12,76 @@ type NoteTab = {
   content: string;
 };
 
+type NotesPayload = {
+  notes: NoteTab[];
+  activeId: string;
+};
+
+type SlashCommand = "paragraph" | "h1" | "h2" | "h3" | "bullet" | "number";
+
 const STORAGE_KEY = "lifeos_notes_v1";
 const ACTIVE_KEY = "lifeos_notes_active_v1";
+
+const SLASH_ITEMS: Array<{ label: string; type: SlashCommand }> = [
+  { label: "Paragraph", type: "paragraph" },
+  { label: "Heading 1", type: "h1" },
+  { label: "Heading 2", type: "h2" },
+  { label: "Heading 3", type: "h3" },
+  { label: "Bulleted list", type: "bullet" },
+  { label: "Numbered list", type: "number" },
+];
+
+function readLocalNotes(): NotesPayload {
+  try {
+    const rawNotes = localStorage.getItem(STORAGE_KEY);
+    const rawActiveId = localStorage.getItem(ACTIVE_KEY);
+
+    const fallbackNote = createNote(1);
+
+    if (!rawNotes) {
+      return {
+        notes: [fallbackNote],
+        activeId: fallbackNote.id,
+      };
+    }
+
+    const parsed = JSON.parse(rawNotes);
+    const notes = Array.isArray(parsed)
+      ? parsed.filter(
+          (n) =>
+            n &&
+            typeof n.id === "string" &&
+            typeof n.title === "string" &&
+            typeof n.content === "string",
+        )
+      : [];
+
+    const safeNotes = notes.length ? notes : [fallbackNote];
+    const safeActiveId =
+      typeof rawActiveId === "string" &&
+      safeNotes.some((n) => n.id === rawActiveId)
+        ? rawActiveId
+        : safeNotes[0].id;
+
+    return {
+      notes: safeNotes,
+      activeId: safeActiveId,
+    };
+  } catch {
+    const fallbackNote = createNote(1);
+    return {
+      notes: [fallbackNote],
+      activeId: fallbackNote.id,
+    };
+  }
+}
+
+function writeLocalNotes(payload: NotesPayload) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload.notes));
+    localStorage.setItem(ACTIVE_KEY, payload.activeId);
+  } catch {}
+}
 
 function makeId() {
   return typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -26,35 +95,6 @@ function createNote(index: number): NoteTab {
     title: `Note ${index}`,
     content: "<p></p>",
   };
-}
-
-function loadNotes(): NoteTab[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [createNote(1)];
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed) || parsed.length === 0) return [createNote(1)];
-
-    const clean = parsed.filter(
-      (n) =>
-        n &&
-        typeof n.id === "string" &&
-        typeof n.title === "string" &&
-        typeof n.content === "string",
-    );
-
-    return clean.length ? clean : [createNote(1)];
-  } catch {
-    return [createNote(1)];
-  }
-}
-
-function loadActiveId(notes: NoteTab[]): string {
-  try {
-    const saved = localStorage.getItem(ACTIVE_KEY);
-    if (saved && notes.some((n) => n.id === saved)) return saved;
-  } catch {}
-  return notes[0].id;
 }
 
 function ToolbarButton({
@@ -81,6 +121,46 @@ function ToolbarButton({
       {icon ? <img src={icon} alt="" className="lo-notebar__icon" /> : children}
     </button>
   );
+}
+
+async function fetchRemoteNotes(): Promise<NotesPayload | null> {
+  const jwt = await getJwt();
+  if (!jwt) return null;
+
+  const res = await fetch("/.netlify/functions/notes", {
+    headers: {
+      Authorization: `Bearer ${jwt}`,
+    },
+  });
+
+  if (!res.ok) return null;
+
+  const remote = await res.json();
+  const notes = Array.isArray(remote?.notes) ? remote.notes : [];
+
+  if (!notes.length) return null;
+
+  const activeId =
+    typeof remote?.activeId === "string" &&
+    notes.some((n: NoteTab) => n.id === remote.activeId)
+      ? remote.activeId
+      : notes[0].id;
+
+  return { notes, activeId };
+}
+
+async function saveRemoteNotes(payload: NotesPayload) {
+  const jwt = await getJwt();
+  if (!jwt) return;
+
+  await fetch("/.netlify/functions/notes", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${jwt}`,
+    },
+    body: JSON.stringify(payload),
+  });
 }
 
 function NotesMenu({
@@ -209,14 +289,44 @@ export default function NotesPanel() {
   const slashOpenRef = React.useRef(false);
   const slashIndexRef = React.useRef(0);
 
-  const slashItems = [
-    { label: "Paragraph", type: "paragraph" },
-    { label: "Heading 1", type: "h1" },
-    { label: "Heading 2", type: "h2" },
-    { label: "Heading 3", type: "h3" },
-    { label: "Bulleted list", type: "bullet" },
-    { label: "Numbered list", type: "number" },
-  ];
+  const noteActions = React.useMemo(
+    () => ({
+      add() {
+        const next = createNote(notes.length + 1);
+        setNotes((prev) => [...prev, next]);
+        setActiveId(next.id);
+      },
+
+      rename(id: string, title: string) {
+        setNotes((prev) =>
+          prev.map((n) => (n.id === id ? { ...n, title } : n)),
+        );
+      },
+
+      remove(id: string) {
+        const target = notes.find((n) => n.id === id);
+        if (!target) return;
+
+        if (notes.length === 1) {
+          const fresh = createNote(1);
+          setNotes([fresh]);
+          setActiveId(fresh.id);
+          return;
+        }
+
+        const idx = notes.findIndex((n) => n.id === id);
+        const nextNotes = notes.filter((n) => n.id !== id);
+        const fallback = nextNotes[Math.max(0, idx - 1)] ?? nextNotes[0];
+
+        setNotes(nextNotes);
+
+        if (activeId === id) {
+          setActiveId(fallback.id);
+        }
+      },
+    }),
+    [notes, activeId],
+  );
 
   React.useEffect(() => {
     slashOpenRef.current = slashOpen;
@@ -230,25 +340,136 @@ export default function NotesPanel() {
     setIsMounted(true);
   }, []);
 
-  React.useEffect(() => {
-    const loaded = loadNotes();
-    setNotes(loaded);
-    setActiveId(loadActiveId(loaded));
+  const ignoreNextSaveRef = React.useRef(false);
+  const hydratedRef = React.useRef(false);
+
+  const reloadNotes = React.useCallback(async () => {
+    try {
+      const jwt = await getJwt();
+
+      ignoreNextSaveRef.current = true;
+
+      if (!jwt) {
+        const local = readLocalNotes();
+        setNotes(local.notes);
+        setActiveId(local.activeId);
+        return;
+      }
+
+      const res = await fetch("/.netlify/functions/notes", {
+        headers: {
+          Authorization: `Bearer ${jwt}`,
+        },
+      });
+
+      if (!res.ok) {
+        const local = readLocalNotes();
+        setNotes(local.notes);
+        setActiveId(local.activeId);
+        return;
+      }
+
+      const remote = await res.json();
+      const remoteNotes = Array.isArray(remote?.notes) ? remote.notes : [];
+      const local = readLocalNotes();
+
+      if (remoteNotes.length > 0) {
+        const nextActiveId =
+          typeof remote?.activeId === "string" &&
+          remoteNotes.some((n: NoteTab) => n.id === remote.activeId)
+            ? remote.activeId
+            : (remoteNotes[0]?.id ?? "");
+
+        setNotes(remoteNotes);
+        setActiveId(nextActiveId);
+        writeLocalNotes({
+          notes: remoteNotes,
+          activeId: nextActiveId,
+        });
+        return;
+      }
+
+      setNotes(local.notes);
+      setActiveId(local.activeId);
+    } catch {
+      const local = readLocalNotes();
+      setNotes(local.notes);
+      setActiveId(local.activeId);
+    }
   }, []);
 
   React.useEffect(() => {
-    if (!notes.length) return;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
-    } catch {}
-  }, [notes]);
+    void reloadNotes();
+  }, [reloadNotes]);
 
   React.useEffect(() => {
-    if (!activeId) return;
-    try {
-      localStorage.setItem(ACTIVE_KEY, activeId);
-    } catch {}
-  }, [activeId]);
+    let unsub: (() => void) | null = null;
+
+    (async () => {
+      unsub = await onAuthChange(() => {
+        void reloadNotes();
+      });
+    })();
+
+    return () => {
+      if (unsub) unsub();
+    };
+  }, [reloadNotes]);
+
+  React.useEffect(() => {
+    if (!notes.length) return;
+    writeLocalNotes({ notes, activeId });
+  }, [notes, activeId]);
+
+  const saveTimerRef = React.useRef<number | null>(null);
+
+  React.useEffect(() => {
+    if (!notes.length) return;
+    if (typeof window === "undefined") return;
+
+    if (ignoreNextSaveRef.current) {
+      ignoreNextSaveRef.current = false;
+      hydratedRef.current = true;
+      return;
+    }
+
+    if (!hydratedRef.current) {
+      hydratedRef.current = true;
+      return;
+    }
+
+    if (saveTimerRef.current) {
+      window.clearTimeout(saveTimerRef.current);
+    }
+
+    saveTimerRef.current = window.setTimeout(async () => {
+      try {
+        const jwt = await getJwt();
+
+        if (!jwt) return;
+
+        await fetch("/.netlify/functions/notes", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${jwt}`,
+          },
+          body: JSON.stringify({
+            notes,
+            activeId,
+          }),
+        });
+      } catch {
+        // local fallback already saved
+      }
+    }, 700);
+
+    return () => {
+      if (saveTimerRef.current) {
+        window.clearTimeout(saveTimerRef.current);
+      }
+    };
+  }, [notes, activeId]);
 
   React.useEffect(() => {
     function handlePointerDown(event: MouseEvent) {
@@ -265,24 +486,6 @@ export default function NotesPanel() {
     document.addEventListener("mousedown", handlePointerDown);
     return () => document.removeEventListener("mousedown", handlePointerDown);
   }, []);
-
-  function openSlashMenu(
-    view: Parameters<
-      NonNullable<typeof editor>["view"]["coordsAtPos"]
-    >[0] extends never
-      ? never
-      : any,
-  ) {
-    const { from } = view.state.selection;
-    const coords = view.coordsAtPos(from);
-
-    setSlashPos({
-      top: coords.bottom + 6,
-      left: coords.left,
-    });
-    setSlashIndex(0);
-    setSlashOpen(true);
-  }
 
   function closeSlashMenu() {
     setSlashOpen(false);
@@ -332,7 +535,7 @@ export default function NotesPanel() {
             if (event.key === "ArrowDown") {
               event.preventDefault();
               setSlashIndex((prev) => {
-                const next = (prev + 1) % slashItems.length;
+                const next = (prev + 1) % SLASH_ITEMS.length;
                 slashIndexRef.current = next;
                 return next;
               });
@@ -342,7 +545,7 @@ export default function NotesPanel() {
             if (event.key === "ArrowUp") {
               event.preventDefault();
               setSlashIndex((prev) => {
-                const next = prev === 0 ? slashItems.length - 1 : prev - 1;
+                const next = prev === 0 ? SLASH_ITEMS.length - 1 : prev - 1;
                 slashIndexRef.current = next;
                 return next;
               });
@@ -351,7 +554,7 @@ export default function NotesPanel() {
 
             if (event.key === "Enter") {
               event.preventDefault();
-              const item = slashItems[slashIndexRef.current];
+              const item = SLASH_ITEMS[slashIndexRef.current];
               if (item) {
                 runSlashCommand(
                   item.type as
@@ -404,41 +607,12 @@ export default function NotesPanel() {
     }
   }, [editor, activeNote]);
 
-  function addNote() {
-    const next = createNote(notes.length + 1);
-    setNotes((prev) => [...prev, next]);
-    setActiveId(next.id);
-  }
-
-  function renameNote(id: string, title: string) {
-    setNotes((prev) => prev.map((n) => (n.id === id ? { ...n, title } : n)));
-  }
-
-  function deleteNoteById(id: string) {
-    const target = notes.find((n) => n.id === id);
-    if (!target) return;
-
-    if (notes.length === 1) {
-      const fresh = createNote(1);
-      setNotes([fresh]);
-      setActiveId(fresh.id);
-      return;
+  React.useEffect(() => {
+    if (!notes.length) return;
+    if (!activeId || !notes.some((n) => n.id === activeId)) {
+      setActiveId(notes[0].id);
     }
-
-    const idx = notes.findIndex((n) => n.id === id);
-    const nextNotes = notes.filter((n) => n.id !== id);
-    const fallback = nextNotes[Math.max(0, idx - 1)] ?? nextNotes[0];
-
-    setNotes(nextNotes);
-
-    if (activeId === id) {
-      setActiveId(fallback.id);
-    }
-  }
-
-  function deleteCurrentNoteById(id: string) {
-    deleteNoteById(id);
-  }
+  }, [notes, activeId]);
 
   if (!activeNote || !editor) {
     return <div className="lo-notes">Loading notes…</div>;
@@ -522,9 +696,9 @@ export default function NotesPanel() {
           notes={notes}
           activeId={activeId}
           onOpenNote={(id) => setActiveId(id)}
-          onAddNote={addNote}
-          onRenameNote={renameNote}
-          onDeleteNote={deleteCurrentNoteById}
+          onAddNote={noteActions.add}
+          onRenameNote={noteActions.rename}
+          onDeleteNote={noteActions.remove}
         />
       </div>
 
@@ -597,7 +771,7 @@ export default function NotesPanel() {
         <input
           className="lo-notes__titleinput"
           value={activeNote.title}
-          onChange={(e) => renameNote(activeNote.id, e.target.value)}
+          onChange={(e) => noteActions.rename(activeNote.id, e.target.value)}
           placeholder="Note title"
           title="Note title"
           aria-label="Note title"
@@ -644,7 +818,7 @@ export default function NotesPanel() {
                 left: slashPos.left,
               }}
             >
-              {slashItems.map((item, index) => (
+              {SLASH_ITEMS.map((item, index) => (
                 <button
                   key={item.type}
                   type="button"
