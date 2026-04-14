@@ -1239,27 +1239,6 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   box-sizing: border-box;
 }
 
-.lo-task-edit-title {
-  min-height: 88px;
-  padding: 12px 14px;
-  resize: vertical;
-  line-height: 1.45;
-  font-weight: 600;
-  white-space: pre-wrap;
-  word-break: break-word;
-  overflow-wrap: anywhere;
-}
-
-.lo-task-editor-grid--panel {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.lo-task-edit-panel__hint {
-  font-size: 0.78rem;
-  color: var(--shell-muted);
-  line-height: 1.4;
-}
-
 @media (max-width: 720px) {
   .lo-task-editor-grid--panel {
     grid-template-columns: 1fr;
@@ -1790,13 +1769,6 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   .lo-dock__label {
     font-size: 11px;
   }
-}
-
-.lo-dock--mobile .lo-dock__btn {
-  flex: 1 1 0;
-  width: auto;
-  min-height: 60px;
-  padding: 8px 6px;
 }
 
 @media (max-width: 720px) {
@@ -2737,20 +2709,6 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   flex-wrap: wrap;
 }
 
-
-
-
-
-.lo-daycal__hour {
-  padding-top: 8px;
-  font-size: 0.76rem;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-  opacity: 0.72;
-  white-space: nowrap;
-}
-
-
 .lo-daycal__now {
   position: absolute;
   left: 0;
@@ -3395,11 +3353,6 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   text-overflow: ellipsis;
 }
 
-.lo-daycal__event-main strong.is-done {
-  text-decoration: line-through;
-  opacity: 0.72;
-}
-
 /* Calendar Context Menu */
 .lo-daycal__context {
   position: absolute;
@@ -3628,27 +3581,14 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   background: var(--shell-btn-hover);
 }
 
-.lo-notes__editor {
-  position: relative;
-  cursor: text;
-}
-
 .lo-notes-slash button.is-active {
   background: var(--shell-btn-hover);
-}
-
-.lo-notes__content {
-  min-height: 100%;
 }
 
 .lo-notes__content .tiptap {
   min-height: 100%;
   height: 100%;
   cursor: text;
-}
-
-.lo-notes__content .tiptap p {
-  min-height: 1.2em;
 }
 
 .lo-notebar{

@@ -154,15 +154,30 @@ export default function AccountMenu() {
   }, []);
 
   useEffect(() => {
-    const onPointerDown = (event: MouseEvent) => {
+    function handleClick(event: MouseEvent) {
       if (!menuRef.current) return;
-      if (!menuRef.current.contains(event.target as Node)) {
+
+      const target = event.target as Node;
+
+      // if clicking outside menu → close
+      if (!menuRef.current.contains(target)) {
         setOpen(false);
       }
-    };
+    }
 
-    document.addEventListener("mousedown", onPointerDown);
-    return () => document.removeEventListener("mousedown", onPointerDown);
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("click", handleClick);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("click", handleClick);
+      document.removeEventListener("keydown", handleEscape);
+    };
   }, []);
 
   useEffect(() => {
