@@ -1318,9 +1318,33 @@ export default function FloatingWorkspace() {
     };
   }, [hasModalWindowOpen]);
 
+  const [isUiHidden, setIsUiHidden] = useState(false);
+
+  React.useEffect(() => {
+    if (typeof document === "undefined") return;
+
+    const root = document.documentElement;
+
+    const syncHiddenState = () => {
+      setIsUiHidden(root.classList.contains("is-focus-mode-hidden"));
+    };
+
+    syncHiddenState();
+
+    const observer = new MutationObserver(syncHiddenState);
+    observer.observe(root, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
   React.useEffect(() => {
     const syncTopDockWindows = () => {
       if (typeof window === "undefined") return;
+
+      const placed = topDockWindowPos();
 
       setWins((prev) =>
         prev.map((w) => {
@@ -1333,8 +1357,8 @@ export default function FloatingWorkspace() {
 
           return {
             ...w,
-            x: w.x,
-            y: w.y,
+            x: placed.x,
+            y: placed.y,
             w: w.w || size.w,
             h: nextH,
           };
@@ -1350,7 +1374,7 @@ export default function FloatingWorkspace() {
     return () => {
       window.removeEventListener("resize", onResize);
     };
-  }, [isMobile]);
+  }, [isMobile, isUiHidden]);
 
   const topDockZ = Math.max(
     0,
