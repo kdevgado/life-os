@@ -68,7 +68,7 @@
 
   --shell-edge-gap: 10px;
   --shell-top-gap: 10px;
-  --dock-top-offset: 74px;
+  --dock-top-offset: 68px;
 
   --dock-active-accent: #f97316; /* duna orange */
 }
@@ -5057,21 +5057,21 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 .lo-window--spaces,
 .lo-window--sounds,
 .lo-window--calendar{
-  max-height: calc(100vh - 150px);
+  max-height: calc(100vh - 120px);
 }
 
 /* clicked/focused */
 .lo-window--spaces.is-focused,
 .lo-window--sounds.is-focused,
 .lo-window--calendar.is-focused{
-  max-height: calc(100vh - 100px);
+  max-height: calc(100vh - 88px); 
 }
 
 /* hidden ui mode */
 .is-focus-mode-hidden .lo-window--spaces,
 .is-focus-mode-hidden .lo-window--sounds,
 .is-focus-mode-hidden .lo-window--calendar{
-  max-height: calc(100vh - 20px);
+  max-height: calc(100vh - 12px);
 }
 
 .lo-account-menu__check {

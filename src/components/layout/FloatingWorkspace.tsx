@@ -114,19 +114,19 @@ function isFocusModeHidden() {
 
 function topDockWindowPos() {
   if (typeof window === "undefined") {
-    return { x: 110, y: 86 };
+    return { x: 92, y: 68 };
   }
 
   if (isFocusModeHidden()) {
     return {
-      x: 7,
-      y: 7,
+      x: 6,
+      y: 6,
     };
   }
 
   return {
-    x: 110,
-    y: 86,
+    x: 92,
+    y: 68,
   };
 }
 
@@ -412,9 +412,9 @@ function findNonOverlappingPos(args: {
   const { preferred, size, existing } = args;
 
   // Reserve left space for dock + padding
-  const leftSafe = 92;
-  const topSafe = 80;
-  const pad = 18;
+  const leftSafe = 84;
+  const topSafe = 66;
+  const pad = 10;
 
   const vw = window.innerWidth;
   const vh = window.innerHeight;
