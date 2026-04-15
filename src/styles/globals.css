@@ -65,6 +65,8 @@
   --shell-btn-hover: rgba(255,255,255,.96);
   --shell-chip: rgba(255,255,255,.76);
   --shell-resize: rgba(18,16,20,.30);
+
+  --dock-active-accent: #f97316; /* duna orange */
 }
 
 /* ===== NEBULA (optional dark theme) ===== */
@@ -115,6 +117,8 @@
   --shell-btn-hover: rgba(255,255,255,.18);
   --shell-chip: rgba(255,255,255,.08);
   --shell-resize: rgba(255,255,255,.45);
+
+  --dock-active-accent: #b56ff6; /* Tailwind Violet-500 */
 }
 
 html,body{height:100%}
@@ -1659,13 +1663,53 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   box-shadow: var(--shell-shadow);
 }
 
-.lo-dock__btn:hover{
-  background: var(--shell-btn);
-  transform: translateY(-1px);
+.lo-dock__btn {
+  appearance: none;
+  border: 0;
+  cursor: pointer;
+  background: transparent;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  min-height: 62px;
+  padding: 8px 6px;
+  gap: 6px;
+  border-radius: 16px;
+  transition:
+    transform .12s ease,
+    background .12s ease,
+    border-color .12s ease,
+    color .12s ease;
 }
 
-.lo-dock__btn.is-active{
-  background: var(--shell-btn-hover);
+.lo-dock__icon {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  background: transparent;
+  border-radius: 10px;
+  transition:
+    transform .12s ease,
+    background .12s ease,
+    box-shadow .12s ease;
+}
+
+.lo-dock__icon-img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  display: block;
+  opacity: 0.95;
+  transition: filter .12s ease, opacity .12s ease, transform .12s ease;
 }
 
 .lo-dock__label{
@@ -1676,48 +1720,43 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   white-space: normal;
 }
 
-.lo-dock__btn{
-  appearance: none;
-  border: 0;
-  cursor: pointer;
-  background: transparent;
-  color: inherit;
-
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-
-  width: 54px;          /* ↓ smaller */
-  min-height: 62px;     /* ↓ tighter */
-  padding: 8px 6px;
-  gap: 6px;
-
-  border-radius: 16px;
-
-  transition:
-    transform .12s ease,
-    background .12s ease,
-    border-color .12s ease;
+/* default icon tint */
+:root[data-theme="duna"] .lo-dock__icon-img {
+  filter: brightness(0) saturate(100%) invert(16%) sepia(10%) saturate(537%)
+    hue-rotate(182deg) brightness(94%) contrast(92%);
 }
 
-.lo-dock__icon{
-  width: 28px;
-  height: 28px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
+:root[data-theme="nebula"] .lo-dock__icon-img {
+  filter: brightness(0) saturate(100%) invert(100%);
 }
 
-.lo-dock__icon-img{
-  width: 22px;
-  height: 22px;
-  object-fit: contain;
-  display: block;
-  opacity: 0.95;
+/* hover */
+.lo-dock__btn:hover .lo-dock__icon-img {
+  opacity: 1;
+  transform: translateY(-1px);
+}
+
+.lo-dock__btn:hover{
+  background: var(--shell-btn);
+  transform: translateY(-1px);
+}
+
+/* active shell */
+
+.lo-dock__btn.is-active .lo-dock__label {
+  font-weight: 500;
+  color: var(--dock-active-accent);
+}
+
+/* active icon tint */
+:root[data-theme="duna"] .lo-dock__btn.is-active .lo-dock__icon-img {
+  filter: brightness(0) saturate(100%) invert(59%) sepia(86%) saturate(1848%)
+    hue-rotate(352deg) brightness(101%) contrast(95%);
+}
+
+:root[data-theme="nebula"] .lo-dock__btn.is-active .lo-dock__icon-img {
+  filter: brightness(0) saturate(100%) invert(53%) sepia(57%) saturate(1471%)
+    hue-rotate(228deg) brightness(102%) contrast(95%);
 }
 
 /* Mobile dock: fixed at bottom, full-width, more spaced out */

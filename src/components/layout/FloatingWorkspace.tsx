@@ -1116,20 +1116,17 @@ export default function FloatingWorkspace() {
       {
         key: "spaces" as const,
         label: "Spaces",
-        iconWhite: "/icons/white/spaces.png",
-        iconBlack: "/icons/black/spaces.png",
+        icon: "/icons/black/spaces.png",
       },
       {
         key: "sounds" as const,
         label: "Sounds",
-        iconWhite: "/icons/white/sounds.png",
-        iconBlack: "/icons/black/sounds.png",
+        icon: "/icons/black/sounds.png",
       },
       {
         key: "calendar" as const,
         label: "Calendar",
-        iconWhite: "/icons/white/calendar.png",
-        iconBlack: "/icons/black/calendar.png",
+        icon: "/icons/black/calendar.png",
       },
     ],
     [],
@@ -1140,26 +1137,22 @@ export default function FloatingWorkspace() {
       {
         key: "timer" as const,
         label: "Timer",
-        iconWhite: "/icons/white/timer.png",
-        iconBlack: "/icons/black/timer.png",
+        icon: "/icons/black/timer.png",
       },
       {
         key: "tasks" as const,
         label: "Tasks",
-        iconWhite: "/icons/white/tasks.png",
-        iconBlack: "/icons/black/tasks.png",
+        icon: "/icons/black/tasks.png",
       },
       {
         key: "notes" as const,
         label: "Notes",
-        iconWhite: "/icons/white/notes.png",
-        iconBlack: "/icons/black/notes.png",
+        icon: "/icons/black/notes.png",
       },
       {
         key: "bible" as const,
         label: "Bible",
-        iconWhite: "/icons/white/bible.png",
-        iconBlack: "/icons/black/bible.png",
+        icon: "/icons/black/bible.png",
       },
     ],
     [],
@@ -1170,26 +1163,22 @@ export default function FloatingWorkspace() {
       {
         key: "spaces" as const,
         label: "Spaces",
-        iconWhite: "/icons/white/spaces.png",
-        iconBlack: "/icons/black/spaces.png",
+        icon: "/icons/black/spaces.png",
       },
       {
         key: "timer" as const,
         label: "Timer",
-        iconWhite: "/icons/white/timer.png",
-        iconBlack: "/icons/black/timer.png",
+        icon: "/icons/black/timer.png",
       },
       {
         key: "notes" as const,
         label: "Notes",
-        iconWhite: "/icons/white/notes.png",
-        iconBlack: "/icons/black/notes.png",
+        icon: "/icons/black/notes.png",
       },
       {
         key: "tasks" as const,
         label: "Tasks",
-        iconWhite: "/icons/white/tasks.png",
-        iconBlack: "/icons/black/tasks.png",
+        icon: "/icons/black/tasks.png",
       },
     ],
     [],
@@ -1573,11 +1562,9 @@ export default function FloatingWorkspace() {
                   type="button"
                 >
                   <span className="lo-dock__icon" aria-hidden="true">
-                    <img
-                      src={theme === "nebula" ? it.iconWhite : it.iconBlack}
-                      alt=""
-                      className="lo-dock__icon-img"
-                    />
+                    <span className="lo-dock__icon" aria-hidden="true">
+                      <img src={it.icon} alt="" className="lo-dock__icon-img" />
+                    </span>
                   </span>
                   <span className="lo-dock__label">{it.label}</span>
                 </button>
@@ -1600,11 +1587,7 @@ export default function FloatingWorkspace() {
                     type="button"
                   >
                     <span className="lo-dock__icon" aria-hidden="true">
-                      <img
-                        src={theme === "nebula" ? it.iconWhite : it.iconBlack}
-                        alt=""
-                        className="lo-dock__icon-img"
-                      />
+                      <img src={it.icon} alt="" className="lo-dock__icon-img" />
                     </span>
                     <span className="lo-dock__label">{it.label}</span>
                   </button>
@@ -1637,11 +1620,7 @@ export default function FloatingWorkspace() {
                     type="button"
                   >
                     <span className="lo-dock__icon" aria-hidden="true">
-                      <img
-                        src={theme === "nebula" ? it.iconWhite : it.iconBlack}
-                        alt=""
-                        className="lo-dock__icon-img"
-                      />
+                      <img src={it.icon} alt="" className="lo-dock__icon-img" />
                     </span>
                     <span className="lo-dock__label">{it.label}</span>
                   </button>
