@@ -2834,8 +2834,8 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
 .lo-daycal__grid {
   display: grid;
-  grid-template-columns: 84px minmax(0, 1fr);
-  gap: 10px;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 0px;
   align-items: start;
 }
 
@@ -2845,47 +2845,34 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 }
 
 .lo-daycal__hour-row {
-  min-height: 96px;
+  min-height: 72px;
 }
 
 .lo-daycal__hour {
-  padding-top: 8px;
-  font-size: 0.76rem;
+  padding-top: 4px;
+  padding-right: 8px;
+  font-size: 0.7rem;
+  text-align: left;
   font-weight: 700;
   letter-spacing: 0.01em;
   opacity: 0.72;
   white-space: nowrap;
 }
 
-.lo-daycal__track {
+.lo-daycal__hour-row,
+.lo-daycal__track-hour {
+  min-height: 72px;
   position: relative;
-  overflow: hidden;
-  border-radius: 14px;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  background:
-    linear-gradient(
-      to bottom,
-      rgba(255, 255, 255, 0.28) 0%,
-      rgba(255, 255, 255, 0.2) 48%,
-      rgba(255, 255, 255, 0.16) 100%
-    );
 }
 
-:root[data-theme="nebula"] .lo-daycal__track {
-  border-color: rgba(255, 255, 255, 0.08);
-  background:
-    linear-gradient(
-      to bottom,
-      rgba(255, 255, 255, 0.045) 0%,
-      rgba(255, 255, 255, 0.03) 48%,
-      rgba(255, 255, 255, 0.02) 100%
-    );
+.lo-daycal__track-hour::before {
+  display: none;
 }
 
 .lo-daycal__track-hour {
   position: relative;
-  min-height: 96px;
-  padding-right: 12px;
+   min-height: 72px;
+  padding-right: 2px;
 
   /* REMOVE old border */
   border-bottom: none;
@@ -2912,33 +2899,24 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   border-bottom: none;
 }
 
-.lo-daycal__track-hour::before {
+.lo-daycal__track {
+  position: relative;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.lo-daycal__hour-row::after,
+.lo-daycal__track-hour::after {
   content: "";
   position: absolute;
-  left: 12px;
-  right: 12px;
-  top: 50%;
+  left: 0;
+  right: 0;
+  bottom: 0;
   height: 1px;
-  background: rgba(15, 23, 42, 0.06);
+  background: rgba(255, 255, 255, 0.15);
 }
-
-:root[data-theme="nebula"] .lo-daycal__track-hour::after {
-  background: rgba(255, 255, 255, 0.12);
-}
-
-:root[data-theme="nebula"] .lo-daycal__track-hour::before {
-  background:
-    linear-gradient(
-      to bottom,
-      transparent 0,
-      transparent calc(50% - 10px),
-      rgba(255, 255, 255, 0.05) calc(50% - 10px),
-      rgba(255, 255, 255, 0.05) calc(50% - 9px),
-      transparent calc(50% - 9px),
-      transparent 100%
-    );
-}
-
 .lo-daycal__track-hour.is-drop-target {
   box-shadow:
     inset 0 0 0 999px rgba(99, 102, 241, 0.06);
@@ -2965,17 +2943,16 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
 .lo-daycal__event {
   position: absolute;
-  left: 10px;
-  width: calc(100% - 20px);
-  min-height: calc(50% - 10px);
-  padding: 7px 9px 7px 11px;
-  border-radius: 10px;
+  left: 6px;
+  width: calc(100% - 12px);
+  min-height: calc(50% - 6px);
+  padding: 4px 6px 4px 8px;
+  gap: 4px;
+  border-radius: 7px;
   height: auto;
-  padding-top: 8px;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 8px;
   box-sizing: border-box;
   overflow: hidden;
   background: rgba(99, 102, 241, 0.1);
@@ -3082,57 +3059,6 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
 .lo-daycal__event-remove:hover {
   opacity: 1;
-}
-
-.lo-daycal.is-compact {
-  gap: 8px;
-}
-
-.lo-daycal.is-compact .lo-daycal__title {
-  font-size: 0.95rem;
-}
-
-.lo-daycal.is-compact .lo-daycal__subtitle {
-  font-size: 0.74rem;
-}
-
-.lo-daycal.is-compact .lo-daycal__body {
-  gap: 8px;
-}
-
-.lo-daycal.is-compact .lo-daycal__grid {
-  grid-template-columns: 68px minmax(0, 1fr);
-  gap: 10px;
-}
-
-.lo-daycal.is-compact .lo-daycal__hour-row,
-.lo-daycal.is-compact .lo-daycal__track-hour {
-  min-height: 72px;
-}
-
-.lo-daycal.is-compact .lo-daycal__track {
-  border-radius: 12px;
-}
-
-.lo-daycal.is-compact .lo-daycal__event {
-  left: 8px;
-  right: 8px;
-  height: calc(50% - 12px);
-  padding: 6px 8px 6px 10px;
-  border-radius: 8px;
-}
-
-.lo-daycal.is-compact .lo-daycal__event.is-top {
-  top: 8px;
-}
-
-.lo-daycal.is-compact .lo-daycal__event.is-half {
-  top: calc(50% + 4px);
-}
-
-.lo-daycal.is-compact .lo-daycal__hour {
-  font-size: 0.72rem;
-  padding-top: 6px;
 }
 
 .lo-focus-calendar .lo-daycal__body {
@@ -3387,8 +3313,8 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 .lo-daycal__event-time {
   display: block;
   margin-top: auto;
-  padding-top: 4px;
-  font-size: 0.68rem;
+  padding-top: 2px;
+  font-size: 0.64rem;
   line-height: 1.1;
   opacity: 0.7;
   white-space: nowrap;

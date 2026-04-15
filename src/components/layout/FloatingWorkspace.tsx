@@ -1690,7 +1690,6 @@ export default function FloatingWorkspace() {
             {w.key === "sounds" && <SoundsPanel />}
             {w.key === "calendar" && (
               <DayCalendarPanel
-                compact
                 startHour={7}
                 endHour={22}
                 storageKey="lifeos_calendar_day_events_v1"
