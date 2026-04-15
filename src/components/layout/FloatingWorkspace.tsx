@@ -66,7 +66,7 @@ function defaultSizeFor(key: Exclude<PanelKey, null>) {
     case "notes":
       return { w: 460, h: 450 };
     case "bible":
-      return { w: 0, h: 0 };
+      return { w: 280, h: 160 };
   }
 }
 
@@ -1086,7 +1086,6 @@ export default function FloatingWorkspace() {
     if (alreadyOpened) return;
 
     const size = defaultSizeFor("bible");
-
     const margin = 20;
 
     const x = window.innerWidth - size.w - margin;
