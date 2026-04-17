@@ -55,7 +55,7 @@ function defaultSizeFor(key: Exclude<PanelKey, null>) {
     case "sounds":
       return { w: 400, h: 1150 };
     case "calendar":
-      return { w: 450, h: 1150 };
+      return { w: 400, h: 1150 };
     case "calendar-settings":
       return { w: 500, h: 350 };
     case "account-settings":
@@ -78,7 +78,7 @@ function minSizeFor(key: Exclude<PanelKey, null>) {
     case "sounds":
       return { w: 400, h: 1150 };
     case "calendar":
-      return { w: 450, h: 1150 };
+      return { w: 400, h: 1150 };
     case "calendar-settings":
       return { w: 500, h: 350 };
     case "account-settings":

@@ -1557,18 +1557,6 @@ export default function DayCalendarPanel({
 
         {showSettings ? (
           <div className="lo-daycal__tools">
-            <div className="lo-daycal__provider">
-              {connectedProvider ? (
-                <span className="lo-chip">
-                  {connectedProvider === "google"
-                    ? "Google connected"
-                    : "Outlook connected"}
-                </span>
-              ) : (
-                <span className="lo-chip">Not connected</span>
-              )}
-            </div>
-
             <div className="lo-daycal__settingswrap">
               <button
                 className="lo-btn lo-daycal__gear"
@@ -1693,7 +1681,7 @@ export default function DayCalendarPanel({
                             : renderedDuration >= 0.5
                               ? 2
                               : 1;
-                              
+
                       return (
                         <div
                           key={event.id}
