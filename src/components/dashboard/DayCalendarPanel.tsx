@@ -1693,7 +1693,7 @@ export default function DayCalendarPanel({
                             : renderedDuration >= 0.5
                               ? 2
                               : 1;
-
+                              
                       return (
                         <div
                           key={event.id}
@@ -1851,7 +1851,7 @@ export default function DayCalendarPanel({
                                   {event.title || "New event"}
                                 </strong>
 
-                                {renderedDuration >= 0.75 ? (
+                                {renderedDuration >= 1 ? (
                                   <span className="lo-daycal__event-time">
                                     {startLabel} - {endLabel}
                                   </span>
