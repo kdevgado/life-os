@@ -1626,10 +1626,7 @@ export default function FloatingWorkspace() {
               })}
             </nav>
 
-            <nav
-              className="lo-dock lo-dock--bottom"
-              aria-label="Productivity tools"
-            >
+            <nav className="lo-dock lo-dock--bottom" aria-label="Workspace tools">
               {bottomGroup.map((it) => {
                 const active = wins.some((w) => w.key === it.key);
 

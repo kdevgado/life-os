@@ -1651,6 +1651,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
   display: flex;
   flex-direction: column;
+  height: calc(100vh - var(--dock-top-offset) - 20px);
   gap: 8px;
 }
 
@@ -1665,6 +1666,73 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   box-shadow: var(--shell-shadow);
+
+  max-height: min(420px, calc(100vh - 140px));
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(120, 120, 120, 0.45) transparent;
+}
+
+.lo-dock::-webkit-scrollbar {
+  width: 6px;
+}
+
+.lo-dock::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.lo-dock::-webkit-scrollbar-thumb {
+  background: rgba(120, 120, 120, 0.45);
+  border-radius: 999px;
+}
+
+.lo-dock::-webkit-scrollbar-thumb:hover {
+  background: rgba(120, 120, 120, 0.7);
+}
+
+.lo-dock--bottom{
+  max-height: min(300px, calc(100vh - 140px));
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 1px;
+
+  /* reserve scrollbar space so width stays stable */
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+/* keep scrollbar width constant */
+.lo-dock--bottom::-webkit-scrollbar {
+  width: 6px;
+}
+
+/* hidden by default */
+.lo-dock--bottom::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.lo-dock--bottom::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 999px;
+}
+
+/* show when hovering the whole dock/workspace area */
+.lo-docks:hover .lo-dock--bottom::-webkit-scrollbar-thumb,
+.lo-dock--bottom:hover::-webkit-scrollbar-thumb {
+  background: rgba(120, 120, 120, 0.45);
+}
+
+.lo-docks:hover .lo-dock--bottom::-webkit-scrollbar-thumb:hover,
+.lo-dock--bottom:hover::-webkit-scrollbar-thumb:hover {
+  background: rgba(120, 120, 120, 0.7);
+}
+
+/* Firefox */
+.lo-docks:hover .lo-dock--bottom,
+.lo-dock--bottom:hover {
+  scrollbar-color: rgba(120, 120, 120, 0.45) transparent;
 }
 
 .lo-dock__btn {
