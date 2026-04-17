@@ -610,11 +610,18 @@ function CalendarSettingsPanel() {
       localStorage.removeItem(EVENTS_KEY);
       localStorage.removeItem(PROVIDER_KEY);
       localStorage.removeItem(ACCOUNTS_KEY);
+      localStorage.removeItem(CALENDAR_NOW_COLOR_KEY);
     } catch {}
 
     setAccounts([]);
+    setNowLineColor("#ef4444");
 
     window.dispatchEvent(new CustomEvent("lifeos:calendar-reset"));
+    window.dispatchEvent(
+      new CustomEvent("lifeos:calendar-now-color-change", {
+        detail: { color: "#ef4444" },
+      }),
+    );
   }
 
   // Change the colour of the live time line
@@ -1471,14 +1478,14 @@ export default function FloatingWorkspace() {
     });
   }
 
- const handleResetLayout = () => {
-  setShowLayoutMenu(false);
-  setWins([]);
+  const handleResetLayout = () => {
+    setShowLayoutMenu(false);
+    setWins([]);
 
-  window.setTimeout(() => {
-    window.location.reload();
-  }, 120);
-};
+    window.setTimeout(() => {
+      window.location.reload();
+    }, 120);
+  };
 
   React.useEffect(() => {
     if (!isMobile) return;
