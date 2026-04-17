@@ -1112,6 +1112,7 @@ export default function FloatingWorkspace() {
   }, []);
 
   const [showBreathe, setShowBreathe] = useState(false);
+  const [showLayoutMenu, setShowLayoutMenu] = useState(false);
 
   const topGroup = useMemo(
     () => [
@@ -1470,6 +1471,15 @@ export default function FloatingWorkspace() {
     });
   }
 
+ const handleResetLayout = () => {
+  setShowLayoutMenu(false);
+  setWins([]);
+
+  window.setTimeout(() => {
+    window.location.reload();
+  }, 120);
+};
+
   React.useEffect(() => {
     if (!isMobile) return;
 
@@ -1559,6 +1569,20 @@ export default function FloatingWorkspace() {
     };
   }, []);
 
+  React.useEffect(() => {
+    if (!showLayoutMenu) return;
+
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest(".lo-layout-menu")) {
+        setShowLayoutMenu(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [showLayoutMenu]);
+
   return (
     <>
       {/* Top-right login */}
@@ -1625,34 +1649,63 @@ export default function FloatingWorkspace() {
                 );
               })}
             </nav>
+            <div className="lo-dock-stack">
+              <nav
+                className="lo-dock lo-dock--bottom"
+                aria-label="Workspace tools"
+              >
+                {bottomGroup.map((it) => {
+                  const active = wins.some((w) => w.key === it.key);
 
-            <nav className="lo-dock lo-dock--bottom" aria-label="Workspace tools">
-              {bottomGroup.map((it) => {
-                const active = wins.some((w) => w.key === it.key);
+                  return (
+                    <button
+                      key={it.key}
+                      className={"lo-dock__btn " + (active ? "is-active" : "")}
+                      onClick={() => {
+                        if (it.key === "breathe") {
+                          setShowBreathe(true);
+                          return;
+                        }
+                        toggleWindowFromDock(it.key);
+                      }}
+                      aria-label={it.label}
+                      title={it.label}
+                      type="button"
+                    >
+                      <span className="lo-dock__icon" aria-hidden="true">
+                        <img
+                          src={it.icon}
+                          alt=""
+                          className="lo-dock__icon-img"
+                        />
+                      </span>
+                      <span className="lo-dock__label">{it.label}</span>
+                    </button>
+                  );
+                })}
+              </nav>
+              <div className="lo-layout-menu">
+                <button
+                  type="button"
+                  className="lo-layout-menu__trigger"
+                  onClick={() => setShowLayoutMenu((v) => !v)}
+                >
+                  ...
+                </button>
 
-                return (
-                  <button
-                    key={it.key}
-                    className={"lo-dock__btn " + (active ? "is-active" : "")}
-                    onClick={() => {
-                      if (it.key === "breathe") {
-                        setShowBreathe(true);
-                        return;
-                      }
-                      toggleWindowFromDock(it.key);
-                    }}
-                    aria-label={it.label}
-                    title={it.label}
-                    type="button"
-                  >
-                    <span className="lo-dock__icon" aria-hidden="true">
-                      <img src={it.icon} alt="" className="lo-dock__icon-img" />
-                    </span>
-                    <span className="lo-dock__label">{it.label}</span>
-                  </button>
-                );
-              })}
-            </nav>
+                {showLayoutMenu && (
+                  <div className="lo-layout-menu__panel">
+                    <button
+                      type="button"
+                      className="lo-layout-menu__item"
+                      onClick={handleResetLayout}
+                    >
+                      Reset Layout
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
           </>
         )}
       </div>

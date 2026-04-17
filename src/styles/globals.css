@@ -1647,12 +1647,18 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   position: fixed;
   left: var(--shell-edge-gap);
   top: var(--dock-top-offset);
-  z-index: 40;
+  z-index: 10040;
 
   display: flex;
   flex-direction: column;
   height: calc(100vh - var(--dock-top-offset) - 20px);
   gap: 8px;
+}
+
+.lo-dock-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0; /* no spacing between bottom dock and reset button */
 }
 
 .lo-dock{
@@ -1701,6 +1707,11 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   scrollbar-gutter: stable;
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
+
+  padding-bottom: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  margin-bottom: 0;
 }
 
 /* keep scrollbar width constant */
@@ -1829,6 +1840,95 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 :root[data-theme="nebula"] .lo-dock__btn.is-active .lo-dock__icon-img {
   filter: brightness(0) saturate(100%) invert(53%) sepia(57%) saturate(1471%)
     hue-rotate(228deg) brightness(102%) contrast(95%);
+}
+
+/* Layout menu: centered under bottom dock */
+.lo-layout-menu {
+  position: relative;
+  margin-top: 0;
+  display: flex;
+  justify-content: stretch;
+  overflow: visible;
+  z-index: 10030;
+}
+
+.lo-layout-menu__trigger {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 8px 6px;
+  border: 1px solid var(--shell-border);
+  border-top: 0;
+  border-radius: 0 0 10px 10px;
+  background: var(--shell-surface);
+  color: var(--shell-title);
+  box-shadow: var(--shell-shadow);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  transition:
+    transform .12s ease,
+    background .12s ease,
+    border-color .12s ease,
+    color .12s ease;
+}
+
+.lo-layout-menu__trigger:hover {
+  background: var(--shell-btn);
+}
+
+.lo-layout-menu__panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 180px;
+  padding: 8px;
+  border-radius: 14px;
+  background: var(--shell-surface-strong);
+  color: var(--shell-title);
+  border: 1px solid var(--shell-border);
+  box-shadow: var(--shell-shadow);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  z-index: 10040;
+  white-space: nowrap;
+}
+
+:root[data-theme="nebula"] .lo-layout-menu__panel {
+  background: rgba(10, 14, 24, 0.94);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+:root[data-theme="duna"] .lo-layout-menu__panel {
+  background: rgba(255, 255, 255, 0.96);
+  border-color: rgba(24, 28, 40, 0.1);
+}
+
+.lo-layout-menu__item {
+  width: 100%;
+  min-height: 40px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  display: block;
+}
+
+.lo-layout-menu__item:hover {
+  background: var(--shell-btn-hover);
+}
+
+.lo-dock-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow: visible;
 }
 
 /* Mobile dock: fixed at bottom, full-width, more spaced out */
