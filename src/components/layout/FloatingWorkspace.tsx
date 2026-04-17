@@ -7,6 +7,7 @@ import FullscreenButton from "../account/FullscreenButton";
 import DayCalendarPanel from "../dashboard/DayCalendarPanel";
 import SoundsPanel from "../dashboard/SoundsPanel";
 import SpacesPanel from "../dashboard/SpacesPanel";
+import BreatheOverlay from "../dashboard/BreatheOverlay";
 
 type PanelKey =
   | "spaces"
@@ -1110,6 +1111,8 @@ export default function FloatingWorkspace() {
     localStorage.setItem("lifeos_bible_autoload_v1", "true");
   }, []);
 
+  const [showBreathe, setShowBreathe] = useState(false);
+
   const topGroup = useMemo(
     () => [
       {
@@ -1152,6 +1155,11 @@ export default function FloatingWorkspace() {
         key: "bible" as const,
         label: "Bible",
         icon: "/icons/black/bible.png",
+      },
+      {
+        key: "breathe" as const,
+        label: "Breathe",
+        icon: "/icons/black/breathe.png",
       },
     ],
     [],
@@ -1629,14 +1637,12 @@ export default function FloatingWorkspace() {
                   <button
                     key={it.key}
                     className={"lo-dock__btn " + (active ? "is-active" : "")}
-                    onClick={(e) => {
-                      const btn = e.currentTarget as HTMLButtonElement;
-                      const r = btn.getBoundingClientRect();
-
-                      toggleWindowFromDock(it.key, {
-                        x: Math.round(r.right + 18),
-                        y: Math.round(r.top - 10),
-                      });
+                    onClick={() => {
+                      if (it.key === "breathe") {
+                        setShowBreathe(true);
+                        return;
+                      }
+                      toggleWindowFromDock(it.key);
                     }}
                     aria-label={it.label}
                     title={it.label}
@@ -1706,6 +1712,7 @@ export default function FloatingWorkspace() {
           </WindowShell>
         );
       })}
+      {showBreathe && <BreatheOverlay onClose={() => setShowBreathe(false)} />}
     </>
   );
 }
