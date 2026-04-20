@@ -1,77 +1,58 @@
 import type { Handler } from "@netlify/functions";
-import { getStore } from "@netlify/blobs";
-
-type NoteTab = {
-  id: string;
-  title: string;
-  content: string;
-};
-
-type NotesPayload = {
-  notes: NoteTab[];
-  activeId: string;
-};
-
-const EMPTY_PAYLOAD: NotesPayload = {
-  notes: [],
-  activeId: "",
-};
+import {
+  envelopeHeaders,
+  errorResponse,
+  extractClientResource,
+  getRevisionFromRequest,
+  jsonResponse,
+  methodNotAllowed,
+  parseJsonBody,
+  readResource,
+  requireUserId,
+  writeResource,
+} from "./_lib/backend";
+import {
+  normalizeNotesResource,
+  validateNotesResource,
+} from "./_lib/validation";
 
 export const handler: Handler = async (event, context) => {
-  const user = context.clientContext?.user;
+  try {
+    const userId = requireUserId(context);
+    const key = `notes/${userId}.json`;
+    const current = await readResource({
+      key,
+      fallback: { notes: [], activeId: "" },
+      normalize: normalizeNotesResource,
+    });
 
-  if (!user?.sub) {
-    return {
-      statusCode: 401,
-      body: "Unauthorized",
-    };
-  }
-
-  const store = getStore({
-    name: "lifeos",
-    siteID: process.env.NETLIFY_SITE_ID!,
-    token: process.env.NETLIFY_AUTH_TOKEN!,
-  });
-
-  const key = `notes/${user.sub}.json`;
-
-  if (event.httpMethod === "GET") {
-    try {
-      const data = await store.get(key, { type: "json" });
-      return {
-        statusCode: 200,
-        body: JSON.stringify(data ?? EMPTY_PAYLOAD),
-      };
-    } catch {
-      return {
-        statusCode: 200,
-        body: JSON.stringify(EMPTY_PAYLOAD),
-      };
+    if (event.httpMethod === "GET") {
+      return jsonResponse(200, current.resource, envelopeHeaders(current));
     }
-  }
 
-  if (event.httpMethod === "POST") {
-    try {
-      const body = event.body ? JSON.parse(event.body) : EMPTY_PAYLOAD;
-      await store.setJSON(key, {
-        notes: Array.isArray(body?.notes) ? body.notes : [],
-        activeId: typeof body?.activeId === "string" ? body.activeId : "",
+    if (event.httpMethod === "POST") {
+      const body = parseJsonBody(event);
+      const resource = validateNotesResource(extractClientResource(body));
+      const expectedRevision = getRevisionFromRequest(event, body);
+      const next = await writeResource({
+        key,
+        current,
+        expectedRevision,
+        resource,
       });
 
-      return {
-        statusCode: 200,
-        body: JSON.stringify({ ok: true }),
-      };
-    } catch (error: any) {
-      return {
-        statusCode: 400,
-        body: error?.message ?? "Invalid request body",
-      };
+      return jsonResponse(200, {
+        ok: true,
+        meta: {
+          version: next.version,
+          revision: next.revision,
+          updatedAt: next.updatedAt,
+        },
+      }, envelopeHeaders(next));
     }
-  }
 
-  return {
-    statusCode: 405,
-    body: "Method not allowed",
-  };
+    return methodNotAllowed(["GET", "POST"]);
+  } catch (error) {
+    return errorResponse(error);
+  }
 };

@@ -1,39 +1,58 @@
 import type { Handler } from "@netlify/functions";
-import { getStore } from "@netlify/blobs";
+import {
+  envelopeHeaders,
+  errorResponse,
+  extractClientResource,
+  getRevisionFromRequest,
+  jsonResponse,
+  methodNotAllowed,
+  parseJsonBody,
+  readResource,
+  requireUserId,
+  writeResource,
+} from "./_lib/backend";
+import {
+  normalizeCalendarResource,
+  validateCalendarResource,
+} from "./_lib/validation";
 
 export const handler: Handler = async (event, context) => {
-  const user = context.clientContext?.user;
+  try {
+    const userId = requireUserId(context);
+    const key = `calendar/${userId}.json`;
+    const current = await readResource({
+      key,
+      fallback: {} as ReturnType<typeof normalizeCalendarResource>,
+      normalize: normalizeCalendarResource,
+    });
 
-  if (!user?.sub) {
-    return { statusCode: 401, body: "Unauthorized" };
+    if (event.httpMethod === "GET") {
+      return jsonResponse(200, current.resource, envelopeHeaders(current));
+    }
+
+    if (event.httpMethod === "POST") {
+      const body = parseJsonBody(event);
+      const resource = validateCalendarResource(extractClientResource(body));
+      const expectedRevision = getRevisionFromRequest(event, body);
+      const next = await writeResource({
+        key,
+        current,
+        expectedRevision,
+        resource,
+      });
+
+      return jsonResponse(200, {
+        ok: true,
+        meta: {
+          version: next.version,
+          revision: next.revision,
+          updatedAt: next.updatedAt,
+        },
+      }, envelopeHeaders(next));
+    }
+
+    return methodNotAllowed(["GET", "POST"]);
+  } catch (error) {
+    return errorResponse(error);
   }
-
-  const store = getStore({
-    name: "lifeos",
-    siteID: process.env.NETLIFY_SITE_ID!,
-    token: process.env.NETLIFY_AUTH_TOKEN!,
-  });
-
-  const key = `calendar/${user.sub}.json`;
-
-  if (event.httpMethod === "GET") {
-    const data = await store.get(key, { type: "json" }).catch(() => null);
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify(data ?? {}),
-    };
-  }
-
-  if (event.httpMethod === "POST") {
-    const body = event.body ? JSON.parse(event.body) : {};
-    await store.setJSON(key, body);
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ ok: true }),
-    };
-  }
-
-  return { statusCode: 405, body: "Method not allowed" };
 };
