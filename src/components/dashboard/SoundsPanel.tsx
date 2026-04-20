@@ -12,22 +12,22 @@ const SOUND_DEFS: SoundDef[] = [
   {
     id: "rain",
     label: "Rain",
-    iconLight: "/icons/black/rain.png",
-    iconDark: "/icons/white/rain.png",
+    iconLight: "/icons/black/sounds.png",
+    iconDark: "/icons/white/sounds.png",
     src: "/audio/gentle-rain.mp3",
   },
   {
     id: "cafe",
     label: "Cafe",
-    iconLight: "/icons/black/cafe.png",
-    iconDark: "/icons/white/cafe.png",
+    iconLight: "/icons/black/sounds.png",
+    iconDark: "/icons/white/sounds.png",
     src: "/audio/cafe.mp3",
   },
   {
     id: "fireplace",
     label: "Fireplace",
-    iconLight: "/icons/black/fireplace.png",
-    iconDark: "/icons/white/fireplace.png",
+    iconLight: "/icons/black/sounds.png",
+    iconDark: "/icons/white/sounds.png",
     src: "/audio/fireplace.mp3",
   },
 ];
