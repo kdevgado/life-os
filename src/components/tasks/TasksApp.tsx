@@ -16,6 +16,13 @@ import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { getJwt, onAuthChange } from "../../lib/identity";
 import { createPortal } from "react-dom";
+import {
+  EMPTY_RESOURCE_META,
+  fetchAuthedResource,
+  ResourceApiError,
+  saveAuthedResource,
+  type ResourceMeta,
+} from "../../lib/resourceApi";
 
 type Priority = 1 | 2 | 3;
 
@@ -125,6 +132,7 @@ export default function TasksApp({
 
   const [authed, setAuthed] = useState(false);
   const ignoreNextSaveRef = useRef(false);
+  const serverMetaRef = useRef<ResourceMeta>(EMPTY_RESOURCE_META);
 
   // ✅ error handling for load
   const [loading, setLoading] = useState(false);
@@ -340,33 +348,25 @@ export default function TasksApp({
   const reloadTasks = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
+    ignoreNextSaveRef.current = true;
 
     try {
       const jwt = await getJwt();
       setAuthed(!!jwt);
 
-      ignoreNextSaveRef.current = true;
-
       if (!jwt) {
+        serverMetaRef.current = EMPTY_RESOURCE_META;
         setTasks(loadTasks());
         setLoading(false);
         return;
       }
 
-      const res = await fetch("/.netlify/functions/tasks", {
-        headers: { Authorization: `Bearer ${jwt}` },
-      });
-
-      if (!res.ok) {
-        const text = await res.text();
-        setLoadError(`Tasks failed to load (${res.status}): ${text}`);
-        // ✅ Keep existing tasks visible instead of clearing
-        setLoading(false);
-        return;
-      }
-
-      const remote = (await res.json()) as Task[];
-      setTasks(Array.isArray(remote) ? remote : []);
+      const { data, meta } = await fetchAuthedResource<Task[]>(
+        "/.netlify/functions/tasks",
+        jwt,
+      );
+      serverMetaRef.current = meta;
+      setTasks(Array.isArray(data) ? data : []);
       setLoading(false);
     } catch (e: any) {
       setLoadError(e?.message ?? "Tasks failed to load");
@@ -396,6 +396,16 @@ export default function TasksApp({
   const saveTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    try {
+      saveTasks(tasks);
+    } catch {
+      // Keep in-memory state if local storage is unavailable.
+    }
+  }, [tasks]);
+
+  useEffect(() => {
     if (ignoreNextSaveRef.current) {
       ignoreNextSaveRef.current = false;
       hydratedRef.current = true;
@@ -406,24 +416,38 @@ export default function TasksApp({
     if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
 
     saveTimerRef.current = window.setTimeout(async () => {
-      const jwt = await getJwt();
+      try {
+        const jwt = await getJwt();
 
-      if (!jwt) return;
+        if (!jwt) return;
 
-      await fetch("/.netlify/functions/tasks", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${jwt}`,
-        },
-        body: JSON.stringify(tasks),
-      });
+        const { meta } = await saveAuthedResource(
+          "/.netlify/functions/tasks",
+          jwt,
+          tasks,
+          serverMetaRef.current,
+        );
+
+        serverMetaRef.current = meta;
+      } catch (error) {
+        if (error instanceof ResourceApiError && error.status === 409) {
+          setLoadError(
+            "Tasks changed in another tab or device. Reloaded the latest version.",
+          );
+          void reloadTasks();
+          return;
+        }
+
+        setLoadError(
+          error instanceof Error ? error.message : "Tasks failed to save",
+        );
+      }
     }, 700);
 
     return () => {
       if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
     };
-  }, [tasks]);
+  }, [tasks, reloadTasks]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
