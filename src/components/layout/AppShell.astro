@@ -1,8 +1,10 @@
 ---
 import "../../styles/globals.css";
 import WorkspaceMode from "./WorkspaceMode";
+import { IMAGE_WALLPAPERS } from "../../data/wallpapers";
 
 const { title = "Life OS" } = Astro.props;
+const startupImageWallpapers = IMAGE_WALLPAPERS.map((item) => item.src);
 ---
 
 <html lang="en">
@@ -39,6 +41,24 @@ const { title = "Life OS" } = Astro.props;
         );
       } catch {}
     </script>
+
+    <script is:inline define:vars={{ startupImageWallpapers }}>
+      try {
+        const savedWallpaper = localStorage.getItem("lifeos_wallpaper");
+        const fallbackImages = startupImageWallpapers;
+        const randomImage =
+          fallbackImages[Math.floor(Math.random() * fallbackImages.length)] ||
+          "/images/duna-sky.jpg";
+        const startupWallpaper = savedWallpaper || randomImage;
+
+        window.__lifeosStartupWallpaper = startupWallpaper;
+
+        document.documentElement.style.setProperty(
+          "--lifeos-startup-image",
+          `url("${/\.(mp4|webm|ogg)$/i.test(startupWallpaper) ? randomImage : startupWallpaper}")`,
+        );
+      } catch {}
+    </script>
   </head>
 
   <body class="iw-app">
@@ -59,7 +79,9 @@ const { title = "Life OS" } = Astro.props;
       (function () {
         try {
           const val =
-            localStorage.getItem("lifeos_wallpaper") || "/images/duna-sky.jpg";
+            localStorage.getItem("lifeos_wallpaper") ||
+            window.__lifeosStartupWallpaper ||
+            "/images/duna-sky.jpg";
           const isVideo = /\.(mp4|webm|ogg)$/i.test(val);
 
           const img = document.getElementById("iw-bg-image");
