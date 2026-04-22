@@ -5,6 +5,13 @@ import { useClickOutside } from "../../lib/useClickOutside";
 import Placeholder from "@tiptap/extension-placeholder";
 import { createPortal } from "react-dom";
 import { getJwt, onAuthChange } from "../../lib/identity";
+import {
+  EMPTY_RESOURCE_META,
+  fetchAuthedResource,
+  ResourceApiError,
+  saveAuthedResource,
+  type ResourceMeta,
+} from "../../lib/resourceApi";
 
 type NoteTab = {
   id: string;
@@ -121,46 +128,6 @@ function ToolbarButton({
       {icon ? <img src={icon} alt="" className="lo-notebar__icon" /> : children}
     </button>
   );
-}
-
-async function fetchRemoteNotes(): Promise<NotesPayload | null> {
-  const jwt = await getJwt();
-  if (!jwt) return null;
-
-  const res = await fetch("/.netlify/functions/notes", {
-    headers: {
-      Authorization: `Bearer ${jwt}`,
-    },
-  });
-
-  if (!res.ok) return null;
-
-  const remote = await res.json();
-  const notes = Array.isArray(remote?.notes) ? remote.notes : [];
-
-  if (!notes.length) return null;
-
-  const activeId =
-    typeof remote?.activeId === "string" &&
-    notes.some((n: NoteTab) => n.id === remote.activeId)
-      ? remote.activeId
-      : notes[0].id;
-
-  return { notes, activeId };
-}
-
-async function saveRemoteNotes(payload: NotesPayload) {
-  const jwt = await getJwt();
-  if (!jwt) return;
-
-  await fetch("/.netlify/functions/notes", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${jwt}`,
-    },
-    body: JSON.stringify(payload),
-  });
 }
 
 function NotesMenu({
@@ -325,8 +292,10 @@ export default function NotesPanel() {
   const editorWrapRef = React.useRef<HTMLDivElement | null>(null);
   const [isMounted, setIsMounted] = React.useState(false);
   const [slashIndex, setSlashIndex] = React.useState(0);
+  const [syncNotice, setSyncNotice] = React.useState<string | null>(null);
   const slashOpenRef = React.useRef(false);
   const slashIndexRef = React.useRef(0);
+  const serverMetaRef = React.useRef<ResourceMeta>(EMPTY_RESOURCE_META);
 
   const [slashItems, setSlashItems] =
     React.useState<Array<{ label: string; type: SlashCommand }>>(SLASH_ITEMS);
@@ -394,30 +363,23 @@ export default function NotesPanel() {
   const reloadNotes = React.useCallback(async () => {
     try {
       const jwt = await getJwt();
+      setSyncNotice(null);
 
       ignoreNextSaveRef.current = true;
 
       if (!jwt) {
+        serverMetaRef.current = EMPTY_RESOURCE_META;
         const local = readLocalNotes();
         setNotes(local.notes);
         setActiveId(local.activeId);
         return;
       }
 
-      const res = await fetch("/.netlify/functions/notes", {
-        headers: {
-          Authorization: `Bearer ${jwt}`,
-        },
-      });
-
-      if (!res.ok) {
-        const local = readLocalNotes();
-        setNotes(local.notes);
-        setActiveId(local.activeId);
-        return;
-      }
-
-      const remote = await res.json();
+      const { data: remote, meta } = await fetchAuthedResource<NotesPayload>(
+        "/.netlify/functions/notes",
+        jwt,
+      );
+      serverMetaRef.current = meta;
       const remoteNotes = Array.isArray(remote?.notes) ? remote.notes : [];
       const local = readLocalNotes();
 
@@ -496,19 +458,32 @@ export default function NotesPanel() {
 
         if (!jwt) return;
 
-        await fetch("/.netlify/functions/notes", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${jwt}`,
-          },
-          body: JSON.stringify({
+        const { meta } = await saveAuthedResource(
+          "/.netlify/functions/notes",
+          jwt,
+          {
             notes,
             activeId,
-          }),
-        });
-      } catch {
-        // local fallback already saved
+          },
+          serverMetaRef.current,
+        );
+
+        serverMetaRef.current = meta;
+        setSyncNotice(null);
+      } catch (error) {
+        if (error instanceof ResourceApiError && error.status === 409) {
+          setSyncNotice(
+            "Notes changed in another tab or device. Reloaded the latest version.",
+          );
+          void reloadNotes();
+          return;
+        }
+
+        setSyncNotice(
+          error instanceof Error
+            ? error.message
+            : "Notes could not sync right now. Your local copy is still saved on this device.",
+        );
       }
     }, 700);
 
@@ -517,7 +492,7 @@ export default function NotesPanel() {
         window.clearTimeout(saveTimerRef.current);
       }
     };
-  }, [notes, activeId]);
+  }, [notes, activeId, reloadNotes]);
 
   React.useEffect(() => {
     function handlePointerDown(event: MouseEvent) {
@@ -793,6 +768,8 @@ export default function NotesPanel() {
           onDeleteNote={noteActions.remove}
         />
       </div>
+
+      {syncNotice ? <div className="muted">{syncNotice}</div> : null}
 
       <div className="lo-notebar">
         <select

@@ -323,11 +323,6 @@ export default function SoundsPanel() {
                       <span className="lo-sounds__emoji">
                         {SOUND_EMOJIS[sound.id] ?? "🎧"}
                       </span>
-                      <img
-                        src={iconSrc}
-                        alt=""
-                        className="lo-sounds__icon-img"
-                      />
                     </span>
 
                     <div className="lo-sounds__item-copy">

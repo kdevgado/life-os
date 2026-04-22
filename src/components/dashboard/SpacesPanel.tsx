@@ -275,29 +275,6 @@ export default function SpacesPanel() {
   return (
     <div className="lo-spaces">
       <div className="lo-spaces__top">
-        {!isMobile && (
-          <div className="lo-spaces__section">
-            <div className="lo-spaces__label">
-              <strong>Theme</strong>
-              <span>Duna / Nebula</span>
-            </div>
-
-            <select
-              className="lo-spaces__select"
-              value={theme}
-              onChange={(e) => {
-                const v = e.target.value === "nebula" ? "nebula" : "duna";
-                setTheme(v);
-                localStorage.setItem("lifeos_theme", v);
-                document.documentElement.setAttribute("data-theme", v);
-              }}
-            >
-              <option value="duna">Duna</option>
-              <option value="nebula">Nebula</option>
-            </select>
-          </div>
-        )}
-
         <div
           className="lo-spaces__tabs"
           role="tablist"
