@@ -2477,14 +2477,25 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   transition: background .12s ease;
 }
 
-.lo-window--tasks .lo-window__close{
-  width: 36px;
-  height: 36px;
+.lo-window--tasks .lo-window__close,
+.lo-window--notes .lo-window__close{
+  width: 30px;
+  height: 30px;
   border-radius: 10px;
 }
 
-.lo-window--tasks .lo-window__bar{
-  padding: 18px 30px 0;
+.lo-window--tasks .lo-window__bar,
+.lo-window--notes .lo-window__bar{
+  height: 18px;
+  padding: 0 30px 0 14px;
+  pointer-events: auto;
+}
+
+.lo-window--tasks .lo-window__actions,
+.lo-window--notes .lo-window__actions{
+  position: absolute;
+  top: 14px;
+  right: 30px;
 }
 
 .lo-window__close:hover{
@@ -3699,7 +3710,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   width: 260px;
   max-height: 320px;
   overflow: auto;
-  z-index: 20;
+  z-index: 10050;
 
   padding: 10px;
   border-radius: 16px;

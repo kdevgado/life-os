@@ -147,6 +147,10 @@ function NotesMenu({
 }) {
   const [open, setOpen] = React.useState(false);
   const [hoveredId, setHoveredId] = React.useState<string | null>(null);
+  const [menuPos, setMenuPos] = React.useState<{
+    top: number;
+    right: number;
+  } | null>(null);
 
   const menuRef = useClickOutside<HTMLDivElement>(() => {
     setOpen(false);
@@ -158,15 +162,31 @@ function NotesMenu({
       <button
         type="button"
         className="lo-notes-menu__trigger"
-        onClick={() => setOpen((v) => !v)}
+        onClick={(e) => {
+          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+
+          setMenuPos({
+            top: rect.bottom + 8,
+            right: Math.max(12, window.innerWidth - rect.right),
+          });
+          setOpen((v) => !v);
+        }}
         title="Manage notes"
         aria-label="Manage notes"
       >
         Notes ▾
       </button>
 
-      {open && (
-        <div className="lo-notes-menu__panel">
+      {open && menuPos
+        ? createPortal(
+            <div
+              className="lo-notes-menu__panel"
+              style={{
+                position: "fixed",
+                top: menuPos.top,
+                right: menuPos.right,
+              }}
+            >
           <button
             type="button"
             className="lo-notes-menu__new"
@@ -239,8 +259,10 @@ function NotesMenu({
               </div>
             ))}
           </div>
-        </div>
-      )}
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }
@@ -744,21 +766,6 @@ export default function NotesPanel() {
   return (
     <div className="lo-notes">
       <div className="lo-notes__tabs">
-        <div className="lo-notes__tablist">
-          {notes.map((note) => (
-            <button
-              key={note.id}
-              type="button"
-              className={`lo-notes__tab ${note.id === activeId ? "is-active" : ""}`}
-              onClick={() => setActiveId(note.id)}
-              title={note.title}
-              aria-label={`Open ${note.title}`}
-            >
-              {note.title}
-            </button>
-          ))}
-        </div>
-
         <NotesMenu
           notes={notes}
           activeId={activeId}
