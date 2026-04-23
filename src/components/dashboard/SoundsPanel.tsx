@@ -209,6 +209,8 @@ export default function SoundsPanel() {
 
   return (
     <div className="lo-sounds">
+      <div className="lo-sounds__panel-heading">Soundboard</div>
+
       <section className="lo-sounds__section">
         <div className="lo-sounds__section-head">
           <div>
