@@ -120,7 +120,10 @@ export default function TasksApp({
   mode?: TasksMode;
   setWindowHeader?: (node: React.ReactNode | null) => void;
 }) {
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasks, setTasks] = useState<Task[]>(() => {
+    if (typeof window === "undefined") return [];
+    return loadTasks();
+  });
   const [title, setTitle] = useState("");
   const [query, setQuery] = useState("");
 
@@ -350,6 +353,7 @@ export default function TasksApp({
     setLoading(true);
     setLoadError(null);
     ignoreNextSaveRef.current = true;
+    const localTasks = loadTasks();
 
     try {
       const jwt = await getJwt();
@@ -357,7 +361,7 @@ export default function TasksApp({
 
       if (!jwt) {
         serverMetaRef.current = EMPTY_RESOURCE_META;
-        setTasks(loadTasks());
+        setTasks(localTasks);
         setLoading(false);
         return;
       }
@@ -366,11 +370,34 @@ export default function TasksApp({
         "/.netlify/functions/tasks",
         jwt,
       );
+      const remoteTasks = Array.isArray(data) ? data : [];
       serverMetaRef.current = meta;
-      setTasks(Array.isArray(data) ? data : []);
+
+      const shouldKeepLocalBackup =
+        localTasks.length > 0 &&
+        remoteTasks.length === 0 &&
+        (meta.revision ?? 0) === 0;
+
+      if (shouldKeepLocalBackup) {
+        setTasks(localTasks);
+        setLoadError(
+          "Remote tasks were empty, so the local backup is being kept.",
+        );
+        setLoading(false);
+        return;
+      }
+
+      setTasks(remoteTasks);
       setLoading(false);
     } catch (e: any) {
-      setLoadError(e?.message ?? "Tasks failed to load");
+      if (localTasks.length > 0) {
+        setTasks(localTasks);
+        setLoadError(
+          `${e?.message ?? "Tasks failed to load"} Showing local backup.`,
+        );
+      } else {
+        setLoadError(e?.message ?? "Tasks failed to load");
+      }
       setLoading(false);
     }
   }, []);
@@ -1124,9 +1151,10 @@ export default function TasksApp({
     function handleOutsideClick(event: MouseEvent) {
       const target = event.target as Node;
 
-      if (!focusFilterWrapRef.current?.contains(target)) {
-        setShowFocusFilter(false);
-      }
+      if (focusFilterWrapRef.current?.contains(target)) return;
+      if (focusFilterMenuRef.current?.contains(target)) return;
+
+      setShowFocusFilter(false);
     }
 
     function handleEscape(event: KeyboardEvent) {

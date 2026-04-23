@@ -1,7 +1,6 @@
 import React from "react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { useClickOutside } from "../../lib/useClickOutside";
 import Placeholder from "@tiptap/extension-placeholder";
 import { createPortal } from "react-dom";
 import { getJwt, onAuthChange } from "../../lib/identity";
@@ -151,11 +150,28 @@ function NotesMenu({
     top: number;
     right: number;
   } | null>(null);
+  const menuRef = React.useRef<HTMLDivElement | null>(null);
+  const panelRef = React.useRef<HTMLDivElement | null>(null);
 
-  const menuRef = useClickOutside<HTMLDivElement>(() => {
-    setOpen(false);
-    setHoveredId(null);
-  }, open);
+  React.useEffect(() => {
+    if (!open) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+      if (menuRef.current?.contains(target)) return;
+      if (panelRef.current?.contains(target)) return;
+
+      setOpen(false);
+      setHoveredId(null);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, [open]);
 
   return (
     <div className="lo-notes-menu" ref={menuRef}>
@@ -180,6 +196,7 @@ function NotesMenu({
       {open && menuPos
         ? createPortal(
             <div
+              ref={panelRef}
               className="lo-notes-menu__panel"
               style={{
                 position: "fixed",

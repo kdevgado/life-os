@@ -376,8 +376,14 @@ function WindowShell({
 
       <div
         className="lo-window__body"
-        onPointerDown={(e) => e.stopPropagation()}
-        onMouseDown={(e) => e.stopPropagation()}
+        onPointerDown={(e) => {
+          onFocus();
+          e.stopPropagation();
+        }}
+        onMouseDown={(e) => {
+          onFocus();
+          e.stopPropagation();
+        }}
       >
         {children}
       </div>

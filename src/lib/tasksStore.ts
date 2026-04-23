@@ -1,6 +1,13 @@
 import type { Task } from "../types/task";
 
 const KEY = "lifeos_tasks_v1";
+const BACKUP_KEY = "lifeos_tasks_backup_v1";
+const MAX_BACKUPS = 10;
+
+type TaskBackupSnapshot = {
+  savedAt: string;
+  tasks: Task[];
+};
 
 function nowISO() {
   return new Date().toISOString();
@@ -85,15 +92,20 @@ function parseTaskInput(input: string) {
 export function loadTasks(): Task[] {
   try {
     const raw = localStorage.getItem(KEY);
-    if (!raw) return [];
-    return JSON.parse(raw) as Task[];
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed as Task[];
+    }
   } catch {
-    return [];
+    // Fall through to backup recovery.
   }
+
+  return loadLatestTaskBackup();
 }
 
 export function saveTasks(tasks: Task[]) {
   localStorage.setItem(KEY, JSON.stringify(tasks));
+  saveTaskBackup(tasks);
 }
 
 export function createTask(
@@ -158,4 +170,54 @@ export function searchTasks(query: string): Task[] {
 
     return inTitle || inList || inTags || inNotes;
   });
+}
+
+function loadLatestTaskBackup(): Task[] {
+  try {
+    const raw = localStorage.getItem(BACKUP_KEY);
+    if (!raw) return [];
+
+    const snapshots = JSON.parse(raw);
+    if (!Array.isArray(snapshots)) return [];
+
+    for (let i = snapshots.length - 1; i >= 0; i -= 1) {
+      const snapshot = snapshots[i];
+      if (snapshot && Array.isArray(snapshot.tasks)) {
+        return snapshot.tasks as Task[];
+      }
+    }
+  } catch {
+    return [];
+  }
+
+  return [];
+}
+
+function saveTaskBackup(tasks: Task[]) {
+  if (tasks.length === 0) return;
+
+  try {
+    const raw = localStorage.getItem(BACKUP_KEY);
+    const current = raw ? JSON.parse(raw) : [];
+    const snapshots: TaskBackupSnapshot[] = Array.isArray(current) ? current : [];
+    const serializedTasks = JSON.stringify(tasks);
+    const latestSerialized =
+      snapshots.length > 0
+        ? JSON.stringify(snapshots[snapshots.length - 1]?.tasks ?? [])
+        : null;
+
+    if (latestSerialized === serializedTasks) return;
+
+    const nextSnapshots = [
+      ...snapshots,
+      {
+        savedAt: nowISO(),
+        tasks,
+      },
+    ].slice(-MAX_BACKUPS);
+
+    localStorage.setItem(BACKUP_KEY, JSON.stringify(nextSnapshots));
+  } catch {
+    // Ignore backup failures and keep the primary save path working.
+  }
 }
