@@ -2228,8 +2228,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   flex: 0 0 auto;
 }
 
-.lo-window-filter--button,
-.lo-notes-menu__trigger {
+.lo-dropdown-trigger {
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -2247,18 +2246,16 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
     transform 0.16s ease;
 }
 
-.lo-window-filter--button:hover,
-.lo-notes-menu__trigger:hover {
+.lo-dropdown-trigger:hover {
   background: var(--shell-btn-hover);
 }
 
-.lo-window-filter--button:active,
-.lo-notes-menu__trigger:active {
+.lo-dropdown-trigger:active {
   transform: translateY(1px);
 }
 
-.lo-window-filter--button.is-open,
-.lo-notes-menu__trigger[aria-expanded="true"] {
+.lo-dropdown-trigger[aria-expanded="true"],
+.lo-window-filter--button.is-open {
   background: var(--shell-btn-hover);
 }
 
@@ -2285,8 +2282,8 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  padding: 6px;
-  border-radius: 12px;
+  padding: 10px;
+  border-radius: 16px;
   width: 180px;          /* 👈 shrink it */
   min-width: 160px;
   max-width: 200px;
@@ -2294,9 +2291,10 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   border: 1px solid var(--shell-border);
   background: var(--shell-surface-strong);
   color: var(--shell-title);
+  font: inherit;
   box-shadow: var(--shell-shadow);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .lo-filter-group {
@@ -2305,7 +2303,8 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 }
 
 .lo-filter-label {
-  padding: 2px 6px 4px;
+  padding: 2px 6px 6px;
+  font: inherit;
   font-size: 12px;
   letter-spacing: 0.04em;
   font-weight: 700;
@@ -2319,10 +2318,9 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 4px 8px;
-  border-radius: 8px;
-  font-size: 12.5px;
-  font-weight: 500;
+  padding: 6px 8px;
+  border-radius: 10px;
+  font: inherit;
   box-sizing: border-box;
   cursor: pointer;
 }
@@ -2347,14 +2345,6 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   color: inherit;
 }
 
-/* Duna */
-:root[data-theme="duna"] .lo-filter-menu {
-  background: rgba(255, 255, 255, 0.97);
-  border-color: rgba(24, 28, 40, 0.1);
-  color: rgba(24, 28, 40, 0.94);
-  box-shadow: 0 18px 40px rgba(24, 28, 40, 0.14);
-}
-
 :root[data-theme="duna"] .lo-filter-option {
   color: rgba(24, 28, 40, 0.94);
 }
@@ -2365,14 +2355,6 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
 :root[data-theme="duna"] .lo-filter-option--checkbox input[type="checkbox"] {
   accent-color: #5b6df8;
-}
-
-/* Nebula */
-:root[data-theme="nebula"] .lo-filter-menu {
-  background: rgba(10, 14, 24, 0.96);
-  border-color: rgba(255, 255, 255, 0.12);
-  color: rgba(245, 247, 255, 0.98);
-  box-shadow: 0 22px 50px rgba(0, 0, 0, 0.42);
 }
 
 :root[data-theme="nebula"] .lo-filter-label {
@@ -3642,6 +3624,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  flex: 0 0 auto;
 }
 
 .lo-notes__tablist{
@@ -3814,6 +3797,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   border-radius: 14px;
   background: var(--shell-surface-soft);
   border: 1px solid var(--shell-border);
+  flex: 0 0 auto;
   transition:
     padding .18s ease,
     border-radius .18s ease,
@@ -3877,8 +3861,9 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
 .lo-notes__meta{
   display: flex;
-  overflow: hidden;
-  max-height: 72px;
+  flex: 0 0 auto;
+  overflow: visible;
+  max-height: none;
   opacity: 1;
   transform: translateY(0);
   transition:
@@ -3889,12 +3874,16 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 }
 
 .lo-notes__titleinput{
+  display: block;
+  box-sizing: border-box;
   width: 100%;
+  min-height: 44px;
   border: 1px solid var(--shell-border);
   background: var(--shell-surface-strong);
   color: var(--shell-title);
   border-radius: 12px;
   padding: 10px 12px;
+  line-height: 1.35;
   transition:
     padding .18s ease,
     border-radius .18s ease,
@@ -3950,6 +3939,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 }
 
 .lo-notes.is-compact .lo-notes__meta{
+  overflow: hidden;
   max-height: 0;
   opacity: 0;
   margin: 0;

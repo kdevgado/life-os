@@ -1386,7 +1386,7 @@ export default function TasksApp({
                 <div ref={focusFilterWrapRef} className="lo-filter-dropdown">
                   <button
                     type="button"
-                    className={`lo-window-filter--button ${showFocusFilter ? "is-open" : ""}`}
+                    className={`lo-dropdown-trigger lo-window-filter--button ${showFocusFilter ? "is-open" : ""}`}
                     onClick={(e) => {
                       e.stopPropagation();
 

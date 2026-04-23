@@ -177,7 +177,7 @@ function NotesMenu({
     <div className="lo-notes-menu" ref={menuRef}>
       <button
         type="button"
-        className="lo-notes-menu__trigger"
+        className="lo-dropdown-trigger lo-notes-menu__trigger"
         onClick={(e) => {
           const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
 
