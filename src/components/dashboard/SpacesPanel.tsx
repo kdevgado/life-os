@@ -430,7 +430,6 @@ export default function SpacesPanel() {
     {!isMobile && (
       <div className="lo-spaces__footer">
         <div className="lo-spaces__current">
-          <div className="lo-spaces__current-label">Selected wallpaper</div>
           <div className="lo-spaces__current-title">
             {selectedWallpaper?.title || "No wallpaper selected"}
           </div>
