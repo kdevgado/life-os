@@ -490,6 +490,10 @@ function TimerPanel() {
 
   return (
     <div className="lo-timer">
+      <div className="lo-timer__header">
+        <div className="lo-timer__panel-heading">Timer</div>
+      </div>
+
       <div className="lo-timer__time">
         {mm}:{ss}
       </div>
