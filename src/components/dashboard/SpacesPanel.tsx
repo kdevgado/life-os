@@ -119,6 +119,9 @@ export default function SpacesPanel() {
     () => WALLPAPERS.find((item) => item.src === selected),
     [selected],
   );
+  const isSelectedFavourite = selectedWallpaper
+    ? favourites.includes(selectedWallpaper.id)
+    : false;
 
   const CATEGORY_OPTIONS = [
     { value: "all", label: "All" },
@@ -433,31 +436,48 @@ export default function SpacesPanel() {
           </div>
         </div>
 
-        {selectedWallpaper?.type === "video" ? (
-          <div className="lo-spaces__audio">
-            <div className="lo-spaces__audio-row">
-              <span className="lo-spaces__audio-label">Wallpaper sound</span>
+        <div className="lo-spaces__footer-actions">
+          {selectedWallpaper ? (
+            <button
+              type="button"
+              className={`lo-spaces__footer-fav ${isSelectedFavourite ? "is-fav" : ""}`}
+              onClick={() => toggleFavourite(selectedWallpaper.id)}
+              aria-label={
+                isSelectedFavourite
+                  ? "Remove selected wallpaper from favourites"
+                  : "Add selected wallpaper to favourites"
+              }
+            >
+              {isSelectedFavourite ? "♥ Favourited" : "♡ Add to favourites"}
+            </button>
+          ) : null}
 
-              <button
-                type="button"
-                className={`lo-spaces__mute ${videoMuted ? "is-muted" : ""}`}
-                onClick={toggleVideoMuted}
-              >
-                {videoMuted ? "Unmute" : "Mute"}
-              </button>
+          {selectedWallpaper?.type === "video" ? (
+            <div className="lo-spaces__audio">
+              <div className="lo-spaces__audio-row">
+                <span className="lo-spaces__audio-label">Wallpaper sound</span>
+
+                <button
+                  type="button"
+                  className={`lo-spaces__mute ${videoMuted ? "is-muted" : ""}`}
+                  onClick={toggleVideoMuted}
+                >
+                  {videoMuted ? "Unmute" : "Mute"}
+                </button>
+              </div>
+
+              <input
+                className="lo-spaces__volume"
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={videoVolume}
+                onChange={(e) => changeVideoVolume(Number(e.target.value))}
+              />
             </div>
-
-            <input
-              className="lo-spaces__volume"
-              type="range"
-              min="0"
-              max="1"
-              step="0.05"
-              value={videoVolume}
-              onChange={(e) => changeVideoVolume(Number(e.target.value))}
-            />
-          </div>
-        ) : null}
+          ) : null}
+        </div>
       </div>
     )}
     </div>
