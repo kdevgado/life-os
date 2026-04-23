@@ -27,6 +27,7 @@ type SlashCommand = "paragraph" | "h1" | "h2" | "h3" | "bullet" | "number";
 
 const STORAGE_KEY = "lifeos_notes_v1";
 const ACTIVE_KEY = "lifeos_notes_active_v1";
+const NOTES_DROPDOWN_ID = "notes-menu";
 
 const SLASH_ITEMS: Array<{ label: string; type: SlashCommand }> = [
   { label: "Paragraph", type: "paragraph" },
@@ -166,10 +167,35 @@ function NotesMenu({
       setHoveredId(null);
     };
 
-    document.addEventListener("pointerdown", handlePointerDown);
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+        setHoveredId(null);
+      }
+    };
+
+    const handleDropdownOpened = (event: Event) => {
+      const customEvent = event as CustomEvent<{ id?: string }>;
+      if (customEvent.detail?.id === NOTES_DROPDOWN_ID) return;
+
+      setOpen(false);
+      setHoveredId(null);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown, true);
+    window.addEventListener("keydown", handleEscape);
+    window.addEventListener(
+      "lifeos:dropdown-opened",
+      handleDropdownOpened as EventListener,
+    );
 
     return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("pointerdown", handlePointerDown, true);
+      window.removeEventListener("keydown", handleEscape);
+      window.removeEventListener(
+        "lifeos:dropdown-opened",
+        handleDropdownOpened as EventListener,
+      );
     };
   }, [open]);
 
@@ -180,12 +206,22 @@ function NotesMenu({
         className="lo-dropdown-trigger lo-notes-menu__trigger"
         onClick={(e) => {
           const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+          const nextOpen = !open;
 
           setMenuPos({
             top: rect.bottom + 8,
             right: Math.max(12, window.innerWidth - rect.right),
           });
-          setOpen((v) => !v);
+
+          if (nextOpen) {
+            window.dispatchEvent(
+              new CustomEvent("lifeos:dropdown-opened", {
+                detail: { id: NOTES_DROPDOWN_ID },
+              }),
+            );
+          }
+
+          setOpen(nextOpen);
         }}
         title="Manage notes"
         aria-label="Manage notes"

@@ -97,6 +97,7 @@ function getCreatedDateKey(task: Task) {
 type TasksMode = "focus" | "plan";
 type FocusFilter = "all" | "today" | "overdue";
 type StatusFilter = "all" | "inprogress" | "completed";
+const TASKS_FILTER_DROPDOWN_ID = "tasks-filter";
 
 function formatDateForEditor(date?: string) {
   if (!date) return "";
@@ -1148,7 +1149,7 @@ export default function TasksApp({
   useEffect(() => {
     if (!showFocusFilter) return;
 
-    function handleOutsideClick(event: MouseEvent) {
+    function handleOutsideClick(event: PointerEvent) {
       const target = event.target as Node;
 
       if (focusFilterWrapRef.current?.contains(target)) return;
@@ -1167,16 +1168,31 @@ export default function TasksApp({
       setShowFocusFilter(false);
     }
 
-    window.addEventListener("mousedown", handleOutsideClick);
+    function handleDropdownOpened(event: Event) {
+      const customEvent = event as CustomEvent<{ id?: string }>;
+      if (customEvent.detail?.id === TASKS_FILTER_DROPDOWN_ID) return;
+
+      setShowFocusFilter(false);
+    }
+
+    document.addEventListener("pointerdown", handleOutsideClick, true);
     window.addEventListener("keydown", handleEscape);
     window.addEventListener("resize", handleViewportChange);
     window.addEventListener("scroll", handleViewportChange, true);
+    window.addEventListener(
+      "lifeos:dropdown-opened",
+      handleDropdownOpened as EventListener,
+    );
 
     return () => {
-      window.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("pointerdown", handleOutsideClick, true);
       window.removeEventListener("keydown", handleEscape);
       window.removeEventListener("resize", handleViewportChange);
       window.removeEventListener("scroll", handleViewportChange, true);
+      window.removeEventListener(
+        "lifeos:dropdown-opened",
+        handleDropdownOpened as EventListener,
+      );
     };
   }, [showFocusFilter]);
 
@@ -1412,7 +1428,17 @@ export default function TasksApp({
                         left: nextLeft,
                       });
 
-                      setShowFocusFilter((prev) => !prev);
+                      const nextOpen = !showFocusFilter;
+
+                      if (nextOpen) {
+                        window.dispatchEvent(
+                          new CustomEvent("lifeos:dropdown-opened", {
+                            detail: { id: TASKS_FILTER_DROPDOWN_ID },
+                          }),
+                        );
+                      }
+
+                      setShowFocusFilter(nextOpen);
                     }}
                     aria-label="Filter"
                     aria-expanded={showFocusFilter}
