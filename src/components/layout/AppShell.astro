@@ -78,6 +78,42 @@ const startupImageWallpapers = IMAGE_WALLPAPERS.map((item) => item.src);
     <script is:inline>
       (function () {
         try {
+          const readWallpaperAudio = () => {
+            try {
+              const savedMuted = localStorage.getItem("lifeos_wallpaper_muted");
+              const savedVolume = localStorage.getItem("lifeos_wallpaper_volume");
+              const muted = savedMuted === null ? true : savedMuted === "true";
+              const parsedVolume =
+                savedVolume === null ? 0.5 : Number(savedVolume);
+              const volume = Number.isFinite(parsedVolume)
+                ? Math.max(0, Math.min(1, parsedVolume))
+                : 0.5;
+
+              return { muted, volume };
+            } catch {
+              return { muted: true, volume: 0.5 };
+            }
+          };
+
+          const applyWallpaperAudio = (video) => {
+            const { muted, volume } = readWallpaperAudio();
+            video.defaultMuted = muted;
+            video.muted = muted;
+            video.volume = muted ? 0 : volume;
+          };
+
+          const syncVideoPlayback = (video, src) => {
+            applyWallpaperAudio(video);
+
+            if (video.getAttribute("src") !== src) {
+              video.setAttribute("src", src);
+              video.load();
+            }
+
+            const p = video.play();
+            if (p && typeof p.catch === "function") p.catch(() => {});
+          };
+
           const val =
             localStorage.getItem("lifeos_wallpaper") ||
             window.__lifeosStartupWallpaper ||
@@ -92,12 +128,10 @@ const startupImageWallpapers = IMAGE_WALLPAPERS.map((item) => item.src);
           if (isVideo) {
             img.style.display = "none";
             vid.style.display = "block";
-            if (vid.getAttribute("src") !== val) vid.setAttribute("src", val);
-            // Some browsers need an explicit play call
-            const p = vid.play();
-            if (p && typeof p.catch === "function") p.catch(() => {});
+            syncVideoPlayback(vid, val);
           } else {
             vid.style.display = "none";
+            vid.pause();
             vid.removeAttribute("src");
             vid.load();
             img.style.display = "block";
@@ -115,16 +149,24 @@ const startupImageWallpapers = IMAGE_WALLPAPERS.map((item) => item.src);
               if (nextIsVideo) {
                 img.style.display = "none";
                 vid.style.display = "block";
-                if (vid.getAttribute("src") !== next)
-                  vid.setAttribute("src", next);
-                const p2 = vid.play();
-                if (p2 && typeof p2.catch === "function") p2.catch(() => {});
+                syncVideoPlayback(vid, next);
               } else {
                 vid.style.display = "none";
+                vid.pause();
                 vid.removeAttribute("src");
                 vid.load();
                 img.style.display = "block";
                 img.style.backgroundImage = "url(" + next + ")";
+              }
+            } catch {}
+          });
+
+          window.addEventListener("lifeos:wallpaper-audio", () => {
+            try {
+              applyWallpaperAudio(vid);
+              if (vid.style.display !== "none" && vid.getAttribute("src")) {
+                const p = vid.play();
+                if (p && typeof p.catch === "function") p.catch(() => {});
               }
             } catch {}
           });
