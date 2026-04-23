@@ -332,6 +332,7 @@ export default function NotesPanel() {
   const [activeId, setActiveId] = React.useState<string>("");
   const [slashOpen, setSlashOpen] = React.useState(false);
   const [slashPos, setSlashPos] = React.useState({ top: 0, left: 0 });
+  const [isEditorScrolled, setIsEditorScrolled] = React.useState(false);
   const editorWrapRef = React.useRef<HTMLDivElement | null>(null);
   const [isMounted, setIsMounted] = React.useState(false);
   const [slashIndex, setSlashIndex] = React.useState(0);
@@ -552,6 +553,22 @@ export default function NotesPanel() {
     document.addEventListener("mousedown", handlePointerDown);
     return () => document.removeEventListener("mousedown", handlePointerDown);
   }, []);
+
+  React.useEffect(() => {
+    const editorWrap = editorWrapRef.current;
+    if (!editorWrap) return;
+
+    const handleScroll = () => {
+      setIsEditorScrolled(editorWrap.scrollTop > 24);
+    };
+
+    handleScroll();
+    editorWrap.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      editorWrap.removeEventListener("scroll", handleScroll);
+    };
+  }, [activeId]);
 
   function closeSlashMenu() {
     setSlashOpen(false);
@@ -785,7 +802,7 @@ export default function NotesPanel() {
   }
 
   return (
-    <div className="lo-notes">
+    <div className={`lo-notes ${isEditorScrolled ? "is-compact" : ""}`}>
       <div className="lo-notes__tabs">
         <NotesMenu
           notes={notes}

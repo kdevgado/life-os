@@ -3814,6 +3814,13 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   border-radius: 14px;
   background: var(--shell-surface-soft);
   border: 1px solid var(--shell-border);
+  transition:
+    padding .18s ease,
+    border-radius .18s ease,
+    background .18s ease,
+    box-shadow .18s ease,
+    backdrop-filter .18s ease,
+    -webkit-backdrop-filter .18s ease;
 }
 
 .lo-notebar__select{
@@ -3823,6 +3830,11 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   color: var(--shell-title);
   border-radius: 10px;
   padding: 8px 10px;
+  transition:
+    min-width .18s ease,
+    padding .18s ease,
+    border-radius .18s ease,
+    background .18s ease;
 }
 
 .lo-notebar__btn{
@@ -3838,6 +3850,13 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   justify-content: center;
   min-width: 38px;
   min-height: 38px;
+  transition:
+    min-width .18s ease,
+    min-height .18s ease,
+    padding .18s ease,
+    border-radius .18s ease,
+    background .18s ease,
+    transform .18s ease;
 }
 
 .lo-notebar__btn.is-active{
@@ -3858,6 +3877,15 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
 .lo-notes__meta{
   display: flex;
+  overflow: hidden;
+  max-height: 72px;
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    max-height .2s ease,
+    opacity .16s ease,
+    margin .2s ease,
+    transform .2s ease;
 }
 
 .lo-notes__titleinput{
@@ -3867,6 +3895,10 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   color: var(--shell-title);
   border-radius: 12px;
   padding: 10px 12px;
+  transition:
+    padding .18s ease,
+    border-radius .18s ease,
+    opacity .16s ease;
 }
 
 .lo-notes__editor{
@@ -3887,6 +3919,42 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   min-height: 100%;
   outline: none;
   color: var(--shell-text);
+}
+
+.lo-notes.is-compact .lo-notebar{
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--shell-surface-soft) 82%, transparent);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.lo-notes.is-compact .lo-notebar__select{
+  min-width: 108px;
+  border-radius: 9px;
+  padding: 6px 9px;
+}
+
+.lo-notes.is-compact .lo-notebar__btn{
+  min-width: 32px;
+  min-height: 32px;
+  border-radius: 9px;
+  padding: 6px 8px;
+}
+
+.lo-notes.is-compact .lo-notebar__icon{
+  width: 14px;
+  height: 14px;
+}
+
+.lo-notes.is-compact .lo-notes__meta{
+  max-height: 0;
+  opacity: 0;
+  margin: 0;
+  transform: translateY(-8px);
+  pointer-events: none;
 }
 
 .lo-notes__content .tiptap p{
