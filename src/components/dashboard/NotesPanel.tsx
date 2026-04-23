@@ -189,8 +189,12 @@ function NotesMenu({
         }}
         title="Manage notes"
         aria-label="Manage notes"
+        aria-expanded={open}
       >
-        Notes ▾
+        <span>Notes</span>
+        <span className="lo-dropdown-caret" aria-hidden="true">
+          {"\u25BE"}
+        </span>
       </button>
 
       {open && menuPos
@@ -735,7 +739,7 @@ export default function NotesPanel() {
   }, [notes, activeId]);
 
   if (!activeNote || !editor) {
-    return <div className="lo-notes">Loading notes…</div>;
+    return <div className="lo-notes">Loading notes{"\u2026"}</div>;
   }
 
   const textStyle = editor.isActive("heading", { level: 1 })

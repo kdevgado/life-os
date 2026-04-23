@@ -2228,15 +2228,16 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   flex: 0 0 auto;
 }
 
-.lo-window-filter--button {
+.lo-window-filter--button,
+.lo-notes-menu__trigger {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   border: 1px solid var(--shell-border);
   background: var(--shell-surface-soft);
   color: var(--shell-title);
   border-radius: 12px;
-  padding: 8px 12px;
+  padding: 8px 13px;
   cursor: pointer;
   font: inherit;
   transition:
@@ -2246,51 +2247,26 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
     transform 0.16s ease;
 }
 
-.lo-window-filter--button:hover {
+.lo-window-filter--button:hover,
+.lo-notes-menu__trigger:hover {
   background: var(--shell-btn-hover);
 }
 
-.lo-window-filter--button:active {
+.lo-window-filter--button:active,
+.lo-notes-menu__trigger:active {
   transform: translateY(1px);
 }
 
-.lo-window-filter--button.is-open {
+.lo-window-filter--button.is-open,
+.lo-notes-menu__trigger[aria-expanded="true"] {
   background: var(--shell-btn-hover);
 }
 
-.lo-window-filter__chevron {
-  position: relative;
-  width: 12px;
-  height: 12px;
+.lo-dropdown-caret {
+  font-size: 15px;
+  line-height: 1;
   flex: 0 0 auto;
-}
-
-.lo-window-filter__arrow {
-  width: 8px;
-  height: 8px;
-  border-right: 1.8px solid currentColor;
-  border-bottom: 1.8px solid currentColor;
-  transform: rotate(45deg);
-  transition: transform 0.2s ease;
-}
-
-.lo-window-filter--button.is-open .lo-window-filter__arrow {
-  transform: rotate(-135deg);
-}
-
-.lo-window-filter--button:hover .lo-window-filter__chevron-up,
-.lo-window-filter--button:hover .lo-window-filter__chevron-down {
-  opacity: 0.8;
-}
-
-.lo-window-filter--button.is-open .lo-window-filter__chevron-up {
-  opacity: 1;
-  transform: translateX(-50%) translateY(-1px) rotate(-135deg);
-}
-
-.lo-window-filter--button.is-open .lo-window-filter__chevron-down {
-  opacity: 0.35;
-  transform: translateX(-50%) translateY(1px) rotate(45deg);
+  transform: translateY(-1px);
 }
 
 .lo-window-filter__label {
@@ -3688,19 +3664,6 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 .lo-notes-menu{
   position: relative;
   flex: 0 0 auto;
-}
-
-.lo-notes-menu__trigger{
-  border: 1px solid var(--shell-border);
-  background: var(--shell-surface-soft);
-  color: var(--shell-title);
-  border-radius: 12px;
-  padding: 8px 12px;
-  cursor: pointer;
-}
-
-.lo-notes-menu__trigger:hover{
-  background: var(--shell-btn-hover);
 }
 
 .lo-notes-menu__panel{

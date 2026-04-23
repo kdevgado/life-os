@@ -1425,10 +1425,9 @@ export default function TasksApp({
                         </span>
                       ) : null}
                     </span>
-                    <span
-                      className="lo-window-filter__arrow"
-                      aria-hidden="true"
-                    />
+                    <span className="lo-dropdown-caret" aria-hidden="true">
+                      {"\u25BE"}
+                    </span>
                   </button>
                 </div>
 
