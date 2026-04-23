@@ -2121,18 +2121,21 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 }
 
 .lo-window__bar{
-  flex: 0 0 auto;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--shell-border);
+  justify-content: flex-end;
+  padding: 10px 12px 0;
+  border-bottom: 0;
+  background: transparent;
 }
 
 .lo-window__title {
-  display: flex;
-  align-items: center;
-  min-width: 0;
+  display: none;
 }
 
 .lo-window-filter-wrap {
@@ -2718,6 +2721,8 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   display:flex;
   align-items:center;
   gap: 10px;
+  margin-left: auto;
+  pointer-events: auto;
 }
 
 .lo-window__resize{

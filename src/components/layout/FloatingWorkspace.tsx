@@ -113,9 +113,10 @@ function isFocusModeHidden() {
   return document.documentElement.classList.contains("is-focus-mode-hidden");
 }
 
+// Panels that are in the top dock have a specific starting position
 function topDockWindowPos() {
   if (typeof window === "undefined") {
-    return { x: 92, y: 68 };
+    return { x: 97, y: 68 };
   }
 
   if (isFocusModeHidden()) {
@@ -126,7 +127,7 @@ function topDockWindowPos() {
   }
 
   return {
-    x: 92,
+    x: 97,
     y: 68,
   };
 }
