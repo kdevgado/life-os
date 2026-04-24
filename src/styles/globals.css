@@ -922,7 +922,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
 /* Focus add row blends into the window */
 .lo-focus-composer {
-  padding: 2px 0 6px;
+  padding: 2px 10px 6px;
 }
 
 .lo-focus-add-trigger {
@@ -2147,11 +2147,68 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   flex-wrap: wrap;
 }
 
+.lo-window--tasks{
+  --lo-tasks-sticky-offset: 50px;
+}
+
+.lo-window--tasks .lo-tasks {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
 .lo-window--tasks .lo-window-filter-wrap{
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  margin: -14px -14px 0;
   min-height: 36px;
-  padding: 2px 0 12px;
-  margin-bottom: 12px;
+  padding: 0 14px 12px;
   border-bottom: 1px solid var(--shell-border);
+  background: transparent;
+}
+
+.lo-window--tasks .lo-window-filter-wrap ~ .lo-focus-composer {
+  position: sticky;
+  top: var(--lo-tasks-sticky-offset);
+  z-index: 2;
+  margin: 0 -14px;
+  padding: 8px 14px 20px;
+  background: transparent;
+}
+
+.lo-window--tasks .lo-window-filter-wrap ~ .lo-focus-scroller {
+  margin: 0 -14px;
+}
+
+.lo-window--tasks .lo-window__body {
+  overflow: hidden;
+}
+
+.lo-window--tasks .lo-page.lo-tasks {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.lo-window--tasks .lo-focus-scroller {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  display: grid;
+  gap: 14px;
+  padding: 12px 14px 12px;
+  position: relative;
+  z-index: 0;
+}
+
+.lo-window--tasks .lo-focus-composer {
+  z-index: 1;
 }
 
 .lo-window-filter {
@@ -2282,8 +2339,8 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  padding: 10px;
-  border-radius: 16px;
+  padding: 6px;
+  border-radius: 12px;
   width: 180px;          /* 👈 shrink it */
   min-width: 160px;
   max-width: 200px;
@@ -2291,10 +2348,9 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   border: 1px solid var(--shell-border);
   background: var(--shell-surface-strong);
   color: var(--shell-title);
-  font: inherit;
   box-shadow: var(--shell-shadow);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
 .lo-filter-group {
@@ -2303,8 +2359,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 }
 
 .lo-filter-label {
-  padding: 2px 6px 6px;
-  font: inherit;
+  padding: 2px 6px 4px;
   font-size: 12px;
   letter-spacing: 0.04em;
   font-weight: 700;
@@ -2318,9 +2373,10 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 8px;
-  border-radius: 10px;
-  font: inherit;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 500;
   box-sizing: border-box;
   cursor: pointer;
 }
@@ -2345,6 +2401,14 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   color: inherit;
 }
 
+/* Duna */
+:root[data-theme="duna"] .lo-filter-menu {
+  background: rgba(255, 255, 255, 0.97);
+  border-color: rgba(24, 28, 40, 0.1);
+  color: rgba(24, 28, 40, 0.94);
+  box-shadow: 0 18px 40px rgba(24, 28, 40, 0.14);
+}
+
 :root[data-theme="duna"] .lo-filter-option {
   color: rgba(24, 28, 40, 0.94);
 }
@@ -2355,6 +2419,14 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
 :root[data-theme="duna"] .lo-filter-option--checkbox input[type="checkbox"] {
   accent-color: #5b6df8;
+}
+
+/* Nebula */
+:root[data-theme="nebula"] .lo-filter-menu {
+  background: rgba(10, 14, 24, 0.96);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: rgba(245, 247, 255, 0.98);
+  box-shadow: 0 22px 50px rgba(0, 0, 0, 0.42);
 }
 
 :root[data-theme="nebula"] .lo-filter-label {
@@ -2452,7 +2524,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 .lo-window--tasks .lo-window__actions,
 .lo-window--notes .lo-window__actions{
   position: absolute;
-  top: 14px;
+  top: 18px;
   right: 30px;
 }
 
@@ -4688,6 +4760,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
 /* Tasks window scrollbar */
 .lo-window__body,
+.lo-focus-scroller,
 .lo-tasklist,
 .lo-plan-tasks-main,
 .lo-plan-tasks-sidebar {
@@ -4696,6 +4769,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 }
 
 .lo-window__body::-webkit-scrollbar,
+.lo-focus-scroller::-webkit-scrollbar,
 .lo-tasklist::-webkit-scrollbar,
 .lo-plan-tasks-main::-webkit-scrollbar,
 .lo-plan-tasks-sidebar::-webkit-scrollbar {
@@ -4704,6 +4778,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 }
 
 .lo-window__body::-webkit-scrollbar-track,
+.lo-focus-scroller::-webkit-scrollbar-track,
 .lo-tasklist::-webkit-scrollbar-track,
 .lo-plan-tasks-main::-webkit-scrollbar-track,
 .lo-plan-tasks-sidebar::-webkit-scrollbar-track {
@@ -4711,6 +4786,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 }
 
 .lo-window__body::-webkit-scrollbar-thumb,
+.lo-focus-scroller::-webkit-scrollbar-thumb,
 .lo-tasklist::-webkit-scrollbar-thumb,
 .lo-plan-tasks-main::-webkit-scrollbar-thumb,
 .lo-plan-tasks-sidebar::-webkit-scrollbar-thumb {
@@ -4721,6 +4797,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 }
 
 .lo-window__body::-webkit-scrollbar-thumb:hover,
+.lo-focus-scroller::-webkit-scrollbar-thumb:hover,
 .lo-tasklist::-webkit-scrollbar-thumb:hover,
 .lo-plan-tasks-main::-webkit-scrollbar-thumb:hover,
 .lo-plan-tasks-sidebar::-webkit-scrollbar-thumb:hover {

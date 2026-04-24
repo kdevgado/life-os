@@ -1376,7 +1376,7 @@ export default function TasksApp({
     (focusFilter === "overdue" ? 1 : 0);
 
   return (
-    <div ref={pageRef} className="lo-page lo-tasks lo-stack lo-tasks-menu-root">
+    <div ref={pageRef} className="lo-tasks">
       {loading && <div className="muted">Loading tasks…</div>}
       {loadError && (
         <div className="error">
@@ -1736,7 +1736,8 @@ function FocusTasksView({
         </button>
       </div>
 
-      <section
+      <div className="lo-focus-scroller">
+        <section
         className="lo-stack"
         onDragOver={(e) => {
           if (!isFocusReorderDrag(e)) return;
@@ -2114,6 +2115,7 @@ function FocusTasksView({
           </Card>
         ))}
       </section>
+      </div>
     </>
   );
 }

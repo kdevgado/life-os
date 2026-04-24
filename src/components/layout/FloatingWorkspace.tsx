@@ -86,7 +86,7 @@ function minSizeFor(key: Exclude<PanelKey, null>) {
     case "timer":
       return { w: 300, h: 230 };
     case "tasks":
-      return { w: 360, h: 320 };
+      return { w: 360, h: 220 };
     case "notes":
       return { w: 460, h: 150 };
     case "bible":
