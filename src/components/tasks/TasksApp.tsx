@@ -2174,7 +2174,7 @@ function FocusTaskEditorView({
           />
         </label>
 
-        <label className="lo-task-edit-panel__field">
+        <label className="lo-task-edit-panel__field lo-task-edit-panel__field--notes">
           <span>Description</span>
           <textarea
             className="lo-task-editor-textarea"
@@ -2244,10 +2244,6 @@ function FocusTaskEditorView({
               }
             />
           </div>
-        </div>
-
-        <div className="lo-task-edit-panel__hint">
-          Changes to date and time will sync to the linked calendar event.
         </div>
       </div>
 
