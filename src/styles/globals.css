@@ -1209,19 +1209,6 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   min-height: 100%;
 }
 
-.lo-task-edit-panel__head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.lo-task-edit-panel__title {
-  margin: 4px 0 0;
-  font-size: 1.05rem;
-  font-weight: 700;
-}
-
 .lo-task-edit-panel__body {
   display: grid;
   gap: 14px;
@@ -1256,11 +1243,6 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   .lo-task-editor-grid--panel {
     grid-template-columns: 1fr;
   }
-
-  .lo-task-edit-panel__head {
-    flex-direction: column;
-    align-items: stretch;
-  }
 }
 
 .lo-task-edit-panel {
@@ -1271,17 +1253,20 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   margin: 0 auto;
 }
 
-.lo-task-edit-panel__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+.lo-task-edit-panel__back {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--shell-muted);
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
 }
 
-.lo-task-edit-panel__title {
-  margin: 2px 0 0;
-  font-size: 0.96rem;
-  font-weight: 700;
+.lo-task-edit-panel__back:hover {
+  color: var(--shell-title);
 }
 
 .lo-task-edit-panel__body {
@@ -4210,13 +4195,66 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 }
 
 .lo-window--bible .lo-window__bar{
+  position: relative;
+  top: auto;
+  left: auto;
+  right: auto;
   background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 0 14px;
+  min-height: 0;
 }
 
 .lo-window--bible .lo-window__body{
+  flex: 0 0 auto;
+  height: auto;
   padding: 0;
   background: transparent;
   overflow: visible;
+}
+
+.lo-window--bible .lo-window__title{
+  display: block;
+  flex: 1;
+  min-width: 0;
+}
+
+.lo-window--bible .lo-window__actions{
+  flex-shrink: 0;
+  margin-left: 0;
+}
+
+.lo-bible-window-title{
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+
+  color: var(--shell-title);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.lo-bible-window-title__icon{
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.lo-bible-window-title__divider,
+.lo-bible-window-title__date{
+  color: var(--shell-muted);
+}
+
+.lo-bible-window-title__date{
+  text-transform: none;
+  letter-spacing: 0.01em;
 }
 
 /* let content define the size */

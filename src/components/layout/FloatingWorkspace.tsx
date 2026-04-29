@@ -216,6 +216,8 @@ function mobileSizeFor(key: Exclude<PanelKey, null>) {
 
 function WindowShell({
   title,
+  ariaLabel,
+  actionLabel,
   panelKey,
   x,
   y,
@@ -231,7 +233,9 @@ function WindowShell({
   draggable = true,
   isFocused = false,
 }: {
-  title: string;
+  title: React.ReactNode;
+  ariaLabel?: string;
+  actionLabel?: string;
   panelKey: Exclude<PanelKey, null>;
   x: number;
   y: number;
@@ -338,7 +342,7 @@ function WindowShell({
     <section
       className={`lo-window lo-window--${panelKey}${isFocused ? " is-focused" : ""}`}
       role="dialog"
-      aria-label={title}
+      aria-label={ariaLabel ?? (typeof title === "string" ? title : undefined)}
       style={{
         left: x,
         top: y,
@@ -361,7 +365,7 @@ function WindowShell({
         <div className="lo-window__actions">
           <button
             className="lo-window__close"
-            aria-label="Close"
+            aria-label={actionLabel ?? "Close"}
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
@@ -1069,6 +1073,16 @@ export default function FloatingWorkspace() {
     h: number;
   };
 
+  const bibleDateLabel = React.useMemo(
+    () =>
+      new Intl.DateTimeFormat(undefined, {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      }).format(new Date()),
+    [],
+  );
+
   const [wins, setWins] = useState<Win[]>(() => {
     try {
       const raw = localStorage.getItem("lifeos_windows_v2");
@@ -1735,11 +1749,29 @@ export default function FloatingWorkspace() {
       {wins.map((w) => {
         const isFocusedTopDockWindow =
           isTopDockPanel(w.key) && w.z === topDockZ;
+        const windowTitle =
+          w.key === "bible" ? (
+            <div className="lo-bible-window-title">
+              <img
+                className="lo-bible-window-title__icon"
+                src="/icons/white/bible.png"
+                alt=""
+                aria-hidden="true"
+              />
+              <span className="lo-bible-window-title__label">Daily Bible</span>
+              <span className="lo-bible-window-title__divider">|</span>
+              <span className="lo-bible-window-title__date">{bibleDateLabel}</span>
+            </div>
+          ) : (
+            titleFor(w.key)
+          );
 
         return (
           <WindowShell
             key={w.key}
-            title={titleFor(w.key)}
+            title={windowTitle}
+            ariaLabel={titleFor(w.key)}
+            actionLabel={w.key === "bible" ? "Minimize" : undefined}
             panelKey={w.key}
             x={w.x}
             y={w.y}

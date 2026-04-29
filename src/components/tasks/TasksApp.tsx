@@ -2149,16 +2149,13 @@ function FocusTaskEditorView({
 }) {
   return (
     <section className="lo-task-edit-panel">
-      <div className="lo-task-edit-panel__head">
-        <div>
-          <div className="lo-section-title">Edit Task</div>
-          <h3 className="lo-task-edit-panel__title">Update task details</h3>
-        </div>
-
-        <button type="button" className="lo-task-editor-btn" onClick={onCancel}>
-          Back
-        </button>
-      </div>
+      <button
+        type="button"
+        className="lo-task-edit-panel__back"
+        onClick={onCancel}
+      >
+        {"< Back"}
+      </button>
 
       <div className="lo-task-edit-panel__body">
         <label className="lo-task-edit-panel__field">
@@ -2255,9 +2252,6 @@ function FocusTaskEditorView({
       </div>
 
       <div className="lo-task-editor-actions">
-        <button type="button" className="lo-task-editor-btn" onClick={onCancel}>
-          Cancel
-        </button>
         <button
           type="button"
           className="lo-task-editor-btn is-primary"

@@ -11,6 +11,7 @@
   "workspace": {
     "packageJson": {
       "dependencies": [
+        "npm:@astrojs/check@~0.9.8",
         "npm:@astrojs/react@^4.4.2",
         "npm:@netlify/blobs@^10.7.0",
         "npm:@netlify/functions@^5.1.2",
