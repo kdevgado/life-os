@@ -249,58 +249,40 @@ export default function TasksApp({
     setEditorDraft(null);
   }, []);
 
-  const saveEditedTask = useCallback(
-    (task: Task) => {
-      if (!editorDraft) return;
-
-      const trimmed = editorDraft.title.trim();
-      if (!trimmed) {
-        cancelEditingTask();
-        return;
-      }
-
+  const buildEditorTaskPatch = useCallback(
+    (draft: NonNullable<typeof editorDraft>) => {
       const now = new Date().toISOString();
-
-      const patch = {
-        title: trimmed,
-        notes: editorDraft.notes.trim() || undefined,
-        dueDate: editorDraft.dueDate || undefined,
+      return {
+        title: draft.title,
+        notes: draft.notes || undefined,
+        dueDate: draft.dueDate || undefined,
         plannedFor:
-          combineDateAndTime(editorDraft.dueDate, editorDraft.startTime) ||
-          editorDraft.dueDate ||
+          combineDateAndTime(draft.dueDate, draft.startTime) ||
+          draft.dueDate ||
           undefined,
-        plannedStart: combineDateAndTime(
-          editorDraft.dueDate,
-          editorDraft.startTime,
-        ),
-        plannedEnd: combineDateAndTime(
-          editorDraft.dueDate,
-          editorDraft.endTime,
-        ),
+        plannedStart: combineDateAndTime(draft.dueDate, draft.startTime),
+        plannedEnd: combineDateAndTime(draft.dueDate, draft.endTime),
         updatedAt: now,
       };
-
-      if (authed) {
-        setTasks((prev) =>
-          prev.map((t) => (t.id === task.id ? { ...t, ...patch } : t)),
-        );
-      } else {
-        const updated = updateTask(task.id, patch);
-        if (!updated) return;
-        setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
-      }
-
-      broadcastTaskUpdated(task.id, {
-        title: patch.title,
-        dueDate: patch.dueDate,
-        plannedFor: patch.plannedFor,
-        plannedStart: patch.plannedStart,
-        plannedEnd: patch.plannedEnd,
-      });
-
-      cancelEditingTask();
     },
-    [authed, editorDraft, cancelEditingTask],
+    [],
+  );
+
+  const removeTaskFromCalendar = useCallback(
+    (task: Task) => {
+      applyTaskPatch(
+        task,
+        {
+          plannedFor: undefined,
+          plannedStart: undefined,
+          plannedEnd: undefined,
+        },
+        {
+          broadcastUpdate: true,
+        },
+      );
+    },
+    [authed],
   );
 
   function getTimeParts(iso?: string) {
@@ -1370,6 +1352,25 @@ export default function TasksApp({
       ? (tasks.find((task) => task.id === editingTaskId) ?? null)
       : null;
 
+  useEffect(() => {
+    if (!editingTask || !editorDraft) return;
+
+    const patch = buildEditorTaskPatch(editorDraft);
+    const hasChanges =
+      editingTask.title !== patch.title ||
+      (editingTask.notes ?? "") !== (patch.notes ?? "") ||
+      (editingTask.dueDate ?? "") !== (patch.dueDate ?? "") ||
+      (editingTask.plannedFor ?? "") !== (patch.plannedFor ?? "") ||
+      (editingTask.plannedStart ?? "") !== (patch.plannedStart ?? "") ||
+      (editingTask.plannedEnd ?? "") !== (patch.plannedEnd ?? "");
+
+    if (!hasChanges) return;
+
+    applyTaskPatch(editingTask, patch, {
+      broadcastUpdate: true,
+    });
+  }, [editingTask, editorDraft, buildEditorTaskPatch]);
+
   const activeFocusFilterCount =
     (hideCompleted ? 1 : 0) +
     (focusFilter === "today" ? 1 : 0) +
@@ -1391,10 +1392,15 @@ export default function TasksApp({
         <>
           {editingTask && editorDraft ? (
             <FocusTaskEditorView
+              task={editingTask}
               editorDraft={editorDraft}
               setEditorDraft={setEditorDraft}
-              onSave={() => saveEditedTask(editingTask)}
               onCancel={cancelEditingTask}
+              onDelete={() => {
+                onRemove(editingTask);
+                cancelEditingTask();
+              }}
+              onRemoveFromCalendar={() => removeTaskFromCalendar(editingTask)}
             />
           ) : (
             <>
@@ -1526,11 +1532,6 @@ export default function TasksApp({
                 onMoveTaskToColumnEnd={moveFocusTaskToEnd}
                 onOpenTaskMenu={openTaskMenu}
                 startEditingTask={startEditingTask}
-                editingTaskId={editingTaskId}
-                editorDraft={editorDraft}
-                setEditorDraft={setEditorDraft}
-                saveEditedTask={saveEditedTask}
-                cancelEditingTask={cancelEditingTask}
               />
             </>
           )}
@@ -1637,11 +1638,6 @@ function FocusTasksView({
   onMoveTaskToColumnEnd,
   onOpenTaskMenu,
   startEditingTask,
-  editingTaskId,
-  editorDraft,
-  setEditorDraft,
-  saveEditedTask,
-  cancelEditingTask,
 }: {
   onCreateDraftTask: () => void;
   onSaveDraftTask: (id: string, title: string) => void;
@@ -1660,27 +1656,6 @@ function FocusTasksView({
     targetStatus: "todo" | "doing",
   ) => void;
   onOpenTaskMenu: (e: React.MouseEvent, task: Task) => void;
-  editingTaskId: string | null;
-  editorDraft: {
-    title: string;
-    notes: string;
-    dueDate: string;
-    dueDateDisplay: string;
-    startTime: string;
-    endTime: string;
-  } | null;
-  setEditorDraft: React.Dispatch<
-    React.SetStateAction<{
-      title: string;
-      notes: string;
-      dueDate: string;
-      dueDateDisplay: string;
-      startTime: string;
-      endTime: string;
-    } | null>
-  >;
-  saveEditedTask: (task: Task) => void;
-  cancelEditingTask: () => void;
   startEditingTask: (task: Task) => void;
 }) {
   const [draggingTaskId, setDraggingTaskId] = React.useState<string | null>(
@@ -2121,11 +2096,14 @@ function FocusTasksView({
 }
 
 function FocusTaskEditorView({
+  task,
   editorDraft,
   setEditorDraft,
-  onSave,
   onCancel,
+  onDelete,
+  onRemoveFromCalendar,
 }: {
+  task: Task;
   editorDraft: {
     title: string;
     notes: string;
@@ -2144,9 +2122,13 @@ function FocusTaskEditorView({
       endTime: string;
     } | null>
   >;
-  onSave: () => void;
   onCancel: () => void;
+  onDelete: () => void;
+  onRemoveFromCalendar: () => void;
 }) {
+  const isScheduled =
+    !!task.plannedFor || !!task.plannedStart || !!task.plannedEnd;
+
   return (
     <section className="lo-task-edit-panel">
       <button
@@ -2248,12 +2230,31 @@ function FocusTaskEditorView({
       </div>
 
       <div className="lo-task-editor-actions">
+        {isScheduled ? (
+          <button
+            type="button"
+            className="lo-task-editor-btn"
+            onClick={onRemoveFromCalendar}
+          >
+            <img
+              src="/icons/white/calendar-xmark.png"
+              alt=""
+              aria-hidden="true"
+            />
+            Remove from calendar
+          </button>
+        ) : null}
         <button
           type="button"
-          className="lo-task-editor-btn is-primary"
-          onClick={onSave}
+          className="lo-task-editor-btn is-danger"
+          onClick={onDelete}
         >
-          Save
+          <img
+            src="/icons/white/trash-xmark.png"
+            alt=""
+            aria-hidden="true"
+          />
+          Delete task
         </button>
       </div>
     </section>

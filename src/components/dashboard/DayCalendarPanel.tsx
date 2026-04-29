@@ -617,26 +617,27 @@ export default function DayCalendarPanel({
 
         const next = Object.fromEntries(
           Object.entries(prev).map(([dateKey, events]) => {
-            const updatedEvents = events.map((item) => {
-              if (item.sourceTaskId !== taskId) return item;
+            const updatedEvents = events.flatMap((item) => {
+              if (item.sourceTaskId !== taskId) return [item];
+
+              const startIso = patch.plannedStart ?? patch.plannedFor;
+              if (!startIso) {
+                changed = true;
+                return [];
+              }
 
               changed = true;
 
-              const startIso = patch.plannedStart ?? patch.plannedFor;
               const endIso = patch.plannedEnd;
-
               let nextStartHour = item.startHour;
               let nextStartMinute = item.startMinute ?? 0;
               let nextDurationHours = item.durationHours ?? 0.5;
 
-              if (startIso) {
-                const start = new Date(startIso);
-                nextStartHour = start.getHours();
-                nextStartMinute = clampMinuteToQuarter(start.getMinutes());
-              }
+              const start = new Date(startIso);
+              nextStartHour = start.getHours();
+              nextStartMinute = clampMinuteToQuarter(start.getMinutes());
 
-              if (startIso && endIso) {
-                const start = new Date(startIso);
+              if (endIso) {
                 const end = new Date(endIso);
                 const duration = (end.getTime() - start.getTime()) / 3600000;
 
@@ -645,13 +646,15 @@ export default function DayCalendarPanel({
                 );
               }
 
-              return {
-                ...item,
-                title: patch.title ?? item.title,
-                startHour: nextStartHour,
-                startMinute: nextStartMinute,
-                durationHours: nextDurationHours,
-              };
+              return [
+                {
+                  ...item,
+                  title: patch.title ?? item.title,
+                  startHour: nextStartHour,
+                  startMinute: nextStartMinute,
+                  durationHours: nextDurationHours,
+                },
+              ];
             });
 
             return [dateKey, updatedEvents];
