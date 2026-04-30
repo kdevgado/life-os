@@ -843,6 +843,34 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   gap: 8px;
 }
 
+.lo-plan-tasks-new-list {
+  width: 100%;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  box-sizing: border-box;
+  opacity: 0.68;
+  background: rgba(127, 127, 127, 0.12);
+}
+
+.lo-plan-tasks-new-list input {
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  border-radius: 5px;
+  outline: 0;
+  background: transparent;
+  font: inherit;
+  padding: 0;
+}
+
+.lo-plan-tasks-new-list-button {
+  color: var(--muted);
+}
+
 .lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-sidebar {
   justify-items: center;
 }
@@ -856,7 +884,9 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 .lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-sidebar__divider,
 .lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-sidebar__label,
 .lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-sidebar__custom-list,
-.lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-add-list {
+.lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-add-list,
+.lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-new-list,
+.lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-new-list-button {
   display: none;
 }
 
@@ -963,6 +993,10 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   border-color: rgba(255,255,255,0.12);
 }
 
+:root[data-theme="nebula"] .lo-plan-tasks-new-list {
+  background: rgba(255,255,255,0.08);
+}
+
 :root[data-theme="nebula"] .lo-plan-tasks-sidebar__toggle img,
 :root[data-theme="nebula"] .lo-plan-tasks-sidebar__icon {
   filter: none;
@@ -995,8 +1029,13 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   }
 
   .lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-sidebar__custom-list,
-  .lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-add-list {
+  .lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-add-list,
+  .lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-new-list-button {
     display: grid;
+  }
+
+  .lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-new-list {
+    display: flex;
   }
 
   .lo-plan-tasks-sidebar__divider,

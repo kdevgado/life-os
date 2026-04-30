@@ -2314,6 +2314,8 @@ const PLAN_SIDEBAR_ICONS: Record<string, string> = {
   tasks: "/icons/white/home.png",
 };
 
+const CUSTOM_LIST_ICON = "/icons/white/list.png";
+
 function labelForList(list: PlanListId) {
   if (list === "my-day") return "My Day";
   if (list === "important") return "Important";
@@ -2371,24 +2373,47 @@ function PlanTasksView({
 }) {
   const [selectedList, setSelectedList] = React.useState<PlanListId>("tasks");
   const [listDraft, setListDraft] = React.useState("");
+  const [sessionLists, setSessionLists] = React.useState<string[]>([]);
+  const [isCreatingList, setIsCreatingList] = React.useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
+  const listDraftRef = React.useRef<HTMLInputElement | null>(null);
+  const newListWrapRef = React.useRef<HTMLDivElement | null>(null);
 
   const todayISO = isoDate(new Date());
   const customLists = React.useMemo(
     () =>
       Array.from(
         new Set(
-          tasks
-            .map((task) => task.list ?? "tasks")
-            .filter(
-              (list) =>
-                !["inbox", "tasks", "focus"].includes(list) &&
-                !["my-day", "important", "planned", "assigned"].includes(list),
-            ),
+          [
+            ...sessionLists,
+            ...tasks.map((task) => task.list ?? "tasks"),
+          ].filter(
+            (list) =>
+              !["inbox", "tasks", "focus"].includes(list) &&
+              !["my-day", "important", "planned", "assigned"].includes(list),
+          ),
         ),
       ).sort((a, b) => labelForList(a).localeCompare(labelForList(b))),
-    [tasks],
+    [sessionLists, tasks],
   );
+
+  React.useEffect(() => {
+    if (!isCreatingList) return;
+    listDraftRef.current?.focus();
+  }, [isCreatingList]);
+
+  React.useEffect(() => {
+    if (!isCreatingList) return;
+
+    function handlePointerDown(event: MouseEvent) {
+      const target = event.target as Node;
+      if (newListWrapRef.current?.contains(target)) return;
+      cancelCustomListDraft();
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    return () => document.removeEventListener("mousedown", handlePointerDown);
+  }, [isCreatingList]);
 
   const visibleTasks = tasks.filter((t) => {
     if (selectedList === "tasks") {
@@ -2440,8 +2465,21 @@ function PlanTasksView({
       .replace(/^-|-$/g, "");
     if (!id) return;
 
+    setSessionLists((prev) => (prev.includes(id) ? prev : [...prev, id]));
     setSelectedList(id);
     setListDraft("");
+    setIsCreatingList(false);
+  }
+
+  function startCustomListDraft() {
+    setListDraft("");
+    setIsCreatingList(true);
+    setSidebarCollapsed(false);
+  }
+
+  function cancelCustomListDraft() {
+    setListDraft("");
+    setIsCreatingList(false);
   }
 
   function renderSidebarButton(list: PlanListId) {
@@ -2487,7 +2525,6 @@ function PlanTasksView({
         {renderSidebarButton("tasks")}
 
         <div className="lo-plan-tasks-sidebar__divider" />
-        <div className="lo-plan-tasks-sidebar__label">Custom Lists</div>
 
         <div className="lo-plan-tasks-sidebar__custom-list">
           {customLists.map((list) => (
@@ -2499,6 +2536,11 @@ function PlanTasksView({
               title={labelForList(list)}
               aria-label={labelForList(list)}
             >
+              <img
+                className="lo-plan-tasks-sidebar__icon"
+                src={CUSTOM_LIST_ICON}
+                alt=""
+              />
               <span className="lo-plan-tasks-sidebar__text">
                 {labelForList(list)}
               </span>
@@ -2506,20 +2548,30 @@ function PlanTasksView({
           ))}
         </div>
 
-        <div className="lo-plan-tasks-add-list">
-          <input
-            type="text"
-            value={listDraft}
-            onChange={(e) => setListDraft(e.target.value)}
-            placeholder="New list"
-            onKeyDown={(e) => {
-              if (e.key === "Enter") addCustomList();
-            }}
-          />
-          <button type="button" onClick={addCustomList}>
-            Add list
+        {isCreatingList ? (
+          <div className="lo-plan-tasks-new-list" ref={newListWrapRef}>
+            <input
+              ref={listDraftRef}
+              type="text"
+              value={listDraft}
+              onChange={(e) => setListDraft(e.target.value)}
+              placeholder="New list"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") addCustomList();
+                if (e.key === "Escape") cancelCustomListDraft();
+              }}
+              aria-label="New list name"
+            />
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="lo-plan-tasks-new-list-button"
+            onClick={startCustomListDraft}
+          >
+            <span className="lo-plan-tasks-sidebar__text">+ New List</span>
           </button>
-        </div>
+        )}
       </Card>
 
       <div className="lo-plan-tasks-main lo-stack">
