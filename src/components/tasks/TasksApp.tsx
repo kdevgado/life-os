@@ -2650,23 +2650,23 @@ function PlanTasksView({
                   <h3>{labelForList(selectedList)}</h3>
                 </div>
 
-                <div className="spacer" />
-
-                <input
-                  className="lo-input"
-                  type="text"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search tasks… or use @work @planner"
-                />
+                <div className="lo-plan-tasks-search">
+                  <img src="/icons/white/search.png" alt="" />
+                  <input
+                    className="lo-input"
+                    type="text"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    aria-label="Search tasks"
+                  />
+                </div>
               </div>
             </Card>
 
           <Card
             className={`toolbar-card lo-my-day-composer ${myDayComposerClosing ? "is-closing" : ""}`}
-            ref={myDayComposerRef}
           >
-            <div className="lo-my-day-composer__panel">
+            <div className="lo-my-day-composer__panel" ref={myDayComposerRef}>
               <div className="lo-my-day-composer__top">
                 <button
                   type="button"
@@ -2732,15 +2732,16 @@ function PlanTasksView({
               <h3>{labelForList(selectedList)}</h3>
             </div>
 
-            <div className="spacer" />
-
-            <input
-              className="lo-input"
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search tasks… or use @work @planner"
-            />
+            <div className="lo-plan-tasks-search">
+              <img src="/icons/white/search.png" alt="" />
+              <input
+                className="lo-input"
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                aria-label="Search tasks"
+              />
+            </div>
           </div>
         </Card>
 
@@ -2914,33 +2915,6 @@ function TaskSection({
                 >
                   ⋯
                 </button>
-              </div>
-
-              <div className="lo-meta-row">
-                <span>Due</span>
-                <input
-                  type="date"
-                  value={task.dueDate ?? ""}
-                  onChange={(e) => onSetDue(task, e.target.value)}
-                />
-
-                <span className={`lo-pill ${priClass}`}>{priorityLabel}</span>
-
-                <span style={{ marginLeft: "auto" }} />
-                <span className="muted">Set priority:</span>
-
-                <select
-                  className="lo-pri-select"
-                  value={task.priority}
-                  onChange={(e) =>
-                    onSetPriority(task, Number(e.target.value) as Priority)
-                  }
-                  aria-label="Set priority"
-                >
-                  <option value={1}>High</option>
-                  <option value={2}>Med</option>
-                  <option value={3}>Low</option>
-                </select>
               </div>
             </Card>
           );
