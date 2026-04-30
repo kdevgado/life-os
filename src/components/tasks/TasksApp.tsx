@@ -2503,6 +2503,10 @@ function PlanTasksView({
     );
   }
 
+  function getListIcon(list: PlanListId) {
+    return PLAN_SIDEBAR_ICONS[list] ?? CUSTOM_LIST_ICON;
+  }
+
   return (
     <div
       className={`lo-plan-tasks-layout ${sidebarCollapsed ? "is-sidebar-collapsed" : ""}`}
@@ -2578,6 +2582,7 @@ function PlanTasksView({
         <Card className="toolbar-card">
           <div className="lo-toolbar">
             <div className="lo-plan-tasks-heading">
+              <img src={getListIcon(selectedList)} alt="" />
               <h3>{labelForList(selectedList)}</h3>
             </div>
 

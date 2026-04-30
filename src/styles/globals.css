@@ -820,7 +820,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 }
 
 .lo-plan-tasks-sidebar__toggle {
-  justify-content: center;
+  justify-content: left;
 }
 
 .lo-plan-tasks-sidebar__toggle img,
@@ -930,8 +930,26 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   align-content: start;
 }
 
+.lo-plan-tasks-heading {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.lo-plan-tasks-heading img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+
 .lo-plan-tasks-heading h3 {
   margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Focus sections */
@@ -976,7 +994,8 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 }
 
 :root[data-theme="duna"] .lo-plan-tasks-sidebar__toggle img,
-:root[data-theme="duna"] .lo-plan-tasks-sidebar__icon {
+:root[data-theme="duna"] .lo-plan-tasks-sidebar__icon,
+:root[data-theme="duna"] .lo-plan-tasks-heading img {
   filter: brightness(0) saturate(100%) invert(13%) sepia(15%) saturate(822%) hue-rotate(182deg) brightness(94%) contrast(88%);
 }
 
@@ -998,7 +1017,8 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 }
 
 :root[data-theme="nebula"] .lo-plan-tasks-sidebar__toggle img,
-:root[data-theme="nebula"] .lo-plan-tasks-sidebar__icon {
+:root[data-theme="nebula"] .lo-plan-tasks-sidebar__icon,
+:root[data-theme="nebula"] .lo-plan-tasks-heading img {
   filter: none;
 }
 
