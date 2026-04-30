@@ -3271,29 +3271,32 @@ function BoardMenuGroup({
   onChoose: (list: string) => void;
 }) {
   return (
-    <div className="lo-task-menu__group">
-      <div className="lo-task-menu__group-label">
+    <div className="lo-task-menu__group lo-task-menu__group--submenu">
+      <button type="button" className="lo-task-menu__submenu-trigger">
         <img className="lo-task-menu__icon" src={icon} alt="" />
         <span>{label}</span>
+        <span className="lo-task-menu__submenu-caret" aria-hidden="true">
+          {">"}
+        </span>
+      </button>
+      <div className="lo-task-menu__submenu" role="menu">
+        {lists.length > 0 ? (
+          lists.map((list) => (
+              <button
+                key={list}
+                type="button"
+                className="lo-task-menu__item"
+                role="menuitem"
+                onClick={() => onChoose(list)}
+              >
+                <img className="lo-task-menu__icon" src={CUSTOM_LIST_ICON} alt="" />
+                <span>{labelForList(list)}</span>
+              </button>
+            ))
+        ) : (
+          <div className="lo-task-menu__empty">{emptyLabel}</div>
+        )}
       </div>
-      {lists.length > 0 ? (
-        <div className="lo-task-menu__subitems">
-          {lists.map((list) => (
-            <button
-              key={list}
-              type="button"
-              className="lo-task-menu__item lo-task-menu__item--nested"
-              role="menuitem"
-              onClick={() => onChoose(list)}
-            >
-              <img className="lo-task-menu__icon" src={CUSTOM_LIST_ICON} alt="" />
-              <span>{labelForList(list)}</span>
-            </button>
-          ))}
-        </div>
-      ) : (
-        <div className="lo-task-menu__empty">{emptyLabel}</div>
-      )}
     </div>
   );
 }

@@ -1698,7 +1698,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 .lo-board-task-menu {
   width: min(270px, calc(100vw - 16px));
   max-height: min(440px, calc(100vh - 16px));
-  overflow-y: auto;
+  overflow: visible;
 }
 
 .lo-task-menu__item {
@@ -1742,28 +1742,62 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   padding: 2px 0;
 }
 
-.lo-task-menu__group-label {
+.lo-task-menu__submenu-trigger {
+  width: 100%;
+  border: 0;
+  background: transparent;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 12px 6px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.lo-task-menu__submenu-trigger:hover,
+.lo-task-menu__group--submenu:focus-within .lo-task-menu__submenu-trigger {
+  background: var(--shell-btn-hover);
+}
+
+.lo-task-menu__submenu-caret {
+  margin-left: auto;
   color: var(--shell-muted);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.lo-task-menu__subitems {
-  display: grid;
-  gap: 2px;
-}
-
-.lo-task-menu__item--nested {
-  padding-left: 28px;
   font-size: 13px;
 }
 
+.lo-task-menu__group--submenu {
+  position: relative;
+}
+
+.lo-task-menu__submenu {
+  position: absolute;
+  top: 0;
+  left: calc(100% + 6px);
+  width: min(220px, calc(100vw - 24px));
+  max-height: min(300px, calc(100vh - 24px));
+  overflow-y: auto;
+  display: none;
+  padding: 6px;
+  border-radius: 5px;
+  border: 1px solid var(--shell-border);
+  background: var(--shell-surface-strong);
+  color: var(--shell-title);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  z-index: 10000;
+}
+
+.lo-task-menu__group--submenu:hover .lo-task-menu__submenu,
+.lo-task-menu__group--submenu:focus-within .lo-task-menu__submenu {
+  display: block;
+}
+
 .lo-task-menu__empty {
-  padding: 7px 12px 8px 38px;
+  padding: 9px 12px;
   color: var(--shell-muted);
   font-size: 12px;
 }
@@ -1773,7 +1807,17 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   border-color: rgba(255, 255, 255, 0.1);
 }
 
+:root[data-theme="nebula"] .lo-task-menu__submenu {
+  background: rgba(14, 18, 30, 0.94);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
 :root[data-theme="duna"] .lo-task-menu {
+  background: rgba(255, 255, 255, 0.96);
+  border-color: rgba(24, 28, 40, 0.1);
+}
+
+:root[data-theme="duna"] .lo-task-menu__submenu {
   background: rgba(255, 255, 255, 0.96);
   border-color: rgba(24, 28, 40, 0.1);
 }
@@ -4889,6 +4933,49 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 :root[data-theme="nebula"] .lo-plan__placeholder{
   background: rgba(255,255,255,.04);
   border-color: rgba(255,255,255,.10);
+}
+
+/* Planning tab: keep most surfaces and controls on a consistent 10px radius. */
+.lo-plan__shell,
+.lo-plan__panel,
+.lo-plan__placeholder,
+.lo-plan .card,
+.lo-plan .toolbar-card,
+.lo-plan .lo-task,
+.lo-plan .lo-input,
+.lo-plan .lo-chip,
+.lo-plan .lo-chip input,
+.lo-plan .lo-chip select,
+.lo-plan .lo-pri-select,
+.lo-plan .lo-plan-tasks-sidebar,
+.lo-plan .lo-plan-tasks-sidebar button,
+.lo-plan .lo-plan-tasks-new-list,
+.lo-plan .lo-plan-tasks-new-list input,
+.lo-plan .lo-plan-tasks-add-list input,
+.lo-plan .lo-plan-completed__toggle,
+.lo-plan .lo-task-important,
+.lo-plan .lo-task-menu,
+.lo-plan .lo-task-menu__item,
+.lo-plan .lo-task-menu__submenu-trigger,
+.lo-plan .lo-task-menu__submenu,
+.lo-plan .lo-my-day-composer__tools button,
+.lo-plan .planner .card,
+.lo-plan .planner .budget-row,
+.lo-plan .planner input,
+.lo-plan .planner select,
+.lo-plan .planner textarea,
+.lo-plan .lo-day-board__column,
+.lo-plan .lo-day-board__composer input,
+.lo-plan .lo-day-board__composer button,
+.lo-plan .lo-day-board__task,
+.lo-plan .lo-day-board__task button,
+.lo-plan .lo-day-board__empty {
+  border-radius: 10px;
+}
+
+.lo-plan__tabs,
+.lo-plan__tabs button {
+  border-radius: 10px;
 }
 
 /* Transparent Bible verse window */
