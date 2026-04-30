@@ -2377,6 +2377,7 @@ function PlanTasksView({
   const [isCreatingList, setIsCreatingList] = React.useState(false);
   const [myDayComposerOpen, setMyDayComposerOpen] = React.useState(false);
   const [myDayComposerClosing, setMyDayComposerClosing] = React.useState(false);
+  const [myDayCompletedOpen, setMyDayCompletedOpen] = React.useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
   const listDraftRef = React.useRef<HTMLInputElement | null>(null);
   const newListWrapRef = React.useRef<HTMLDivElement | null>(null);
@@ -2464,6 +2465,9 @@ function PlanTasksView({
 
     return t.list === selectedList;
   });
+  const completedMyDayTasks = tasks.filter(
+    (t) => getTaskDateKey(t) === todayISO && t.status === "done",
+  );
   const canAddToSelectedList = canAdd && selectedList !== "assigned";
 
   function addCurrentTask() {
@@ -2808,6 +2812,41 @@ function PlanTasksView({
           onSetImportant={onSetImportant}
           onOpenTaskMenu={onOpenTaskMenu}
         />
+
+        {selectedList === "my-day" && completedMyDayTasks.length > 0 && (
+          <section className="lo-plan-completed lo-stack">
+            <button
+              type="button"
+              className="lo-plan-completed__toggle"
+              aria-expanded={myDayCompletedOpen}
+              onClick={() => setMyDayCompletedOpen((open) => !open)}
+            >
+              <span>Completed</span>
+              <span className="lo-plan-completed__count">
+                {completedMyDayTasks.length}
+              </span>
+              <span
+                className={`lo-plan-completed__chevron ${myDayCompletedOpen ? "is-open" : ""}`}
+                aria-hidden="true"
+              />
+            </button>
+
+            {myDayCompletedOpen && (
+              <TaskSection
+                title="Completed"
+                showTitle={false}
+                tasks={completedMyDayTasks}
+                justAddedId={justAddedId}
+                onToggleDone={onToggleDone}
+                onRemove={onRemove}
+                onSetDue={onSetDue}
+                onSetPriority={onSetPriority}
+                onSetImportant={onSetImportant}
+                onOpenTaskMenu={onOpenTaskMenu}
+              />
+            )}
+          </section>
+        )}
       </div>
     </div>
   );
@@ -2815,6 +2854,7 @@ function PlanTasksView({
 
 function TaskSection({
   title,
+  showTitle = true,
   tasks,
   justAddedId,
   onToggleDone,
@@ -2825,6 +2865,7 @@ function TaskSection({
   onOpenTaskMenu,
 }: {
   title: string;
+  showTitle?: boolean;
   tasks: Task[];
   justAddedId: string | null;
   onToggleDone: (task: Task) => void;
@@ -2834,20 +2875,9 @@ function TaskSection({
   onSetImportant: (task: Task, important: boolean) => void;
   onOpenTaskMenu: (e: React.MouseEvent, task: Task) => void;
 }) {
-  if (tasks.length === 0) {
-    return (
-      <section className="lo-stack">
-        <h3 className="lo-section-title">{title}</h3>
-        <Card className="lo-task">
-          <div className="muted">No tasks here yet.</div>
-        </Card>
-      </section>
-    );
-  }
 
   return (
     <section className="lo-stack">
-      <h3 className="lo-section-title">{title}</h3>
       <div className="lo-tasklist lo-stack">
         {tasks.map((task) => {
           const isNew = task.id === justAddedId;
