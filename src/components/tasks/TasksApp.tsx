@@ -2450,24 +2450,28 @@ function PlanTasksView({
     }
   }, [title]);
 
-  const visibleTasks = tasks.filter((t) => {
-    if (selectedList === "tasks") {
-      return (t.list ?? "tasks") === "tasks" || (t.list ?? "inbox") === "inbox";
-    }
+  const sortImportantFirst = (a: Task, b: Task) =>
+    Number(!!b.important) - Number(!!a.important);
+  const visibleTasks = tasks
+    .filter((t) => {
+      if (selectedList === "tasks") {
+        return (t.list ?? "tasks") === "tasks" || (t.list ?? "inbox") === "inbox";
+      }
 
-    if (selectedList === "my-day") {
-      return getTaskDateKey(t) === todayISO && t.status !== "done";
-    }
+      if (selectedList === "my-day") {
+        return getTaskDateKey(t) === todayISO && t.status !== "done";
+      }
 
-    if (selectedList === "important") return !!t.important;
-    if (selectedList === "planned") return !!getTaskDateKey(t);
-    if (selectedList === "assigned") return false;
+      if (selectedList === "important") return !!t.important;
+      if (selectedList === "planned") return !!getTaskDateKey(t);
+      if (selectedList === "assigned") return false;
 
-    return t.list === selectedList;
-  });
-  const completedMyDayTasks = tasks.filter(
-    (t) => getTaskDateKey(t) === todayISO && t.status === "done",
-  );
+      return t.list === selectedList;
+    })
+    .sort(sortImportantFirst);
+  const completedMyDayTasks = tasks
+    .filter((t) => getTaskDateKey(t) === todayISO && t.status === "done")
+    .sort(sortImportantFirst);
   const canAddToSelectedList = canAdd && selectedList !== "assigned";
 
   function addCurrentTask() {
