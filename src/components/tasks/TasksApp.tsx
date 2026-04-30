@@ -2306,6 +2306,14 @@ function FocusDraftInput({
 
 type PlanListId = "my-day" | "important" | "planned" | "assigned" | "tasks" | string;
 
+const PLAN_SIDEBAR_ICONS: Record<string, string> = {
+  "my-day": "/icons/white/day.png",
+  important: "/icons/white/star.png",
+  planned: "/icons/white/calendar.png",
+  assigned: "/icons/white/me.png",
+  tasks: "/icons/white/home.png",
+};
+
 function labelForList(list: PlanListId) {
   if (list === "my-day") return "My Day";
   if (list === "important") return "Important";
@@ -2363,6 +2371,7 @@ function PlanTasksView({
 }) {
   const [selectedList, setSelectedList] = React.useState<PlanListId>("tasks");
   const [listDraft, setListDraft] = React.useState("");
+  const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
 
   const todayISO = isoDate(new Date());
   const customLists = React.useMemo(
@@ -2435,62 +2444,67 @@ function PlanTasksView({
     setListDraft("");
   }
 
+  function renderSidebarButton(list: PlanListId) {
+    const icon = PLAN_SIDEBAR_ICONS[list];
+
+    return (
+      <button
+        type="button"
+        className={selectedList === list ? "is-active" : ""}
+        onClick={() => setSelectedList(list)}
+        title={labelForList(list)}
+        aria-label={labelForList(list)}
+      >
+        {icon ? (
+          <img className="lo-plan-tasks-sidebar__icon" src={icon} alt="" />
+        ) : null}
+        <span className="lo-plan-tasks-sidebar__text">
+          {labelForList(list)}
+        </span>
+      </button>
+    );
+  }
+
   return (
-    <div className="lo-plan-tasks-layout">
+    <div
+      className={`lo-plan-tasks-layout ${sidebarCollapsed ? "is-sidebar-collapsed" : ""}`}
+    >
       <Card className="lo-plan-tasks-sidebar">
         <button
           type="button"
-          className={selectedList === "my-day" ? "is-active" : ""}
-          onClick={() => setSelectedList("my-day")}
+          className="lo-plan-tasks-sidebar__toggle"
+          onClick={() => setSidebarCollapsed((value) => !value)}
+          aria-label={sidebarCollapsed ? "Expand task sidebar" : "Collapse task sidebar"}
+          title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
-          My Day
+          <img src="/icons/white/menu-burger.png" alt="" />
         </button>
 
-        <button
-          type="button"
-          className={selectedList === "important" ? "is-active" : ""}
-          onClick={() => setSelectedList("important")}
-        >
-          Important
-        </button>
-
-        <button
-          type="button"
-          className={selectedList === "planned" ? "is-active" : ""}
-          onClick={() => setSelectedList("planned")}
-        >
-          Planned
-        </button>
-
-        <button
-          type="button"
-          className={selectedList === "assigned" ? "is-active" : ""}
-          onClick={() => setSelectedList("assigned")}
-        >
-          Assigned to me
-        </button>
-
-        <button
-          type="button"
-          className={selectedList === "tasks" ? "is-active" : ""}
-          onClick={() => setSelectedList("tasks")}
-        >
-          Tasks
-        </button>
+        {renderSidebarButton("my-day")}
+        {renderSidebarButton("important")}
+        {renderSidebarButton("planned")}
+        {renderSidebarButton("assigned")}
+        {renderSidebarButton("tasks")}
 
         <div className="lo-plan-tasks-sidebar__divider" />
         <div className="lo-plan-tasks-sidebar__label">Custom Lists</div>
 
-        {customLists.map((list) => (
-          <button
-            key={list}
-            type="button"
-            className={selectedList === list ? "is-active" : ""}
-            onClick={() => setSelectedList(list)}
-          >
-            {labelForList(list)}
-          </button>
-        ))}
+        <div className="lo-plan-tasks-sidebar__custom-list">
+          {customLists.map((list) => (
+            <button
+              key={list}
+              type="button"
+              className={selectedList === list ? "is-active" : ""}
+              onClick={() => setSelectedList(list)}
+              title={labelForList(list)}
+              aria-label={labelForList(list)}
+            >
+              <span className="lo-plan-tasks-sidebar__text">
+                {labelForList(list)}
+              </span>
+            </button>
+          ))}
+        </div>
 
         <div className="lo-plan-tasks-add-list">
           <input

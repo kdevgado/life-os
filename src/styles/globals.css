@@ -785,6 +785,10 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   min-height: min(680px, calc(100vh - 230px));
 }
 
+.lo-plan-tasks-layout.is-sidebar-collapsed {
+  grid-template-columns: 72px minmax(0, 1fr);
+}
+
 .lo-plan-tasks-sidebar {
   display: grid;
   gap: 8px;
@@ -804,11 +808,56 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   border-radius: 12px;
   cursor: pointer;
   font: inherit;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
 }
 
 .lo-plan-tasks-sidebar button.is-active {
   background: rgba(255,255,255,.08);
   font-weight: 700;
+}
+
+.lo-plan-tasks-sidebar__toggle {
+  justify-content: center;
+}
+
+.lo-plan-tasks-sidebar__toggle img,
+.lo-plan-tasks-sidebar__icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+
+.lo-plan-tasks-sidebar__text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lo-plan-tasks-sidebar__custom-list {
+  display: grid;
+  gap: 8px;
+}
+
+.lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-sidebar {
+  justify-items: center;
+}
+
+.lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-sidebar button {
+  justify-content: center;
+  padding-inline: 0;
+}
+
+.lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-sidebar__text,
+.lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-sidebar__divider,
+.lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-sidebar__label,
+.lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-sidebar__custom-list,
+.lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-add-list {
+  display: none;
 }
 
 .lo-plan-tasks-sidebar__divider {
@@ -896,6 +945,11 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   background: rgba(15, 23, 42, 0.08);
 }
 
+:root[data-theme="duna"] .lo-plan-tasks-sidebar__toggle img,
+:root[data-theme="duna"] .lo-plan-tasks-sidebar__icon {
+  filter: brightness(0) saturate(100%) invert(13%) sepia(15%) saturate(822%) hue-rotate(182deg) brightness(94%) contrast(88%);
+}
+
 :root[data-theme="nebula"] .lo-plan-tasks-sidebar {
   background: rgba(255,255,255,0.05);
 }
@@ -909,9 +963,18 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   border-color: rgba(255,255,255,0.12);
 }
 
+:root[data-theme="nebula"] .lo-plan-tasks-sidebar__toggle img,
+:root[data-theme="nebula"] .lo-plan-tasks-sidebar__icon {
+  filter: none;
+}
+
 /* Mobile */
 @media (max-width: 900px) {
   .lo-plan-tasks-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .lo-plan-tasks-layout.is-sidebar-collapsed {
     grid-template-columns: 1fr;
   }
 
@@ -925,6 +988,15 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
   .lo-plan-tasks-sidebar button {
     white-space: nowrap;
+  }
+
+  .lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-sidebar__text {
+    display: inline;
+  }
+
+  .lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-sidebar__custom-list,
+  .lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-add-list {
+    display: grid;
   }
 
   .lo-plan-tasks-sidebar__divider,
