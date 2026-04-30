@@ -89,9 +89,17 @@ function parseTaskInput(input: string) {
   };
 }
 
-export function loadTasks(): Task[] {
+export function taskStorageKey(userId?: string | null) {
+  return userId ? `${KEY}:${userId}` : KEY;
+}
+
+export function taskBackupKey(userId?: string | null) {
+  return userId ? `${BACKUP_KEY}:${userId}` : BACKUP_KEY;
+}
+
+export function loadTasks(key = KEY, backupKey = BACKUP_KEY): Task[] {
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = localStorage.getItem(key);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) return parsed as Task[];
@@ -100,12 +108,12 @@ export function loadTasks(): Task[] {
     // Fall through to backup recovery.
   }
 
-  return loadLatestTaskBackup();
+  return loadLatestTaskBackup(backupKey);
 }
 
-export function saveTasks(tasks: Task[]) {
-  localStorage.setItem(KEY, JSON.stringify(tasks));
-  saveTaskBackup(tasks);
+export function saveTasks(tasks: Task[], key = KEY, backupKey = BACKUP_KEY) {
+  localStorage.setItem(key, JSON.stringify(tasks));
+  saveTaskBackup(tasks, backupKey);
 }
 
 export function createTask(
@@ -173,9 +181,9 @@ export function searchTasks(query: string): Task[] {
   });
 }
 
-function loadLatestTaskBackup(): Task[] {
+function loadLatestTaskBackup(backupKey = BACKUP_KEY): Task[] {
   try {
-    const raw = localStorage.getItem(BACKUP_KEY);
+    const raw = localStorage.getItem(backupKey);
     if (!raw) return [];
 
     const snapshots = JSON.parse(raw);
@@ -194,11 +202,11 @@ function loadLatestTaskBackup(): Task[] {
   return [];
 }
 
-function saveTaskBackup(tasks: Task[]) {
+function saveTaskBackup(tasks: Task[], backupKey = BACKUP_KEY) {
   if (tasks.length === 0) return;
 
   try {
-    const raw = localStorage.getItem(BACKUP_KEY);
+    const raw = localStorage.getItem(backupKey);
     const current = raw ? JSON.parse(raw) : [];
     const snapshots: TaskBackupSnapshot[] = Array.isArray(current) ? current : [];
     const serializedTasks = JSON.stringify(tasks);
@@ -217,7 +225,7 @@ function saveTaskBackup(tasks: Task[]) {
       },
     ].slice(-MAX_BACKUPS);
 
-    localStorage.setItem(BACKUP_KEY, JSON.stringify(nextSnapshots));
+    localStorage.setItem(backupKey, JSON.stringify(nextSnapshots));
   } catch {
     // Ignore backup failures and keep the primary save path working.
   }

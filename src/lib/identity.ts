@@ -22,6 +22,21 @@ export async function getJwt(): Promise<string | null> {
   return null;
 }
 
+export async function getCurrentUserId(): Promise<string | null> {
+  const id = await getIdentity();
+  if (!id) return null;
+
+  const user = id.currentUser?.();
+  if (!user) return null;
+
+  if (typeof user.id === "string" && user.id) return user.id;
+  if (typeof user.sub === "string" && user.sub) return user.sub;
+
+  const jwt = await getJwt();
+  const claims = parseJwtClaims(jwt);
+  return claims?.sub ?? null;
+}
+
 export type AuthEvent = "login" | "logout";
 export type AuthListener = () => void;
 
@@ -39,4 +54,23 @@ export async function onAuthChange(listener: AuthListener) {
     id.off("login", onLogin);
     id.off("logout", onLogout);
   };
+}
+
+function parseJwtClaims(jwt: string | null): { sub?: string } | null {
+  if (!jwt) return null;
+
+  try {
+    const [, payload] = jwt.split(".");
+    if (!payload) return null;
+
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized.padEnd(
+      Math.ceil(normalized.length / 4) * 4,
+      "=",
+    );
+
+    return JSON.parse(window.atob(padded)) as { sub?: string };
+  } catch {
+    return null;
+  }
 }

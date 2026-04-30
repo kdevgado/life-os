@@ -816,23 +816,53 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 }
 
 .lo-plan-tasks-main .lo-task .lo-task-row .lo-task-important {
+  --lo-important-star-size: 17px;
+  --lo-important-star-fill-size: 15px;
+  --lo-important-star-button-size: calc(var(--lo-important-star-size) + 14px);
   opacity: 1;
   transform: none;
-  width: 32px;
-  height: 32px;
+  width: var(--lo-important-star-button-size);
+  height: var(--lo-important-star-button-size);
   border: 0;
-  border-radius: 10px;
+  border-radius: 9px;
   background: transparent;
-  color: var(--muted);
+  color: #a78bfa;
   cursor: pointer;
-  font-size: 18px;
-  line-height: 1;
+  display: grid;
+  place-items: center;
+  position: relative;
 }
 
 .lo-plan-tasks-main .lo-task .lo-task-row .lo-task-important:hover,
 .lo-plan-tasks-main .lo-task .lo-task-row .lo-task-important.is-active {
-  color: #f59e0b;
-  background: rgba(245, 158, 11, 0.12);
+  background: color-mix(in srgb, currentColor 14%, transparent);
+}
+
+.lo-task-important img {
+  width: var(--lo-important-star-size);
+  height: var(--lo-important-star-size);
+  display: block;
+  position: relative;
+  z-index: 1;
+  filter: brightness(0) saturate(100%) invert(68%) sepia(63%) saturate(2169%) hue-rotate(211deg) brightness(101%) contrast(96%);
+}
+
+.lo-task-important__fill {
+  width: var(--lo-important-star-fill-size);
+  height: var(--lo-important-star-fill-size);
+  position: absolute;
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -50%) scale(0.72);
+  opacity: 0;
+  background: currentColor;
+  clip-path: polygon(50% 0%, 61% 34%, 98% 34%, 68% 55%, 79% 91%, 50% 70%, 21% 91%, 32% 55%, 2% 34%, 39% 34%);
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.lo-task-important:hover .lo-task-important__fill,
+.lo-task-important.is-active .lo-task-important__fill {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
 }
 
 .lo-plan-completed {
@@ -1315,6 +1345,14 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   background: rgba(15, 23, 42, 0.08);
 }
 
+:root[data-theme="duna"] .lo-plan-tasks-main .lo-task .lo-task-row .lo-task-important {
+  color: #f59e0b;
+}
+
+:root[data-theme="duna"] .lo-task-important img {
+  filter: brightness(0) saturate(100%) invert(63%) sepia(76%) saturate(1470%) hue-rotate(359deg) brightness(100%) contrast(93%);
+}
+
 :root[data-theme="duna"] .lo-plan-completed__toggle:hover,
 :root[data-theme="duna"] .lo-plan-completed__toggle:focus-visible {
   background: rgba(15, 23, 42, 0.08);
@@ -1340,6 +1378,14 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
 :root[data-theme="nebula"] .lo-plan-tasks-sidebar button.is-active {
   background: rgba(255,255,255,0.1);
+}
+
+:root[data-theme="nebula"] .lo-plan-tasks-main .lo-task .lo-task-row .lo-task-important {
+  color: #a78bfa;
+}
+
+:root[data-theme="nebula"] .lo-task-important img {
+  filter: brightness(0) saturate(100%) invert(68%) sepia(63%) saturate(2169%) hue-rotate(211deg) brightness(101%) contrast(96%);
 }
 
 :root[data-theme="nebula"] .lo-plan-tasks-add-list input {
@@ -1649,6 +1695,12 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   overflow: hidden;
 }
 
+.lo-board-task-menu {
+  width: min(270px, calc(100vw - 16px));
+  max-height: min(440px, calc(100vh - 16px));
+  overflow-y: auto;
+}
+
 .lo-task-menu__item {
   width: 100%;
   border: 0;
@@ -1659,7 +1711,9 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   border-radius: 10px;
   cursor: pointer;
   font: inherit;
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .lo-task-menu__item:hover {
@@ -1668,6 +1722,50 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
 .lo-task-menu__item.is-danger {
   color: #dc2626;
+}
+
+.lo-task-menu__icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  object-fit: contain;
+  opacity: 0.82;
+}
+
+.lo-task-menu__divider {
+  height: 1px;
+  margin: 6px 4px;
+  background: var(--shell-border);
+}
+
+.lo-task-menu__group {
+  padding: 2px 0;
+}
+
+.lo-task-menu__group-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px 6px;
+  color: var(--shell-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.lo-task-menu__subitems {
+  display: grid;
+  gap: 2px;
+}
+
+.lo-task-menu__item--nested {
+  padding-left: 28px;
+  font-size: 13px;
+}
+
+.lo-task-menu__empty {
+  padding: 7px 12px 8px 38px;
+  color: var(--shell-muted);
+  font-size: 12px;
 }
 
 :root[data-theme="nebula"] .lo-task-menu {

@@ -186,15 +186,15 @@ function getLifeOsStore() {
   const siteID = process.env.NETLIFY_SITE_ID;
   const token = process.env.NETLIFY_AUTH_TOKEN;
 
-  if (!siteID || !token) {
-    throw new HttpError(500, "server_config_error", "Netlify Blobs environment variables are missing");
+  if (siteID && token) {
+    return getStore({
+      name: "lifeos",
+      siteID,
+      token,
+    });
   }
 
-  return getStore({
-    name: "lifeos",
-    siteID,
-    token,
-  });
+  return getStore("lifeos");
 }
 
 function isEnvelope(value: unknown): value is ResourceEnvelope<unknown> {

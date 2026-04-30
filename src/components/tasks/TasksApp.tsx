@@ -11,11 +11,13 @@ import {
   deleteTask,
   loadTasks,
   saveTasks,
+  taskBackupKey,
+  taskStorageKey,
   updateTask,
 } from "../../lib/tasksStore";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
-import { getJwt, onAuthChange } from "../../lib/identity";
+import { getCurrentUserId, getJwt, onAuthChange } from "../../lib/identity";
 import { createPortal } from "react-dom";
 import {
   EMPTY_RESOURCE_META,
@@ -136,6 +138,7 @@ export default function TasksApp({
   const [justAddedId, setJustAddedId] = useState<string | null>(null);
 
   const [authed, setAuthed] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const ignoreNextSaveRef = useRef(false);
   const serverMetaRef = useRef<ResourceMeta>(EMPTY_RESOURCE_META);
 
@@ -336,15 +339,17 @@ export default function TasksApp({
     setLoading(true);
     setLoadError(null);
     ignoreNextSaveRef.current = true;
-    const localTasks = loadTasks();
+    const userId = await getCurrentUserId();
+    const localTasks = loadTasks(taskStorageKey(userId), taskBackupKey(userId));
 
     try {
       const jwt = await getJwt();
       setAuthed(!!jwt);
+      setCurrentUserId(jwt ? userId : null);
 
       if (!jwt) {
         serverMetaRef.current = EMPTY_RESOURCE_META;
-        setTasks(localTasks);
+        setTasks(loadTasks());
         setLoading(false);
         return;
       }
@@ -410,11 +415,15 @@ export default function TasksApp({
     if (typeof window === "undefined") return;
 
     try {
-      saveTasks(tasks);
+      saveTasks(
+        tasks,
+        taskStorageKey(currentUserId),
+        taskBackupKey(currentUserId),
+      );
     } catch {
       // Keep in-memory state if local storage is unavailable.
     }
-  }, [tasks]);
+  }, [currentUserId, tasks]);
 
   useEffect(() => {
     if (ignoreNextSaveRef.current) {
@@ -761,12 +770,57 @@ export default function TasksApp({
     );
   }
 
+  function onSetTaskSchedule(
+    task: Task,
+    patch: Pick<Task, "dueDate" | "plannedFor" | "plannedStart" | "plannedEnd">,
+  ) {
+    applyTaskPatch(task, patch, {
+      broadcastUpdate: true,
+    });
+  }
+
   function onSetPriority(task: Task, p: Priority) {
     applyTaskPatch(task, { priority: p });
   }
 
   function onSetImportant(task: Task, important: boolean) {
     applyTaskPatch(task, { important });
+  }
+
+  function onMoveTaskToList(
+    task: Task,
+    list: string,
+    extraPatch: Partial<Task> = {},
+  ) {
+    applyTaskPatch(
+      task,
+      { ...extraPatch, list },
+      {
+        broadcastUpdate:
+          "dueDate" in extraPatch ||
+          "plannedFor" in extraPatch ||
+          "plannedStart" in extraPatch ||
+          "plannedEnd" in extraPatch,
+      },
+    );
+  }
+
+  function onCopyTaskToList(task: Task, list: string) {
+    const now = new Date().toISOString();
+    const copy: Task = {
+      ...task,
+      id: crypto.randomUUID(),
+      list,
+      sortOrder: tasks.length
+        ? Math.max(...tasks.map((t) => t.sortOrder ?? 0)) + 1
+        : 1,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    setTasks((prev) => [copy, ...prev]);
+    setJustAddedId(copy.id);
+    window.setTimeout(() => setJustAddedId(null), 1600);
   }
 
   function onRemove(task: Task) {
@@ -1561,9 +1615,12 @@ export default function TasksApp({
           onToggleDone={onToggleDone}
           onRemove={onRemove}
           onSetDue={onSetDue}
+          onSetTaskSchedule={onSetTaskSchedule}
           onSetPriority={onSetPriority}
           onSetImportant={onSetImportant}
-          onOpenTaskMenu={openTaskMenu}
+          onSetStatus={onSetStatus}
+          onMoveTaskToList={onMoveTaskToList}
+          onCopyTaskToList={onCopyTaskToList}
         />
       )}
       {contextMenu && (
@@ -2315,6 +2372,15 @@ const PLAN_SIDEBAR_ICONS: Record<string, string> = {
 };
 
 const CUSTOM_LIST_ICON = "/icons/white/list.png";
+const COMPLETE_ICON = "/icons/white/circle.png";
+const DELETE_ICON = "/icons/white/trash-xmark.png";
+const REMOVE_DUE_ICON = "/icons/white/calendar-xmark.png";
+
+type BoardTaskMenuState = {
+  task: Task;
+  x: number;
+  y: number;
+};
 
 function labelForList(list: PlanListId) {
   if (list === "my-day") return "My Day";
@@ -2348,9 +2414,12 @@ function PlanTasksView({
   onToggleDone,
   onRemove,
   onSetDue,
+  onSetTaskSchedule,
   onSetPriority,
   onSetImportant,
-  onOpenTaskMenu,
+  onSetStatus,
+  onMoveTaskToList,
+  onCopyTaskToList,
 }: {
   query: string;
   setQuery: (value: string) => void;
@@ -2367,9 +2436,19 @@ function PlanTasksView({
   onToggleDone: (task: Task) => void;
   onRemove: (task: Task) => void;
   onSetDue: (task: Task, dueDate: string) => void;
+  onSetTaskSchedule: (
+    task: Task,
+    patch: Pick<Task, "dueDate" | "plannedFor" | "plannedStart" | "plannedEnd">,
+  ) => void;
   onSetPriority: (task: Task, p: Priority) => void;
   onSetImportant: (task: Task, important: boolean) => void;
-  onOpenTaskMenu: (e: React.MouseEvent, task: Task) => void;
+  onSetStatus: (task: Task, status: "todo" | "doing" | "done") => void;
+  onMoveTaskToList: (
+    task: Task,
+    list: string,
+    extraPatch?: Partial<Task>,
+  ) => void;
+  onCopyTaskToList: (task: Task, list: string) => void;
 }) {
   const [selectedList, setSelectedList] = React.useState<PlanListId>("my-day");
   const [listDraft, setListDraft] = React.useState("");
@@ -2379,10 +2458,12 @@ function PlanTasksView({
   const [myDayComposerClosing, setMyDayComposerClosing] = React.useState(false);
   const [myDayCompletedOpen, setMyDayCompletedOpen] = React.useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
+  const [boardTaskMenu, setBoardTaskMenu] = React.useState<BoardTaskMenuState | null>(null);
   const listDraftRef = React.useRef<HTMLInputElement | null>(null);
   const newListWrapRef = React.useRef<HTMLDivElement | null>(null);
   const myDayComposerRef = React.useRef<HTMLDivElement | null>(null);
   const myDayTitleRef = React.useRef<HTMLDivElement | null>(null);
+  const boardTaskMenuRef = React.useRef<HTMLDivElement | null>(null);
   const myDayComposerCloseTimerRef = React.useRef<number | null>(null);
 
   const todayISO = isoDate(new Date());
@@ -2443,6 +2524,38 @@ function PlanTasksView({
   }, []);
 
   React.useEffect(() => {
+    if (!boardTaskMenu) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target as Node;
+      if (boardTaskMenuRef.current?.contains(target)) return;
+      setBoardTaskMenu(null);
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setBoardTaskMenu(null);
+      }
+    }
+
+    function handleViewportChange() {
+      setBoardTaskMenu(null);
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown, true);
+    window.addEventListener("keydown", handleEscape);
+    window.addEventListener("resize", handleViewportChange);
+    window.addEventListener("scroll", handleViewportChange, true);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown, true);
+      window.removeEventListener("keydown", handleEscape);
+      window.removeEventListener("resize", handleViewportChange);
+      window.removeEventListener("scroll", handleViewportChange, true);
+    };
+  }, [boardTaskMenu]);
+
+  React.useEffect(() => {
     const el = myDayTitleRef.current;
     if (!el || document.activeElement === el) return;
     if ((el.textContent ?? "") !== title) {
@@ -2501,10 +2614,7 @@ function PlanTasksView({
     const trimmed = listDraft.trim();
     if (!trimmed) return;
 
-    const id = trimmed
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "");
+    const id = makeCustomListId(trimmed);
     if (!id) return;
 
     setSessionLists((prev) => (prev.includes(id) ? prev : [...prev, id]));
@@ -2517,6 +2627,119 @@ function PlanTasksView({
     setListDraft("");
     setIsCreatingList(true);
     setSidebarCollapsed(false);
+  }
+
+  function makeCustomListId(name: string) {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+  }
+
+  function openBoardTaskMenu(event: React.MouseEvent, task: Task) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const menuWidth = 270;
+    const menuHeight = 440;
+    const padding = 8;
+    const x = Math.min(
+      Math.max(padding, event.clientX + 6),
+      window.innerWidth - menuWidth - padding,
+    );
+    const y = Math.min(
+      Math.max(padding, event.clientY + 6),
+      window.innerHeight - menuHeight - padding,
+    );
+
+    setBoardTaskMenu({ task, x, y });
+  }
+
+  function closeBoardTaskMenu() {
+    setBoardTaskMenu(null);
+  }
+
+  function runBoardTaskAction(action: () => void) {
+    action();
+    closeBoardTaskMenu();
+  }
+
+  function addOrRemoveMyDay(task: Task) {
+    const isInMyDay = getTaskDateKey(task) === todayISO;
+
+    if (isInMyDay) {
+      onSetTaskSchedule(task, {
+        dueDate: undefined,
+        plannedFor: undefined,
+        plannedStart: undefined,
+        plannedEnd: undefined,
+      });
+      return;
+    }
+
+    onSetTaskSchedule(task, {
+      dueDate: todayISO,
+      plannedFor: todayISO,
+      plannedStart: undefined,
+      plannedEnd: undefined,
+    });
+  }
+
+  function setBoardTaskDue(task: Task, date: string) {
+    onSetTaskSchedule(task, {
+      dueDate: date,
+      plannedFor: date,
+      plannedStart: undefined,
+      plannedEnd: undefined,
+    });
+  }
+
+  function removeBoardTaskDue(task: Task) {
+    onSetTaskSchedule(task, {
+      dueDate: undefined,
+      plannedFor: undefined,
+      plannedStart: undefined,
+      plannedEnd: undefined,
+    });
+  }
+
+  function createListFromTask(task: Task) {
+    const name = window.prompt("New list name", task.title);
+    if (!name) return;
+
+    const id = makeCustomListId(name);
+    if (!id) return;
+
+    setSessionLists((prev) => (prev.includes(id) ? prev : [...prev, id]));
+    setSelectedList(id);
+    onMoveTaskToList(task, id, getMoveCleanupPatch());
+  }
+
+  function moveTaskToCustomList(task: Task, list: string) {
+    setSelectedList(list);
+    onMoveTaskToList(task, list, getMoveCleanupPatch());
+  }
+
+  function copyTaskToCustomList(task: Task, list: string) {
+    setSelectedList(list);
+    onCopyTaskToList(task, list);
+  }
+
+  function getMoveCleanupPatch(): Partial<Task> {
+    if (selectedList === "my-day" || selectedList === "planned") {
+      return {
+        dueDate: undefined,
+        plannedFor: undefined,
+        plannedStart: undefined,
+        plannedEnd: undefined,
+      };
+    }
+
+    if (selectedList === "important") {
+      return { important: false };
+    }
+
+    return {};
   }
 
   function cancelCustomListDraft() {
@@ -2814,7 +3037,7 @@ function PlanTasksView({
           onSetDue={onSetDue}
           onSetPriority={onSetPriority}
           onSetImportant={onSetImportant}
-          onOpenTaskMenu={onOpenTaskMenu}
+          onOpenTaskMenu={openBoardTaskMenu}
         />
 
         {selectedList === "my-day" && completedMyDayTasks.length > 0 && (
@@ -2846,12 +3069,231 @@ function PlanTasksView({
                 onSetDue={onSetDue}
                 onSetPriority={onSetPriority}
                 onSetImportant={onSetImportant}
-                onOpenTaskMenu={onOpenTaskMenu}
+                onOpenTaskMenu={openBoardTaskMenu}
               />
             )}
           </section>
         )}
       </div>
+      {boardTaskMenu
+        ? createPortal(
+            <BoardTaskContextMenu
+              ref={boardTaskMenuRef}
+              menu={boardTaskMenu}
+              todayISO={todayISO}
+              customLists={customLists}
+              onAction={runBoardTaskAction}
+              onToggleMyDay={addOrRemoveMyDay}
+              onToggleImportant={(task) => onSetImportant(task, !task.important)}
+              onToggleCompleted={(task) =>
+                onSetStatus(task, task.status === "done" ? "todo" : "done")
+              }
+              onDueToday={(task) => setBoardTaskDue(task, todayISO)}
+              onDueTomorrow={(task) => {
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                setBoardTaskDue(task, isoDate(tomorrow));
+              }}
+              onRemoveDue={removeBoardTaskDue}
+              onCreateList={createListFromTask}
+              onMoveToList={moveTaskToCustomList}
+              onCopyToList={copyTaskToCustomList}
+              onDelete={onRemove}
+            />,
+            document.body,
+          )
+        : null}
+    </div>
+  );
+}
+
+const BoardTaskContextMenu = React.forwardRef<
+  HTMLDivElement,
+  {
+    menu: BoardTaskMenuState;
+    todayISO: string;
+    customLists: string[];
+    onAction: (action: () => void) => void;
+    onToggleMyDay: (task: Task) => void;
+    onToggleImportant: (task: Task) => void;
+    onToggleCompleted: (task: Task) => void;
+    onDueToday: (task: Task) => void;
+    onDueTomorrow: (task: Task) => void;
+    onRemoveDue: (task: Task) => void;
+    onCreateList: (task: Task) => void;
+    onMoveToList: (task: Task, list: string) => void;
+    onCopyToList: (task: Task, list: string) => void;
+    onDelete: (task: Task) => void;
+  }
+>(function BoardTaskContextMenu(
+  {
+    menu,
+    todayISO,
+    customLists,
+    onAction,
+    onToggleMyDay,
+    onToggleImportant,
+    onToggleCompleted,
+    onDueToday,
+    onDueTomorrow,
+    onRemoveDue,
+    onCreateList,
+    onMoveToList,
+    onCopyToList,
+    onDelete,
+  },
+  ref,
+) {
+  const task = menu.task;
+  const isInMyDay = getTaskDateKey(task) === todayISO;
+  const hasDueDate = !!(task.dueDate || task.plannedFor || task.plannedStart || task.plannedEnd);
+
+  return (
+    <div
+      ref={ref}
+      className="lo-task-menu lo-board-task-menu"
+      role="menu"
+      style={{
+        position: "fixed",
+        top: menu.y,
+        left: menu.x,
+      }}
+      onClick={(event) => event.stopPropagation()}
+      onContextMenu={(event) => event.preventDefault()}
+    >
+      <BoardMenuButton
+        icon={PLAN_SIDEBAR_ICONS["my-day"]}
+        label={isInMyDay ? "Remove from My Day" : "Add to My Day"}
+        onClick={() => onAction(() => onToggleMyDay(task))}
+      />
+      <BoardMenuButton
+        icon={PLAN_SIDEBAR_ICONS.important}
+        label={task.important ? "Remove importance" : "Mark as important"}
+        onClick={() => onAction(() => onToggleImportant(task))}
+      />
+      <BoardMenuButton
+        icon={COMPLETE_ICON}
+        label={task.status === "done" ? "Remove completed" : "Mark as completed"}
+        onClick={() => onAction(() => onToggleCompleted(task))}
+      />
+
+      <div className="lo-task-menu__divider" />
+
+      <BoardMenuButton
+        icon={PLAN_SIDEBAR_ICONS.planned}
+        label="Due today"
+        onClick={() => onAction(() => onDueToday(task))}
+      />
+      <BoardMenuButton
+        icon={PLAN_SIDEBAR_ICONS.planned}
+        label="Due tomorrow"
+        onClick={() => onAction(() => onDueTomorrow(task))}
+      />
+      {hasDueDate ? (
+        <BoardMenuButton
+          icon={REMOVE_DUE_ICON}
+          label="Remove due date"
+          onClick={() => onAction(() => onRemoveDue(task))}
+        />
+      ) : null}
+
+      <div className="lo-task-menu__divider" />
+
+      <BoardMenuButton
+        icon={CUSTOM_LIST_ICON}
+        label="Create new list from this task"
+        onClick={() => onAction(() => onCreateList(task))}
+      />
+
+      <BoardMenuGroup
+        icon={CUSTOM_LIST_ICON}
+        label="Move task to..."
+        emptyLabel="No custom lists yet"
+        lists={customLists}
+        onChoose={(list) => onAction(() => onMoveToList(task, list))}
+      />
+
+      <BoardMenuGroup
+        icon={CUSTOM_LIST_ICON}
+        label="Copy task to..."
+        emptyLabel="No custom lists yet"
+        lists={customLists}
+        onChoose={(list) => onAction(() => onCopyToList(task, list))}
+      />
+
+      <div className="lo-task-menu__divider" />
+
+      <BoardMenuButton
+        icon={DELETE_ICON}
+        label="Delete task"
+        isDanger
+        onClick={() => onAction(() => onDelete(task))}
+      />
+    </div>
+  );
+});
+
+function BoardMenuButton({
+  icon,
+  label,
+  isDanger = false,
+  onClick,
+}: {
+  icon: string;
+  label: string;
+  isDanger?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className={`lo-task-menu__item ${isDanger ? "is-danger" : ""}`}
+      role="menuitem"
+      onClick={onClick}
+    >
+      <img className="lo-task-menu__icon" src={icon} alt="" />
+      <span>{label}</span>
+    </button>
+  );
+}
+
+function BoardMenuGroup({
+  icon,
+  label,
+  lists,
+  emptyLabel,
+  onChoose,
+}: {
+  icon: string;
+  label: string;
+  lists: string[];
+  emptyLabel: string;
+  onChoose: (list: string) => void;
+}) {
+  return (
+    <div className="lo-task-menu__group">
+      <div className="lo-task-menu__group-label">
+        <img className="lo-task-menu__icon" src={icon} alt="" />
+        <span>{label}</span>
+      </div>
+      {lists.length > 0 ? (
+        <div className="lo-task-menu__subitems">
+          {lists.map((list) => (
+            <button
+              key={list}
+              type="button"
+              className="lo-task-menu__item lo-task-menu__item--nested"
+              role="menuitem"
+              onClick={() => onChoose(list)}
+            >
+              <img className="lo-task-menu__icon" src={CUSTOM_LIST_ICON} alt="" />
+              <span>{labelForList(list)}</span>
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="lo-task-menu__empty">{emptyLabel}</div>
+      )}
     </div>
   );
 }
@@ -2946,7 +3388,8 @@ function TaskSection({
                     task.important ? "Remove from Important" : "Mark important"
                   }
                 >
-                  {task.important ? "★" : "☆"}
+                  <span className="lo-task-important__fill" aria-hidden="true" />
+                  <img src="/icons/white/star.png" alt="" />
                 </button>
 
                 <button

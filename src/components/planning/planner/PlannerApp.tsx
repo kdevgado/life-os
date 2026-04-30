@@ -1,9 +1,16 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { load, save } from "../../../lib/storage";
+import { load, plannerStorageKey, save } from "../../../lib/storage";
 import { defaultPlannerState } from "../../../data/defaults";
 import type { PlannerState } from "../../../types/planner";
-import { getJwt, onAuthChange } from "../../../lib/identity";
+import { getCurrentUserId, getJwt, onAuthChange } from "../../../lib/identity";
 import { normalizePlannerState } from "../../../lib/plannerNormalize";
+import {
+  EMPTY_RESOURCE_META,
+  fetchAuthedResource,
+  ResourceApiError,
+  saveAuthedResource,
+  type ResourceMeta,
+} from "../../../lib/resourceApi";
 import BudgetPanel from "./BudgetPanel";
 import { toMonthly } from "../../../lib/cadence";
 import GoalsPanel from "./GoalsPanel";
@@ -12,29 +19,61 @@ import FHSSPanel from "./FHSSPanel";
 export default function PlannerApp() {
   const ignoreNextSaveRef = useRef(false);
   const [state, setState] = useState<PlannerState>(() => defaultPlannerState);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const serverMetaRef = useRef<ResourceMeta>(EMPTY_RESOURCE_META);
 
   const reloadPlanner = useCallback(async () => {
     const jwt = await getJwt();
+    const userId = await getCurrentUserId();
+    const localKey = plannerStorageKey(userId);
+    const local = normalizePlannerState(
+      load(defaultPlannerState, localKey),
+      defaultPlannerState,
+    );
+
     ignoreNextSaveRef.current = true;
+    setSaveError(null);
 
     if (!jwt) {
-      const local = load(defaultPlannerState);
-      setState(normalizePlannerState(local, defaultPlannerState));
+      serverMetaRef.current = EMPTY_RESOURCE_META;
+      setState(local);
       return;
     }
 
-    const res = await fetch("/.netlify/functions/planner", {
-      headers: { Authorization: `Bearer ${jwt}` },
-    });
+    try {
+      const { data, meta } = await fetchAuthedResource<PlannerState>(
+        "/.netlify/functions/planner",
+        jwt,
+      );
+      const remote = normalizePlannerState(data, defaultPlannerState);
+      serverMetaRef.current = meta;
 
-    if (!res.ok) {
-      const local = load(defaultPlannerState);
-      setState(normalizePlannerState(local, defaultPlannerState));
-      return;
+      const shouldSeedRemoteFromLocal =
+        !isPlannerStateEqual(local, defaultPlannerState) &&
+        (meta.revision ?? 0) === 0;
+
+      if (shouldSeedRemoteFromLocal) {
+        setState(local);
+        const saved = await saveAuthedResource(
+          "/.netlify/functions/planner",
+          jwt,
+          local,
+          meta,
+        );
+        serverMetaRef.current = saved.meta;
+        return;
+      }
+
+      setState(remote);
+    } catch (error) {
+      console.error("Planner failed to load from account storage", error);
+      setState(local);
+      setSaveError(
+        error instanceof Error
+          ? `${error.message} Showing local planner backup.`
+          : "Planner failed to load. Showing local planner backup.",
+      );
     }
-
-    const remote = await res.json();
-    setState(normalizePlannerState(remote, defaultPlannerState));
   }, []);
 
   useEffect(() => {
@@ -57,6 +96,7 @@ export default function PlannerApp() {
   useEffect(() => {
     if (ignoreNextSaveRef.current) {
       ignoreNextSaveRef.current = false;
+      hydratedRef.current = true;
       return;
     }
     if (!hydratedRef.current) {
@@ -67,24 +107,51 @@ export default function PlannerApp() {
 
     timerRef.current = window.setTimeout(async () => {
       const jwt = await getJwt();
+      const userId = await getCurrentUserId();
+      const localKey = plannerStorageKey(userId);
+
+      try {
+        save(state, localKey);
+      } catch (error) {
+        console.error("Planner failed to save local backup", error);
+      }
+
       if (!jwt) {
-        save(state);
         return;
       }
-      await fetch("/.netlify/functions/planner", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${jwt}`,
-        },
-        body: JSON.stringify(state),
-      });
+
+      try {
+        const { meta } = await saveAuthedResource(
+          "/.netlify/functions/planner",
+          jwt,
+          state,
+          serverMetaRef.current,
+        );
+        serverMetaRef.current = meta;
+        setSaveError(null);
+      } catch (error) {
+        console.error("Planner failed to save to account storage", error);
+
+        if (error instanceof ResourceApiError && error.status === 409) {
+          setSaveError(
+            "Planner changed in another tab or device. Reloading the latest version.",
+          );
+          void reloadPlanner();
+          return;
+        }
+
+        setSaveError(
+          error instanceof Error
+            ? `${error.message} Local planner backup was kept.`
+            : "Planner failed to save online. Local planner backup was kept.",
+        );
+      }
     }, 700);
 
     return () => {
       if (timerRef.current) window.clearTimeout(timerRef.current);
     };
-  }, [state]);
+  }, [reloadPlanner, state]);
 
   const totals = useMemo(() => {
     const lines = state.budgetLines ?? [];
@@ -98,6 +165,7 @@ export default function PlannerApp() {
     <div className="container planner">
       <header className="page-header">
         <h1>Life OS Planner</h1>
+        {saveError && <p className="error">{saveError}</p>}
         <p className="muted">Monthly view • Saved automatically</p>
       </header>
 
@@ -151,4 +219,8 @@ export default function PlannerApp() {
       </div>
     </div>
   );
+}
+
+function isPlannerStateEqual(a: PlannerState, b: PlannerState) {
+  return JSON.stringify(a) === JSON.stringify(b);
 }

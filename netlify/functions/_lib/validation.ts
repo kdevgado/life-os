@@ -112,6 +112,7 @@ function normalizeTask(raw: unknown): Task {
     updatedAt: normalizeIsoTimestamp(record.updatedAt, now),
     list: asOptionalString(record.list),
     tags: asStringArray(record.tags),
+    important: asBoolean(record.important, false),
     focus: asBoolean(record.focus, false),
     plannedFor: normalizeOptionalDateTime(record.plannedFor),
     plannedStart: normalizeOptionalDateTime(record.plannedStart),
