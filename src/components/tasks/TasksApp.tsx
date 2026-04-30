@@ -3391,8 +3391,14 @@ function TaskSection({
                     task.important ? "Remove from Important" : "Mark important"
                   }
                 >
-                  <span className="lo-task-important__fill" aria-hidden="true" />
-                  <img src="/icons/white/star.png" alt="" />
+                  <img
+                    src={
+                      task.important
+                        ? "/icons/white/star-filled.png"
+                        : "/icons/white/star.png"
+                    }
+                    alt=""
+                  />
                 </button>
 
                 <button

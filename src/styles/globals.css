@@ -817,7 +817,6 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
 .lo-plan-tasks-main .lo-task .lo-task-row .lo-task-important {
   --lo-important-star-size: 17px;
-  --lo-important-star-fill-size: 15px;
   --lo-important-star-button-size: calc(var(--lo-important-star-size) + 14px);
   opacity: 1;
   transform: none;
@@ -845,24 +844,6 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   position: relative;
   z-index: 1;
   filter: brightness(0) saturate(100%) invert(68%) sepia(63%) saturate(2169%) hue-rotate(211deg) brightness(101%) contrast(96%);
-}
-
-.lo-task-important__fill {
-  width: var(--lo-important-star-fill-size);
-  height: var(--lo-important-star-fill-size);
-  position: absolute;
-  inset: 50% auto auto 50%;
-  transform: translate(-50%, -50%) scale(0.72);
-  opacity: 0;
-  background: currentColor;
-  clip-path: polygon(50% 0%, 61% 34%, 98% 34%, 68% 55%, 79% 91%, 50% 70%, 21% 91%, 32% 55%, 2% 34%, 39% 34%);
-  transition: opacity 0.12s ease, transform 0.12s ease;
-}
-
-.lo-task-important:hover .lo-task-important__fill,
-.lo-task-important.is-active .lo-task-important__fill {
-  opacity: 1;
-  transform: translate(-50%, -50%) scale(1);
 }
 
 .lo-plan-completed {
@@ -4976,6 +4957,133 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 .lo-plan__tabs,
 .lo-plan__tabs button {
   border-radius: 10px;
+}
+
+/* Planning tab: slightly denser text, spacing, and controls. */
+.lo-plan {
+  font-size: 14px;
+}
+
+.lo-plan__shell {
+  padding: 18px;
+}
+
+.lo-plan__header {
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.lo-plan__title {
+  font-size: clamp(24px, 3vw, 34px);
+}
+
+.lo-plan__tabs button {
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.lo-plan__content {
+  min-height: 560px;
+}
+
+.lo-plan__panel,
+.lo-plan__placeholder {
+  padding: 14px;
+}
+
+.lo-plan .lo-stack,
+.lo-plan .lo-plan-tasks-main,
+.lo-plan .lo-tasklist,
+.lo-plan .planner .grid,
+.lo-plan .lo-day-board,
+.lo-plan .lo-day-board__tasks {
+  gap: 10px;
+}
+
+.lo-plan .card,
+.lo-plan .toolbar-card,
+.lo-plan .lo-plan-tasks-sidebar,
+.lo-plan .lo-day-board__column,
+.lo-plan .lo-day-board__task,
+.lo-plan .planner .card,
+.lo-plan .planner .budget-row {
+  padding: 10px;
+}
+
+.lo-plan .lo-plan-tasks-layout {
+  gap: 12px;
+}
+
+.lo-plan .lo-plan-tasks-sidebar {
+  gap: 6px;
+}
+
+.lo-plan .lo-plan-tasks-sidebar button {
+  min-height: 36px;
+  padding: 8px 10px;
+  font-size: 13px;
+}
+
+.lo-plan .lo-toolbar,
+.lo-plan .lo-addbar,
+.lo-plan .lo-focusbar,
+.lo-plan .lo-task-row,
+.lo-plan .lo-my-day-composer__top,
+.lo-plan .lo-my-day-composer__bottom,
+.lo-plan .lo-day-board__composer {
+  gap: 8px;
+}
+
+.lo-plan .lo-task-row {
+  padding: 9px 10px;
+}
+
+.lo-plan .lo-input,
+.lo-plan .lo-chip,
+.lo-plan .lo-plan-tasks-add-list input,
+.lo-plan .lo-plan-tasks-new-list,
+.lo-plan .lo-my-day-composer__tools button,
+.lo-plan .lo-day-board__composer input,
+.lo-plan .lo-day-board__composer button,
+.lo-plan .planner input,
+.lo-plan .planner select,
+.lo-plan .planner textarea {
+  min-height: 36px;
+  height: auto;
+  padding: 7px 10px;
+  font-size: 13px;
+}
+
+.lo-plan .lo-chip {
+  gap: 6px;
+}
+
+.lo-plan .lo-chip input,
+.lo-plan .lo-chip select,
+.lo-plan .lo-pri-select {
+  height: 30px;
+  padding: 4px 8px;
+}
+
+.lo-plan .lo-task-title,
+.lo-plan .lo-plan-tasks-heading h3,
+.lo-plan .planner .card h2,
+.lo-plan .lo-day-board__header h3 {
+  font-size: 14px;
+}
+
+.lo-plan .lo-task-menu__item,
+.lo-plan .lo-task-menu__submenu-trigger {
+  padding: 8px 10px;
+  font-size: 13px;
+}
+
+.lo-plan .lo-task-menu__group-label,
+.lo-plan .lo-task-menu__empty,
+.lo-plan .lo-plan-tasks-sidebar__label,
+.lo-plan .lo-chip label,
+.lo-plan .lo-day-board__header p {
+  font-size: 11px;
 }
 
 /* Transparent Bible verse window */
