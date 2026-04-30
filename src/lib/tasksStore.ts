@@ -124,6 +124,7 @@ export function createTask(
     projectId: partial.projectId ?? null,
     list: partial.list ?? parsed.list,
     tags: partial.tags ?? parsed.tags,
+    important: partial.important ?? false,
     focus: partial.focus ?? parsed.focus,
     plannedFor: partial.plannedFor ?? parsed.plannedFor,
     sortOrder:

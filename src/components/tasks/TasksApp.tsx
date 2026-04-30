@@ -650,7 +650,7 @@ export default function TasksApp({
     window.setTimeout(() => setJustAddedId(null), 300);
   }
 
-  async function onAdd(forcedList?: string) {
+  async function onAdd(forcedList?: string, extraPatch: Partial<Task> = {}) {
     const trimmed = title.trim();
     if (!trimmed) return;
 
@@ -678,12 +678,14 @@ export default function TasksApp({
       ? {
           ...makeTask(trimmed, due, priority ?? 3),
           ...basePatch,
+          ...extraPatch,
           list: taskList,
           tags: mode === "focus" ? ["focus"] : [],
         }
       : createTask({
           title: trimmed,
           ...basePatch,
+          ...extraPatch,
           list: taskList,
           tags: mode === "focus" ? ["focus"] : [],
         });
@@ -761,6 +763,10 @@ export default function TasksApp({
 
   function onSetPriority(task: Task, p: Priority) {
     applyTaskPatch(task, { priority: p });
+  }
+
+  function onSetImportant(task: Task, important: boolean) {
+    applyTaskPatch(task, { important });
   }
 
   function onRemove(task: Task) {
@@ -1556,6 +1562,7 @@ export default function TasksApp({
           onRemove={onRemove}
           onSetDue={onSetDue}
           onSetPriority={onSetPriority}
+          onSetImportant={onSetImportant}
           onOpenTaskMenu={openTaskMenu}
         />
       )}
@@ -2297,16 +2304,22 @@ function FocusDraftInput({
   );
 }
 
-function labelForList(
-  list: "inbox" | "today" | "week" | "planner" | "work" | "personal" | "home",
-) {
-  if (list === "today") return "Today";
-  if (list === "week") return "This Week";
-  if (list === "planner") return "Planner";
+type PlanListId = "my-day" | "important" | "planned" | "assigned" | "tasks" | string;
+
+function labelForList(list: PlanListId) {
+  if (list === "my-day") return "My Day";
+  if (list === "important") return "Important";
+  if (list === "planned") return "Planned";
+  if (list === "assigned") return "Assigned to me";
+  if (list === "tasks") return "Tasks";
   if (list === "work") return "Work";
   if (list === "personal") return "Personal";
   if (list === "home") return "Home";
-  return "Inbox";
+  return list
+    .split("-")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 function PlanTasksView({
@@ -2326,6 +2339,7 @@ function PlanTasksView({
   onRemove,
   onSetDue,
   onSetPriority,
+  onSetImportant,
   onOpenTaskMenu,
 }: {
   query: string;
@@ -2337,100 +2351,161 @@ function PlanTasksView({
   priority: Priority;
   setPriority: (value: Priority) => void;
   canAdd: boolean;
-  onAdd: (forcedList?: string) => void;
+  onAdd: (forcedList?: string, extraPatch?: Partial<Task>) => void;
   tasks: Task[];
   justAddedId: string | null;
   onToggleDone: (task: Task) => void;
   onRemove: (task: Task) => void;
   onSetDue: (task: Task, dueDate: string) => void;
   onSetPriority: (task: Task, p: Priority) => void;
+  onSetImportant: (task: Task, important: boolean) => void;
   onOpenTaskMenu: (e: React.MouseEvent, task: Task) => void;
 }) {
-  const [selectedList, setSelectedList] = React.useState<
-    "inbox" | "today" | "week" | "planner" | "work" | "personal" | "home"
-  >("inbox");
+  const [selectedList, setSelectedList] = React.useState<PlanListId>("tasks");
+  const [listDraft, setListDraft] = React.useState("");
 
   const todayISO = isoDate(new Date());
-  const weekEnd = isoDate(endOfWeek());
+  const customLists = React.useMemo(
+    () =>
+      Array.from(
+        new Set(
+          tasks
+            .map((task) => task.list ?? "tasks")
+            .filter(
+              (list) =>
+                !["inbox", "tasks", "focus"].includes(list) &&
+                !["my-day", "important", "planned", "assigned"].includes(list),
+            ),
+        ),
+      ).sort((a, b) => labelForList(a).localeCompare(labelForList(b))),
+    [tasks],
+  );
 
   const visibleTasks = tasks.filter((t) => {
-    if (selectedList === "inbox") return (t.list ?? "inbox") === "inbox";
-    if (selectedList === "planner") return t.list === "planner";
-    if (selectedList === "work") return t.list === "work";
-    if (selectedList === "personal") return t.list === "personal";
-    if (selectedList === "home") return t.list === "home";
-
-    if (selectedList === "today") {
-      const due = t.dueDate ?? t.plannedFor;
-      return due === todayISO && t.status !== "done";
+    if (selectedList === "tasks") {
+      return (t.list ?? "tasks") === "tasks" || (t.list ?? "inbox") === "inbox";
     }
 
-    if (selectedList === "week") {
-      const due = t.dueDate ?? t.plannedFor;
-      return !!due && due >= todayISO && due <= weekEnd && t.status !== "done";
+    if (selectedList === "my-day") {
+      return getTaskDateKey(t) === todayISO && t.status !== "done";
     }
 
-    return true;
+    if (selectedList === "important") return !!t.important;
+    if (selectedList === "planned") return !!getTaskDateKey(t);
+    if (selectedList === "assigned") return false;
+
+    return t.list === selectedList;
   });
+  const canAddToSelectedList = canAdd && selectedList !== "assigned";
+
+  function addCurrentTask() {
+    if (selectedList === "assigned") return;
+
+    const forcedList =
+      selectedList === "my-day" ||
+      selectedList === "important" ||
+      selectedList === "planned"
+        ? "tasks"
+        : selectedList;
+    const extraPatch: Partial<Task> = {};
+
+    if (selectedList === "my-day") {
+      extraPatch.dueDate = todayISO;
+      extraPatch.plannedFor = todayISO;
+    }
+
+    if (selectedList === "important") {
+      extraPatch.important = true;
+    }
+
+    onAdd(forcedList, extraPatch);
+  }
+
+  function addCustomList() {
+    const trimmed = listDraft.trim();
+    if (!trimmed) return;
+
+    const id = trimmed
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+    if (!id) return;
+
+    setSelectedList(id);
+    setListDraft("");
+  }
 
   return (
     <div className="lo-plan-tasks-layout">
       <Card className="lo-plan-tasks-sidebar">
         <button
           type="button"
-          className={selectedList === "inbox" ? "is-active" : ""}
-          onClick={() => setSelectedList("inbox")}
+          className={selectedList === "my-day" ? "is-active" : ""}
+          onClick={() => setSelectedList("my-day")}
         >
-          Inbox
+          My Day
         </button>
 
         <button
           type="button"
-          className={selectedList === "today" ? "is-active" : ""}
-          onClick={() => setSelectedList("today")}
+          className={selectedList === "important" ? "is-active" : ""}
+          onClick={() => setSelectedList("important")}
         >
-          Today
+          Important
         </button>
 
         <button
           type="button"
-          className={selectedList === "week" ? "is-active" : ""}
-          onClick={() => setSelectedList("week")}
+          className={selectedList === "planned" ? "is-active" : ""}
+          onClick={() => setSelectedList("planned")}
         >
-          This Week
+          Planned
         </button>
 
         <button
           type="button"
-          className={selectedList === "planner" ? "is-active" : ""}
-          onClick={() => setSelectedList("planner")}
+          className={selectedList === "assigned" ? "is-active" : ""}
+          onClick={() => setSelectedList("assigned")}
         >
-          Planner
+          Assigned to me
         </button>
 
         <button
           type="button"
-          className={selectedList === "work" ? "is-active" : ""}
-          onClick={() => setSelectedList("work")}
+          className={selectedList === "tasks" ? "is-active" : ""}
+          onClick={() => setSelectedList("tasks")}
         >
-          Work
+          Tasks
         </button>
 
-        <button
-          type="button"
-          className={selectedList === "personal" ? "is-active" : ""}
-          onClick={() => setSelectedList("personal")}
-        >
-          Personal
-        </button>
+        <div className="lo-plan-tasks-sidebar__divider" />
+        <div className="lo-plan-tasks-sidebar__label">Custom Lists</div>
 
-        <button
-          type="button"
-          className={selectedList === "home" ? "is-active" : ""}
-          onClick={() => setSelectedList("home")}
-        >
-          Home
-        </button>
+        {customLists.map((list) => (
+          <button
+            key={list}
+            type="button"
+            className={selectedList === list ? "is-active" : ""}
+            onClick={() => setSelectedList(list)}
+          >
+            {labelForList(list)}
+          </button>
+        ))}
+
+        <div className="lo-plan-tasks-add-list">
+          <input
+            type="text"
+            value={listDraft}
+            onChange={(e) => setListDraft(e.target.value)}
+            placeholder="New list"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") addCustomList();
+            }}
+          />
+          <button type="button" onClick={addCustomList}>
+            Add list
+          </button>
+        </div>
       </Card>
 
       <div className="lo-plan-tasks-main lo-stack">
@@ -2461,12 +2536,8 @@ function PlanTasksView({
               onChange={(e) => setTitle(e.target.value)}
               placeholder={`Add a task in ${labelForList(selectedList)}…`}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && canAdd) {
-                  onAdd(
-                    selectedList === "today" || selectedList === "week"
-                      ? "inbox"
-                      : selectedList,
-                  );
+                if (e.key === "Enter" && canAddToSelectedList) {
+                  addCurrentTask();
                 }
               }}
             />
@@ -2497,16 +2568,7 @@ function PlanTasksView({
             </div>
 
             <div className="lo-add-btn">
-              <Button
-                onClick={() =>
-                  onAdd(
-                    selectedList === "today" || selectedList === "week"
-                      ? "inbox"
-                      : selectedList,
-                  )
-                }
-                disabled={!canAdd}
-              >
+              <Button onClick={addCurrentTask} disabled={!canAddToSelectedList}>
                 Add
               </Button>
             </div>
@@ -2521,6 +2583,7 @@ function PlanTasksView({
           onRemove={onRemove}
           onSetDue={onSetDue}
           onSetPriority={onSetPriority}
+          onSetImportant={onSetImportant}
           onOpenTaskMenu={onOpenTaskMenu}
         />
       </div>
@@ -2536,6 +2599,7 @@ function TaskSection({
   onRemove,
   onSetDue,
   onSetPriority,
+  onSetImportant,
   onOpenTaskMenu,
 }: {
   title: string;
@@ -2545,6 +2609,7 @@ function TaskSection({
   onRemove: (task: Task) => void;
   onSetDue: (task: Task, dueDate: string) => void;
   onSetPriority: (task: Task, p: Priority) => void;
+  onSetImportant: (task: Task, important: boolean) => void;
   onOpenTaskMenu: (e: React.MouseEvent, task: Task) => void;
 }) {
   if (tasks.length === 0) {
@@ -2602,6 +2667,23 @@ function TaskSection({
                 >
                   {task.title}
                 </div>
+
+                <button
+                  type="button"
+                  className={`lo-task-important ${task.important ? "is-active" : ""}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSetImportant(task, !task.important);
+                  }}
+                  aria-label={
+                    task.important ? "Remove from Important" : "Mark important"
+                  }
+                  title={
+                    task.important ? "Remove from Important" : "Mark important"
+                  }
+                >
+                  {task.important ? "★" : "☆"}
+                </button>
 
                 <button
                   type="button"

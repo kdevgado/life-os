@@ -14,6 +14,7 @@ export type Task = {
   updatedAt: string;
   list?: string;
   tags?: string[];
+  important?: boolean;
   focus?: boolean;
   plannedFor?: string;
   plannedStart?: string;
