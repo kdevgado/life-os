@@ -699,6 +699,54 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   accent-color: var(--grad3);
 }
 
+.lo-task-check {
+  width: 18px;
+  height: 18px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  opacity: 0.58;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  position: relative;
+  align-self: center;
+  cursor: pointer;
+}
+
+.lo-task-check img {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.lo-task-check::after {
+  content: "";
+  width: 7px;
+  height: 4px;
+  position: absolute;
+  border-left: 2px solid var(--panel, #fff);
+  border-bottom: 2px solid var(--panel, #fff);
+  transform: rotate(-45deg) translateY(-1px) scale(0);
+  transform-origin: center;
+  transition: transform 0.12s ease;
+}
+
+.lo-task-check.is-checked {
+  opacity: 1;
+  background: currentColor;
+}
+
+.lo-task-check.is-checked img {
+  opacity: 0;
+}
+
+.lo-task-check.is-checked::after {
+  transform: rotate(-45deg) translateY(-1px) scale(1);
+}
+
 .lo-tasks .lo-task-title {
   flex: 1 1 auto;
   min-width: 0;
@@ -754,6 +802,17 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 .lo-plan-tasks-main .lo-task:focus-within .lo-task-row button {
   opacity: 1;
   transform: translateX(0);
+}
+
+.lo-plan-tasks-main .lo-task .lo-task-row .lo-task-check {
+  opacity: 0.58;
+  transform: none;
+}
+
+.lo-plan-tasks-main .lo-task .lo-task-row .lo-task-check.is-checked,
+.lo-plan-tasks-main .lo-task:hover .lo-task-row .lo-task-check,
+.lo-plan-tasks-main .lo-task:focus-within .lo-task-row .lo-task-check {
+  opacity: 1;
 }
 
 .lo-plan-tasks-main .lo-task .lo-task-row .lo-task-important {
@@ -992,13 +1051,22 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
 .lo-my-day-composer__circle,
 .lo-my-day-composer__tick {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   border-radius: 999px;
-  border: 2px solid currentColor;
+  border: 0;
+  padding: 0;
   opacity: 0.58;
   flex: 0 0 auto;
   background: transparent;
+  display: grid;
+  place-items: center;
+}
+
+.lo-my-day-composer__tick img {
+  width: 18px;
+  height: 18px;
+  display: block;
 }
 
 .lo-my-day-composer__panel {
@@ -1201,6 +1269,8 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 :root[data-theme="duna"] .lo-plan-tasks-sidebar__icon,
 :root[data-theme="duna"] .lo-plan-tasks-heading img,
 :root[data-theme="duna"] .lo-plan-tasks-search img,
+:root[data-theme="duna"] .lo-task-check img,
+:root[data-theme="duna"] .lo-my-day-composer__tick img,
 :root[data-theme="duna"] .lo-my-day-composer__tools img {
   filter: brightness(0) saturate(100%) invert(13%) sepia(15%) saturate(822%) hue-rotate(182deg) brightness(94%) contrast(88%);
 }
@@ -1226,6 +1296,8 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 :root[data-theme="nebula"] .lo-plan-tasks-sidebar__icon,
 :root[data-theme="nebula"] .lo-plan-tasks-heading img,
 :root[data-theme="nebula"] .lo-plan-tasks-search img,
+:root[data-theme="nebula"] .lo-task-check img,
+:root[data-theme="nebula"] .lo-my-day-composer__tick img,
 :root[data-theme="nebula"] .lo-my-day-composer__tools img {
   filter: none;
 }

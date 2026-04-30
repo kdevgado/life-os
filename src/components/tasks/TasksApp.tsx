@@ -2673,7 +2673,9 @@ function PlanTasksView({
                   className="lo-my-day-composer__tick"
                   aria-label="Task not completed"
                   onClick={openMyDayComposer}
-                />
+                >
+                  <img src="/icons/white/circle.png" alt="" />
+                </button>
                 <div
                   ref={myDayTitleRef}
                   className="lo-my-day-composer__input"
@@ -2874,12 +2876,20 @@ function TaskSection({
               }}
             >
               <div className="lo-task-row">
-                <input
-                  type="checkbox"
-                  checked={task.status === "done"}
-                  onChange={() => onToggleDone(task)}
-                  aria-label="Mark done"
-                />
+                <button
+                  type="button"
+                  className={`lo-task-check ${task.status === "done" ? "is-checked" : ""}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleDone(task);
+                  }}
+                  aria-pressed={task.status === "done"}
+                  aria-label={
+                    task.status === "done" ? "Mark not done" : "Mark done"
+                  }
+                >
+                  <img src="/icons/white/circle.png" alt="" />
+                </button>
 
                 <div
                   className={`lo-task-title ${task.status === "done" ? "is-done" : ""}`}
