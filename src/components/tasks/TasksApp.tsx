@@ -2371,13 +2371,18 @@ function PlanTasksView({
   onSetImportant: (task: Task, important: boolean) => void;
   onOpenTaskMenu: (e: React.MouseEvent, task: Task) => void;
 }) {
-  const [selectedList, setSelectedList] = React.useState<PlanListId>("tasks");
+  const [selectedList, setSelectedList] = React.useState<PlanListId>("my-day");
   const [listDraft, setListDraft] = React.useState("");
   const [sessionLists, setSessionLists] = React.useState<string[]>([]);
   const [isCreatingList, setIsCreatingList] = React.useState(false);
+  const [myDayComposerOpen, setMyDayComposerOpen] = React.useState(false);
+  const [myDayComposerClosing, setMyDayComposerClosing] = React.useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
   const listDraftRef = React.useRef<HTMLInputElement | null>(null);
   const newListWrapRef = React.useRef<HTMLDivElement | null>(null);
+  const myDayComposerRef = React.useRef<HTMLDivElement | null>(null);
+  const myDayTitleRef = React.useRef<HTMLDivElement | null>(null);
+  const myDayComposerCloseTimerRef = React.useRef<number | null>(null);
 
   const todayISO = isoDate(new Date());
   const customLists = React.useMemo(
@@ -2414,6 +2419,35 @@ function PlanTasksView({
     document.addEventListener("mousedown", handlePointerDown);
     return () => document.removeEventListener("mousedown", handlePointerDown);
   }, [isCreatingList]);
+
+  React.useEffect(() => {
+    if (!myDayComposerOpen) return;
+
+    function handlePointerDown(event: MouseEvent) {
+      const target = event.target as Node;
+      if (myDayComposerRef.current?.contains(target)) return;
+      closeMyDayComposer();
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    return () => document.removeEventListener("mousedown", handlePointerDown);
+  }, [myDayComposerOpen]);
+
+  React.useEffect(() => {
+    return () => {
+      if (myDayComposerCloseTimerRef.current) {
+        window.clearTimeout(myDayComposerCloseTimerRef.current);
+      }
+    };
+  }, []);
+
+  React.useEffect(() => {
+    const el = myDayTitleRef.current;
+    if (!el || document.activeElement === el) return;
+    if ((el.textContent ?? "") !== title) {
+      el.textContent = title;
+    }
+  }, [title]);
 
   const visibleTasks = tasks.filter((t) => {
     if (selectedList === "tasks") {
@@ -2480,6 +2514,34 @@ function PlanTasksView({
   function cancelCustomListDraft() {
     setListDraft("");
     setIsCreatingList(false);
+  }
+
+  function submitMyDayTask() {
+    if (!canAddToSelectedList) return;
+    addCurrentTask();
+    if (myDayTitleRef.current) {
+      myDayTitleRef.current.textContent = "";
+    }
+    closeMyDayComposer();
+  }
+
+  function openMyDayComposer() {
+    if (myDayComposerCloseTimerRef.current) {
+      window.clearTimeout(myDayComposerCloseTimerRef.current);
+    }
+    setMyDayComposerClosing(false);
+    setMyDayComposerOpen(true);
+  }
+
+  function closeMyDayComposer() {
+    if (!myDayComposerOpen || myDayComposerClosing) return;
+
+    setMyDayComposerClosing(true);
+    myDayComposerCloseTimerRef.current = window.setTimeout(() => {
+      setMyDayComposerOpen(false);
+      setMyDayComposerClosing(false);
+      myDayComposerCloseTimerRef.current = null;
+    }, 180);
   }
 
   function renderSidebarButton(list: PlanListId) {
@@ -2579,6 +2641,90 @@ function PlanTasksView({
       </Card>
 
       <div className="lo-plan-tasks-main lo-stack">
+        {selectedList === "my-day" ? (
+          <>
+            <Card className="toolbar-card">
+              <div className="lo-toolbar">
+                <div className="lo-plan-tasks-heading">
+                  <img src={getListIcon(selectedList)} alt="" />
+                  <h3>{labelForList(selectedList)}</h3>
+                </div>
+
+                <div className="spacer" />
+
+                <input
+                  className="lo-input"
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search tasks… or use @work @planner"
+                />
+              </div>
+            </Card>
+
+          <Card
+            className={`toolbar-card lo-my-day-composer ${myDayComposerClosing ? "is-closing" : ""}`}
+            ref={myDayComposerRef}
+          >
+            <div className="lo-my-day-composer__panel">
+              <div className="lo-my-day-composer__top">
+                <button
+                  type="button"
+                  className="lo-my-day-composer__tick"
+                  aria-label="Task not completed"
+                  onClick={openMyDayComposer}
+                />
+                <div
+                  ref={myDayTitleRef}
+                  className="lo-my-day-composer__input"
+                  contentEditable
+                  suppressContentEditableWarning
+                  role="textbox"
+                  tabIndex={0}
+                  aria-label="Add a task"
+                  data-placeholder="Add a task"
+                  onFocus={openMyDayComposer}
+                  onInput={(e) => {
+                    setTitle(e.currentTarget.textContent ?? "");
+                    openMyDayComposer();
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      submitMyDayTask();
+                    }
+                    if (e.key === "Escape") {
+                      e.currentTarget.blur();
+                      closeMyDayComposer();
+                    }
+                  }}
+                />
+              </div>
+
+              {(myDayComposerOpen || myDayComposerClosing) && (
+                <div className="lo-my-day-composer__actions">
+                  <div className="lo-my-day-composer__divider" />
+
+                  <div className="lo-my-day-composer__bottom">
+                    <div className="lo-my-day-composer__tools">
+                      <button type="button" title="Due date" aria-label="Due date">
+                        <img src="/icons/white/calendar.png" alt="" />
+                      </button>
+                      <button type="button">Alarm</button>
+                      <button type="button">Repeat</button>
+                    </div>
+
+                    <Button onClick={submitMyDayTask} disabled={!canAddToSelectedList}>
+                      Add
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </Card>
+          </>
+        ) : (
+          <>
         <Card className="toolbar-card">
           <div className="lo-toolbar">
             <div className="lo-plan-tasks-heading">
@@ -2645,6 +2791,8 @@ function PlanTasksView({
             </div>
           </div>
         </Card>
+          </>
+        )}
 
         <TaskSection
           title={labelForList(selectedList)}

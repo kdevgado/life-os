@@ -952,6 +952,177 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   white-space: nowrap;
 }
 
+.lo-my-day-composer {
+  padding: 0;
+  overflow: hidden;
+}
+
+.lo-my-day-composer__circle,
+.lo-my-day-composer__tick {
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  border: 2px solid currentColor;
+  opacity: 0.58;
+  flex: 0 0 auto;
+  background: transparent;
+}
+
+.lo-my-day-composer__panel {
+  display: grid;
+  animation: loMyDayComposerPanelIn 0.18s ease-out;
+}
+
+.lo-my-day-composer__actions {
+  display: grid;
+  overflow: hidden;
+}
+
+.lo-my-day-composer__top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+}
+
+.lo-my-day-composer__tick {
+  cursor: pointer;
+}
+
+.lo-my-day-composer__input {
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: 1.35;
+  cursor: text;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.lo-my-day-composer__input:empty::before {
+  content: attr(data-placeholder);
+  color: var(--muted);
+}
+
+.lo-my-day-composer__divider {
+  height: 1px;
+  background: var(--shell-border, var(--border));
+  transform-origin: left center;
+  animation: loMyDayComposerDividerIn 0.2s ease-out both;
+}
+
+.lo-my-day-composer__bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  overflow: hidden;
+  transform-origin: top center;
+  animation: loMyDayComposerBottomIn 0.22s ease-out both;
+}
+
+.lo-my-day-composer.is-closing .lo-my-day-composer__divider {
+  animation: loMyDayComposerDividerOut 0.16s ease-in both;
+}
+
+.lo-my-day-composer.is-closing .lo-my-day-composer__bottom {
+  animation: loMyDayComposerBottomOut 0.18s ease-in both;
+}
+
+.lo-my-day-composer__tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.lo-my-day-composer__tools button {
+  min-height: 34px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.lo-my-day-composer__tools button:hover {
+  background: rgba(127, 127, 127, 0.12);
+  color: inherit;
+}
+
+.lo-my-day-composer__tools img {
+  width: 17px;
+  height: 17px;
+  object-fit: contain;
+}
+
+@keyframes loMyDayComposerPanelIn {
+  from {
+    opacity: 0.72;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes loMyDayComposerDividerIn {
+  from {
+    opacity: 0;
+    transform: scaleX(0);
+  }
+  to {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+@keyframes loMyDayComposerDividerOut {
+  from {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+  to {
+    opacity: 0;
+    transform: scaleX(0);
+  }
+}
+
+@keyframes loMyDayComposerBottomIn {
+  from {
+    max-height: 0;
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    max-height: 58px;
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes loMyDayComposerBottomOut {
+  from {
+    max-height: 58px;
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    max-height: 0;
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
 /* Focus sections */
 .lo-focusbar {
   min-width: 0;
@@ -995,7 +1166,8 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
 :root[data-theme="duna"] .lo-plan-tasks-sidebar__toggle img,
 :root[data-theme="duna"] .lo-plan-tasks-sidebar__icon,
-:root[data-theme="duna"] .lo-plan-tasks-heading img {
+:root[data-theme="duna"] .lo-plan-tasks-heading img,
+:root[data-theme="duna"] .lo-my-day-composer__tools img {
   filter: brightness(0) saturate(100%) invert(13%) sepia(15%) saturate(822%) hue-rotate(182deg) brightness(94%) contrast(88%);
 }
 
@@ -1018,7 +1190,8 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
 :root[data-theme="nebula"] .lo-plan-tasks-sidebar__toggle img,
 :root[data-theme="nebula"] .lo-plan-tasks-sidebar__icon,
-:root[data-theme="nebula"] .lo-plan-tasks-heading img {
+:root[data-theme="nebula"] .lo-plan-tasks-heading img,
+:root[data-theme="nebula"] .lo-my-day-composer__tools img {
   filter: none;
 }
 
