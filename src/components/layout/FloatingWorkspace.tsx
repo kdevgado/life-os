@@ -165,15 +165,16 @@ function getIsMobileViewport() {
 
 function mobileWindowPos(w: number, h: number) {
   if (typeof window === "undefined") {
-    return { x: 12, y: 72 };
+    return { x: 12, y: 120 };
   }
 
-  const topOffset = 72;
   const sideGap = 12;
+  const topGap = 12;
+  const dockClearance = 104;
 
   return {
     x: Math.max(sideGap, Math.round((window.innerWidth - w) / 2)),
-    y: topOffset,
+    y: Math.max(topGap, Math.round(window.innerHeight - h - dockClearance)),
   };
 }
 
