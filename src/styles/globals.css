@@ -1140,6 +1140,49 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   white-space: nowrap;
 }
 
+.lo-plan-tasks-heading__button,
+.lo-plan-tasks-heading__input {
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 1.17em;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.lo-plan-tasks-heading__button {
+  border: 0;
+  padding: 2px 4px;
+  background: transparent;
+  color: inherit;
+  cursor: text;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lo-plan-tasks-heading__button:hover,
+.lo-plan-tasks-heading__button:focus-visible {
+  background: rgba(127, 127, 127, 0.12);
+  outline: 0;
+}
+
+.lo-plan-tasks-heading__input {
+  width: min(240px, 100%);
+  border: 1px solid var(--shell-border, var(--border));
+  padding: 2px 6px;
+  background: var(--shell-surface-strong, var(--panel));
+  color: inherit;
+  outline: 0;
+}
+
+.lo-plan-tasks-heading__input:focus {
+  border-color: var(--shell-border-strong, var(--accent));
+}
+
 .lo-plan-tasks-main .lo-toolbar {
   display: grid;
   grid-template-columns: minmax(140px, 1fr) minmax(180px, 260px) minmax(140px, 1fr);
@@ -5513,6 +5556,8 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
 .lo-plan .lo-task-title,
 .lo-plan .lo-plan-tasks-heading h3,
+.lo-plan .lo-plan-tasks-heading__button,
+.lo-plan .lo-plan-tasks-heading__input,
 .lo-plan .planner .card h2,
 .lo-plan .lo-day-board__header h3 {
   font-size: 14px;

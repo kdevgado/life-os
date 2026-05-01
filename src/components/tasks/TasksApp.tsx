@@ -888,6 +888,33 @@ export default function TasksApp({
     setTasks((prev) => prev.filter((task) => task.list !== list));
   }
 
+  function onRenameTaskList(oldList: string, newList: string) {
+    const now = new Date().toISOString();
+
+    if (!authed) {
+      tasks
+        .filter((task) => task.list === oldList)
+        .forEach((task) => {
+          updateTask(task.id, {
+            list: newList,
+            updatedAt: now,
+          });
+        });
+    }
+
+    setTasks((prev) =>
+      prev.map((task) =>
+        task.list === oldList
+          ? {
+              ...task,
+              list: newList,
+              updatedAt: now,
+            }
+          : task,
+      ),
+    );
+  }
+
   function onRemove(task: Task) {
     if (!authed) deleteTask(task.id);
     setTasks((prev) => prev.filter((t) => t.id !== task.id));
@@ -1691,6 +1718,7 @@ export default function TasksApp({
           onCopyTaskToList={onCopyTaskToList}
           onDuplicateTaskList={onDuplicateTaskList}
           onDeleteTaskList={onDeleteTaskList}
+          onRenameTaskList={onRenameTaskList}
         />
       )}
       {contextMenu && (
@@ -2501,6 +2529,7 @@ function PlanTasksView({
   onCopyTaskToList,
   onDuplicateTaskList,
   onDeleteTaskList,
+  onRenameTaskList,
 }: {
   query: string;
   setQuery: (value: string) => void;
@@ -2537,10 +2566,13 @@ function PlanTasksView({
   onCopyTaskToList: (task: Task, list: string) => void;
   onDuplicateTaskList: (sourceList: string, newList: string) => void;
   onDeleteTaskList: (list: string) => void;
+  onRenameTaskList: (oldList: string, newList: string) => void;
 }) {
   const [selectedList, setSelectedList] = React.useState<PlanListId>("my-day");
   const [listDraft, setListDraft] = React.useState("");
   const [sessionLists, setSessionLists] = React.useState<string[]>([]);
+  const [editingListHeading, setEditingListHeading] = React.useState(false);
+  const [listHeadingDraft, setListHeadingDraft] = React.useState("");
   const [isCreatingList, setIsCreatingList] = React.useState(false);
   const [myDayComposerOpen, setMyDayComposerOpen] = React.useState(false);
   const [myDayComposerClosing, setMyDayComposerClosing] = React.useState(false);
@@ -2550,6 +2582,7 @@ function PlanTasksView({
   const [boardTaskMenu, setBoardTaskMenu] = React.useState<BoardTaskMenuState | null>(null);
   const [customListMenu, setCustomListMenu] = React.useState<CustomListMenuState | null>(null);
   const listDraftRef = React.useRef<HTMLInputElement | null>(null);
+  const listHeadingInputRef = React.useRef<HTMLInputElement | null>(null);
   const newListWrapRef = React.useRef<HTMLDivElement | null>(null);
   const myDayComposerRef = React.useRef<HTMLDivElement | null>(null);
   const myDayTitleRef = React.useRef<HTMLDivElement | null>(null);
@@ -2593,6 +2626,23 @@ function PlanTasksView({
   const isCustomSelectedList = customLists.includes(selectedList);
   const usesCompactComposer = true;
   const showSuggestionsButton = selectedList === "my-day";
+
+  React.useEffect(() => {
+    if (!editingListHeading) return;
+
+    const input = listHeadingInputRef.current;
+    if (!input) return;
+
+    input.focus();
+    input.select();
+  }, [editingListHeading]);
+
+  React.useEffect(() => {
+    if (isCustomSelectedList) return;
+
+    setEditingListHeading(false);
+    setListHeadingDraft("");
+  }, [isCustomSelectedList, selectedList]);
 
   React.useEffect(() => {
     if (!isCreatingList) return;
@@ -2855,6 +2905,70 @@ function PlanTasksView({
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-|-$/g, "");
+  }
+
+  function makeUniqueCustomListId(baseId: string, currentList: string) {
+    const used = new Set(customLists.filter((list) => list !== currentList));
+    if (!used.has(baseId)) return baseId;
+
+    let index = 2;
+    while (used.has(`${baseId}-${index}`)) {
+      index += 1;
+    }
+
+    return `${baseId}-${index}`;
+  }
+
+  function startEditingListHeading() {
+    if (!isCustomSelectedList) return;
+
+    setListHeadingDraft(labelForList(selectedList));
+    setEditingListHeading(true);
+  }
+
+  function cancelEditingListHeading() {
+    setEditingListHeading(false);
+    setListHeadingDraft("");
+  }
+
+  function saveListHeading() {
+    if (!isCustomSelectedList) {
+      cancelEditingListHeading();
+      return;
+    }
+
+    const baseId = makeCustomListId(listHeadingDraft);
+    if (!baseId) {
+      cancelEditingListHeading();
+      return;
+    }
+
+    const nextList = makeUniqueCustomListId(baseId, selectedList);
+
+    if (nextList === selectedList) {
+      cancelEditingListHeading();
+      return;
+    }
+
+    setSessionLists((prev) => {
+      const ordered = customLists;
+      const nextOrdered = ordered.map((list) =>
+        list === selectedList ? nextList : list,
+      );
+      const sessionSet = new Set(prev);
+
+      return nextOrdered.filter(
+        (list) =>
+          list === nextList ||
+          sessionSet.has(list) ||
+          !discoveredCustomLists.includes(list),
+      );
+    });
+
+    onRenameTaskList(selectedList, nextList);
+    setSelectedList(nextList);
+    setEditingListHeading(false);
+    setListHeadingDraft("");
   }
 
   function openBoardTaskMenu(event: React.MouseEvent, task: Task) {
@@ -3141,6 +3255,47 @@ function PlanTasksView({
     return PLAN_SIDEBAR_ICONS[list] ?? CUSTOM_LIST_ICON;
   }
 
+  function renderSelectedListHeading() {
+    if (isCustomSelectedList && editingListHeading) {
+      return (
+        <input
+          ref={listHeadingInputRef}
+          className="lo-plan-tasks-heading__input"
+          value={listHeadingDraft}
+          onChange={(event) => setListHeadingDraft(event.target.value)}
+          onBlur={saveListHeading}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              saveListHeading();
+            }
+
+            if (event.key === "Escape") {
+              event.preventDefault();
+              cancelEditingListHeading();
+            }
+          }}
+          aria-label="Rename custom list"
+        />
+      );
+    }
+
+    if (isCustomSelectedList) {
+      return (
+        <button
+          type="button"
+          className="lo-plan-tasks-heading__button"
+          onClick={startEditingListHeading}
+          title="Rename list"
+        >
+          {labelForList(selectedList)}
+        </button>
+      );
+    }
+
+    return <h3>{labelForList(selectedList)}</h3>;
+  }
+
   return (
     <div
       className={`lo-plan-tasks-layout ${sidebarCollapsed ? "is-sidebar-collapsed" : ""}`}
@@ -3220,7 +3375,7 @@ function PlanTasksView({
               <div className="lo-toolbar">
                 <div className="lo-plan-tasks-heading">
                   <img src={getListIcon(selectedList)} alt="" />
-                  <h3>{labelForList(selectedList)}</h3>
+                  {renderSelectedListHeading()}
                 </div>
 
                 <div className="lo-plan-tasks-search">
@@ -3320,7 +3475,7 @@ function PlanTasksView({
           <div className="lo-toolbar">
             <div className="lo-plan-tasks-heading">
               <img src={getListIcon(selectedList)} alt="" />
-              <h3>{labelForList(selectedList)}</h3>
+              {renderSelectedListHeading()}
             </div>
 
             <div className="lo-plan-tasks-search">
