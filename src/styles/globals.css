@@ -903,6 +903,9 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   gap: 18px;
   align-items: start;
   min-height: min(680px, calc(100vh - 230px));
+  transition:
+    grid-template-columns 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    gap 240ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .lo-plan-tasks-layout.is-sidebar-collapsed {
@@ -916,6 +919,10 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   align-self: start;
   position: sticky;
   top: 0;
+  overflow: hidden;
+  transition:
+    padding 240ms cubic-bezier(0.22, 1, 0.36, 1),
+    gap 240ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .lo-plan-tasks-sidebar button {
@@ -932,6 +939,11 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   align-items: center;
   gap: 10px;
   min-height: 42px;
+  transition:
+    background 160ms ease,
+    padding 240ms cubic-bezier(0.22, 1, 0.36, 1),
+    gap 240ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 160ms ease;
 }
 
 .lo-plan-tasks-sidebar button.is-active {
@@ -956,11 +968,24 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  max-width: 160px;
+  opacity: 1;
+  transition:
+    opacity 140ms ease,
+    max-width 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .lo-plan-tasks-sidebar__custom-list {
   display: grid;
   gap: 8px;
+  max-height: 320px;
+  opacity: 1;
+  overflow: hidden;
+  transition:
+    opacity 150ms ease,
+    max-height 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .lo-plan-tasks-new-list {
@@ -989,6 +1014,13 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
 .lo-plan-tasks-new-list-button {
   color: var(--muted);
+  max-height: 42px;
+  opacity: 1;
+  overflow: hidden;
+  transition:
+    opacity 150ms ease,
+    max-height 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-sidebar {
@@ -1000,20 +1032,42 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   padding-inline: 0;
 }
 
-.lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-sidebar__text,
-.lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-sidebar__divider,
-.lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-sidebar__label,
+.lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-sidebar__text {
+  max-width: 0;
+  opacity: 0;
+  transform: translateX(-2px);
+}
+
 .lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-sidebar__custom-list,
 .lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-add-list,
 .lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-new-list,
 .lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-new-list-button {
-  display: none;
+  max-height: 0;
+  opacity: 0;
+  margin: 0;
+  padding-block: 0;
+  pointer-events: none;
+  transform: translateY(-2px);
+}
+
+.lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-sidebar__divider,
+.lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-sidebar__label {
+  height: 0;
+  margin: 0;
+  padding-block: 0;
+  opacity: 0;
+  overflow: hidden;
 }
 
 .lo-plan-tasks-sidebar__divider {
   height: 1px;
   background: var(--shell-border, var(--border));
   margin: 8px 0 4px;
+  opacity: 1;
+  transition:
+    opacity 140ms ease,
+    height 240ms cubic-bezier(0.22, 1, 0.36, 1),
+    margin 240ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .lo-plan-tasks-sidebar__label {
@@ -1023,12 +1077,26 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  opacity: 1;
+  overflow: hidden;
+  transition:
+    opacity 140ms ease,
+    padding 240ms cubic-bezier(0.22, 1, 0.36, 1),
+    height 240ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .lo-plan-tasks-add-list {
   display: grid;
   gap: 8px;
   margin-top: 6px;
+  max-height: 90px;
+  opacity: 1;
+  overflow: hidden;
+  transition:
+    opacity 150ms ease,
+    max-height 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    margin 240ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .lo-plan-tasks-add-list input {
@@ -1107,15 +1175,19 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 }
 
 .lo-plan-tasks-toolbar-action {
+  position: relative;
   justify-self: end;
+  width: 36px;
+  height: 36px;
   min-height: 36px;
   border: 0;
   border-radius: 10px;
-  padding: 0 12px;
+  padding: 0;
   background: rgba(255,255,255,0.08);
   color: inherit;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   font: inherit;
   font-size: 13px;
@@ -1138,6 +1210,38 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   flex: 0 0 auto;
 }
 
+.lo-plan-tasks-toolbar-tooltip {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  z-index: 10;
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: var(--shell-surface-strong);
+  border: 1px solid var(--shell-border);
+  color: var(--shell-title);
+  box-shadow: var(--shell-shadow);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(4px);
+  transition:
+    opacity 150ms ease,
+    transform 150ms ease,
+    visibility 150ms ease;
+}
+
+.lo-plan-tasks-toolbar-action:hover .lo-plan-tasks-toolbar-tooltip,
+.lo-plan-tasks-toolbar-action:focus-visible .lo-plan-tasks-toolbar-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
 .lo-plan-tasks-toolbar-spacer {
   justify-self: end;
   width: 1px;
@@ -1148,6 +1252,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   position: fixed;
   inset: 0;
   z-index: 4600;
+  overflow: hidden;
   pointer-events: none;
 }
 
@@ -1172,6 +1277,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   display: flex;
   flex-direction: column;
   gap: 12px;
+  overflow: hidden;
   color: var(--shell-text);
   background: var(--shell-surface-strong);
   border-left: 1px solid var(--shell-border);
@@ -1179,6 +1285,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   pointer-events: auto;
+  animation: loSuggestionsPanelIn 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .lo-suggestions-panel__header {
@@ -1188,6 +1295,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   gap: 12px;
   padding-bottom: 10px;
   border-bottom: 1px solid var(--shell-border);
+  animation: loSuggestionsContentIn 220ms cubic-bezier(0.22, 1, 0.36, 1) 40ms both;
 }
 
 .lo-suggestions-panel__title {
@@ -1229,15 +1337,33 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 .lo-suggestions-panel__body {
   min-height: 0;
   overflow: auto;
+  scrollbar-width: none;
   display: grid;
   align-content: start;
   gap: 16px;
   padding-right: 2px;
 }
 
+.lo-suggestions-panel__body::-webkit-scrollbar {
+  display: none;
+}
+
 .lo-suggestions-group {
   display: grid;
   gap: 8px;
+  animation: loSuggestionsContentIn 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.lo-suggestions-group:nth-child(1) {
+  animation-delay: 80ms;
+}
+
+.lo-suggestions-group:nth-child(2) {
+  animation-delay: 125ms;
+}
+
+.lo-suggestions-group:nth-child(3) {
+  animation-delay: 170ms;
 }
 
 .lo-suggestions-group h4 {
@@ -1273,6 +1399,27 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   border-radius: 10px;
   background: var(--shell-surface-soft);
   border: 1px solid var(--shell-border);
+  animation: loSuggestionsRowIn 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.lo-suggestion-row:nth-child(1) {
+  animation-delay: 40ms;
+}
+
+.lo-suggestion-row:nth-child(2) {
+  animation-delay: 65ms;
+}
+
+.lo-suggestion-row:nth-child(3) {
+  animation-delay: 90ms;
+}
+
+.lo-suggestion-row:nth-child(4) {
+  animation-delay: 115ms;
+}
+
+.lo-suggestion-row:nth-child(n + 5) {
+  animation-delay: 135ms;
 }
 
 .lo-suggestion-row__complete,
@@ -1317,6 +1464,39 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   font-size: 20px;
   line-height: 1;
   font-weight: 700;
+}
+
+@keyframes loSuggestionsPanelIn {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes loSuggestionsContentIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes loSuggestionsRowIn {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .lo-my-day-composer {
@@ -1631,17 +1811,25 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   }
 
   .lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-sidebar__text {
-    display: inline;
+    max-width: 160px;
+    opacity: 1;
+    transform: none;
   }
 
   .lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-sidebar__custom-list,
   .lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-add-list,
   .lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-new-list-button {
-    display: grid;
+    max-height: 320px;
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
   }
 
   .lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-new-list {
-    display: flex;
+    max-height: 42px;
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
   }
 
   .lo-plan-tasks-sidebar__divider,

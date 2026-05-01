@@ -3238,10 +3238,13 @@ function PlanTasksView({
                   <button
                     type="button"
                     className="lo-plan-tasks-toolbar-action"
+                    aria-label="Suggestions"
                     onClick={() => setSuggestionsOpen(true)}
                   >
                     <img src={SUGGESTIONS_ICON} alt="" />
-                    <span>Suggestions</span>
+                    <span className="lo-plan-tasks-toolbar-tooltip">
+                      Suggestions
+                    </span>
                   </button>
                 ) : (
                   <span className="lo-plan-tasks-toolbar-spacer" aria-hidden="true" />
@@ -3335,10 +3338,13 @@ function PlanTasksView({
               <button
                 type="button"
                 className="lo-plan-tasks-toolbar-action"
+                aria-label="Suggestions"
                 onClick={() => setSuggestionsOpen(true)}
               >
                 <img src={SUGGESTIONS_ICON} alt="" />
-                <span>Suggestions</span>
+                <span className="lo-plan-tasks-toolbar-tooltip">
+                  Suggestions
+                </span>
               </button>
             ) : (
               <span className="lo-plan-tasks-toolbar-spacer" aria-hidden="true" />
