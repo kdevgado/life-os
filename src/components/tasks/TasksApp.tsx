@@ -2483,6 +2483,9 @@ function PlanTasksView({
       ).sort((a, b) => labelForList(a).localeCompare(labelForList(b))),
     [sessionLists, tasks],
   );
+  const isCustomSelectedList = customLists.includes(selectedList);
+  const usesCompactComposer =
+    selectedList === "my-day" || isCustomSelectedList;
 
   React.useEffect(() => {
     if (!isCreatingList) return;
@@ -2579,11 +2582,25 @@ function PlanTasksView({
       if (selectedList === "planned") return !!getTaskDateKey(t);
       if (selectedList === "assigned") return false;
 
+      if (isCustomSelectedList) {
+        return t.list === selectedList && t.status !== "done";
+      }
+
       return t.list === selectedList;
     })
     .sort(sortImportantFirst);
-  const completedMyDayTasks = tasks
-    .filter((t) => getTaskDateKey(t) === todayISO && t.status === "done")
+  const completedBoardTasks = tasks
+    .filter((t) => {
+      if (selectedList === "my-day") {
+        return getTaskDateKey(t) === todayISO && t.status === "done";
+      }
+
+      if (isCustomSelectedList) {
+        return t.list === selectedList && t.status === "done";
+      }
+
+      return false;
+    })
     .sort(sortImportantFirst);
   const canAddToSelectedList = canAdd && selectedList !== "assigned";
 
@@ -2872,7 +2889,7 @@ function PlanTasksView({
       </Card>
 
       <div className="lo-plan-tasks-main lo-stack">
-        {selectedList === "my-day" ? (
+        {usesCompactComposer ? (
           <>
             <Card className="toolbar-card">
               <div className="lo-toolbar">
@@ -3040,7 +3057,7 @@ function PlanTasksView({
           onOpenTaskMenu={openBoardTaskMenu}
         />
 
-        {selectedList === "my-day" && completedMyDayTasks.length > 0 && (
+        {usesCompactComposer && completedBoardTasks.length > 0 && (
           <section className="lo-plan-completed lo-stack">
             <button
               type="button"
@@ -3050,7 +3067,7 @@ function PlanTasksView({
             >
               <span>Completed</span>
               <span className="lo-plan-completed__count">
-                {completedMyDayTasks.length}
+                {completedBoardTasks.length}
               </span>
               <span
                 className={`lo-plan-completed__chevron ${myDayCompletedOpen ? "is-open" : ""}`}
@@ -3062,7 +3079,7 @@ function PlanTasksView({
               <TaskSection
                 title="Completed"
                 showTitle={false}
-                tasks={completedMyDayTasks}
+                tasks={completedBoardTasks}
                 justAddedId={justAddedId}
                 onToggleDone={onToggleDone}
                 onRemove={onRemove}
