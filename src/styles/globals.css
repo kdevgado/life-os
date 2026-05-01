@@ -1073,14 +1073,15 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 }
 
 .lo-plan-tasks-main .lo-toolbar {
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(140px, 1fr) minmax(180px, 260px) minmax(140px, 1fr);
+  align-items: center;
+  width: 100%;
 }
 
 .lo-plan-tasks-search {
-  flex: 0 1 220px;
-  width: min(220px, calc(42vw - 16px));
-  margin-left: auto;
-  margin-right: 40px;
+  width: 100%;
+  justify-self: center;
   position: relative;
 }
 
@@ -1103,6 +1104,213 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   padding-left: 10px;
   border-radius: 10px;
   font-size: 13px;
+}
+
+.lo-plan-tasks-toolbar-action {
+  justify-self: end;
+  min-height: 36px;
+  border: 0;
+  border-radius: 10px;
+  padding: 0 12px;
+  background: rgba(255,255,255,0.08);
+  color: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.16s ease, transform 0.16s ease;
+}
+
+.lo-plan-tasks-toolbar-action:hover,
+.lo-plan-tasks-toolbar-action:focus-visible {
+  background: rgba(255,255,255,0.14);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.lo-plan-tasks-toolbar-action img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+
+.lo-suggestions-shell {
+  position: fixed;
+  inset: 0;
+  z-index: 4600;
+  pointer-events: none;
+}
+
+.lo-suggestions-backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  background: rgba(10, 14, 24, 0.16);
+  pointer-events: auto;
+  cursor: default;
+}
+
+.lo-suggestions-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: min(390px, calc(100vw - 24px));
+  height: 100%;
+  padding: 14px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  color: var(--shell-text);
+  background: var(--shell-surface-strong);
+  border-left: 1px solid var(--shell-border);
+  box-shadow: -18px 0 45px rgba(15, 23, 42, 0.16);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  pointer-events: auto;
+}
+
+.lo-suggestions-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--shell-border);
+}
+
+.lo-suggestions-panel__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.lo-suggestions-panel__title img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+.lo-suggestions-panel__title h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.lo-suggestions-panel__close {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+}
+
+.lo-suggestions-panel__close:hover,
+.lo-suggestions-panel__close:focus-visible {
+  background: var(--shell-btn-hover);
+  outline: none;
+}
+
+.lo-suggestions-panel__body {
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  padding-right: 2px;
+}
+
+.lo-suggestions-group {
+  display: grid;
+  gap: 8px;
+}
+
+.lo-suggestions-group h4 {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.2;
+  color: var(--shell-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.lo-suggestions-group__empty {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: var(--shell-muted);
+  background: var(--shell-surface-soft);
+  font-size: 13px;
+}
+
+.lo-suggestions-group__list {
+  display: grid;
+  gap: 8px;
+}
+
+.lo-suggestion-row {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 32px;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 7px 8px;
+  border-radius: 10px;
+  background: var(--shell-surface-soft);
+  border: 1px solid var(--shell-border);
+}
+
+.lo-suggestion-row__complete,
+.lo-suggestion-row__add {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.lo-suggestion-row__complete:hover,
+.lo-suggestion-row__add:hover,
+.lo-suggestion-row__complete:focus-visible,
+.lo-suggestion-row__add:focus-visible {
+  background: var(--shell-btn-hover);
+  outline: none;
+}
+
+.lo-suggestion-row__complete img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  opacity: 0.72;
+}
+
+.lo-suggestion-row__title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.lo-suggestion-row__add {
+  font-size: 20px;
+  line-height: 1;
+  font-weight: 700;
 }
 
 .lo-my-day-composer {
@@ -1347,6 +1555,9 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 :root[data-theme="duna"] .lo-plan-tasks-sidebar__icon,
 :root[data-theme="duna"] .lo-plan-tasks-heading img,
 :root[data-theme="duna"] .lo-plan-tasks-search img,
+:root[data-theme="duna"] .lo-plan-tasks-toolbar-action img,
+:root[data-theme="duna"] .lo-suggestions-panel__title img,
+:root[data-theme="duna"] .lo-suggestion-row__complete img,
 :root[data-theme="duna"] .lo-task-check img,
 :root[data-theme="duna"] .lo-my-day-composer__tick img,
 :root[data-theme="duna"] .lo-my-day-composer__tools img {
@@ -1382,6 +1593,9 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 :root[data-theme="nebula"] .lo-plan-tasks-sidebar__icon,
 :root[data-theme="nebula"] .lo-plan-tasks-heading img,
 :root[data-theme="nebula"] .lo-plan-tasks-search img,
+:root[data-theme="nebula"] .lo-plan-tasks-toolbar-action img,
+:root[data-theme="nebula"] .lo-suggestions-panel__title img,
+:root[data-theme="nebula"] .lo-suggestion-row__complete img,
 :root[data-theme="nebula"] .lo-task-check img,
 :root[data-theme="nebula"] .lo-my-day-composer__tick img,
 :root[data-theme="nebula"] .lo-my-day-composer__tools img {
@@ -1449,6 +1663,24 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   .lo-toolbar,
   .lo-addbar {
     flex-wrap: wrap;
+  }
+
+  .lo-plan-tasks-main .lo-toolbar {
+    grid-template-columns: 1fr;
+    justify-items: stretch;
+  }
+
+  .lo-plan-tasks-search,
+  .lo-plan-tasks-toolbar-action {
+    justify-self: stretch;
+  }
+
+  .lo-plan-tasks-toolbar-action {
+    justify-content: center;
+  }
+
+  .lo-suggestions-panel {
+    width: 100vw;
   }
 
   .lo-tasks .lo-chip {

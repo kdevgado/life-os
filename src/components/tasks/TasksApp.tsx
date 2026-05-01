@@ -96,6 +96,15 @@ function getCreatedDateKey(task: Task) {
   return isoDate(new Date(task.createdAt));
 }
 
+function getMyDayDateKey(task: Task) {
+  if (task.myDay) return String(task.myDay).slice(0, 10);
+  return getCreatedDateKey(task);
+}
+
+function isTaskInMyDay(task: Task, todayISO: string) {
+  return getMyDayDateKey(task) === todayISO;
+}
+
 type TasksMode = "focus" | "plan";
 type FocusFilter = "all" | "today" | "overdue";
 type StatusFilter = "all" | "inprogress" | "completed";
@@ -216,12 +225,14 @@ export default function TasksApp({
 
   const onDuplicateTask = useCallback((task: Task) => {
     const now = new Date().toISOString();
+    const today = isoDate(new Date());
 
     const copy: Task = {
       ...task,
       id: crypto.randomUUID(),
       title: `${task.title} copy`,
       status: task.status === "done" ? "todo" : task.status,
+      myDay: today,
       createdAt: now,
       updatedAt: now,
     };
@@ -583,12 +594,14 @@ export default function TasksApp({
 
   function makeTask(title: string, due?: string, priority: Priority = 3): Task {
     const now = new Date().toISOString();
+    const today = isoDate(new Date());
     return {
       id: crypto.randomUUID(),
       title,
       status: "todo",
       priority,
       dueDate: due,
+      myDay: today,
       sortOrder: tasks.length
         ? Math.max(...tasks.map((t) => t.sortOrder ?? 0)) + 1
         : 1,
@@ -612,6 +625,7 @@ export default function TasksApp({
           priority: 3,
           dueDate: today,
           plannedFor: today,
+          myDay: today,
           focus: true,
           list: "focus",
           tags: ["focus"],
@@ -623,6 +637,7 @@ export default function TasksApp({
           title: "",
           dueDate: today,
           plannedFor: today,
+          myDay: today,
           priority: 3,
           status: "todo",
           focus: true,
@@ -671,12 +686,14 @@ export default function TasksApp({
         ? {
             dueDate: today,
             plannedFor: today,
+            myDay: today,
             priority: priority ?? 3,
             status: "todo" as const,
             focus: true,
           }
         : {
             dueDate: due,
+            myDay: today,
             priority: priority ?? 3,
             status: "todo" as const,
           };
@@ -772,10 +789,21 @@ export default function TasksApp({
 
   function onSetTaskSchedule(
     task: Task,
-    patch: Pick<Task, "dueDate" | "plannedFor" | "plannedStart" | "plannedEnd">,
+    patch: Partial<
+      Pick<
+        Task,
+        "dueDate" | "plannedFor" | "plannedStart" | "plannedEnd" | "myDay"
+      >
+    >,
   ) {
+    const updatesCalendarFields =
+      "dueDate" in patch ||
+      "plannedFor" in patch ||
+      "plannedStart" in patch ||
+      "plannedEnd" in patch;
+
     applyTaskPatch(task, patch, {
-      broadcastUpdate: true,
+      broadcastUpdate: updatesCalendarFields,
     });
   }
 
@@ -807,10 +835,12 @@ export default function TasksApp({
 
   function onCopyTaskToList(task: Task, list: string) {
     const now = new Date().toISOString();
+    const today = isoDate(new Date());
     const copy: Task = {
       ...task,
       id: crypto.randomUUID(),
       list,
+      myDay: today,
       sortOrder: tasks.length
         ? Math.max(...tasks.map((t) => t.sortOrder ?? 0)) + 1
         : 1,
@@ -825,6 +855,7 @@ export default function TasksApp({
 
   function onDuplicateTaskList(sourceList: string, newList: string) {
     const now = new Date().toISOString();
+    const today = isoDate(new Date());
     const sourceTasks = tasks.filter((task) => task.list === sourceList);
     if (sourceTasks.length === 0) return;
 
@@ -836,6 +867,7 @@ export default function TasksApp({
       ...task,
       id: crypto.randomUUID(),
       list: newList,
+      myDay: today,
       sortOrder: highestSortOrder + index + 1,
       createdAt: now,
       updatedAt: now,
@@ -1290,6 +1322,7 @@ export default function TasksApp({
       const plannedFor = `${detail.date}T${String(detail.hour).padStart(2, "0")}:${String(plannedMinute).padStart(2, "0")}:00`;
 
       const now = new Date().toISOString();
+      const today = isoDate(new Date());
 
       const createdTask = authed
         ? {
@@ -1301,6 +1334,7 @@ export default function TasksApp({
             plannedFor,
             plannedStart: plannedFor,
             plannedEnd: undefined,
+            myDay: today,
             list: "planner",
             sortOrder: tasks.length
               ? Math.max(...tasks.map((t) => t.sortOrder ?? 0)) + 1
@@ -1316,6 +1350,7 @@ export default function TasksApp({
             plannedFor,
             plannedStart: plannedFor,
             plannedEnd: undefined,
+            myDay: today,
             list: "planner",
             sortOrder: tasks.length
               ? Math.max(...tasks.map((t) => t.sortOrder ?? 0)) + 1
@@ -2412,6 +2447,7 @@ const DELETE_ICON = "/icons/white/trash-xmark.png";
 const REMOVE_DUE_ICON = "/icons/white/calendar-xmark.png";
 const MOVE_UP_ICON = "/icons/white/menu-burger.png";
 const PRINT_LIST_ICON = "/icons/white/notes.png";
+const SUGGESTIONS_ICON = "/icons/white/bulb.png";
 
 type BoardTaskMenuState = {
   task: Task;
@@ -2483,7 +2519,12 @@ function PlanTasksView({
   onSetDue: (task: Task, dueDate: string) => void;
   onSetTaskSchedule: (
     task: Task,
-    patch: Pick<Task, "dueDate" | "plannedFor" | "plannedStart" | "plannedEnd">,
+    patch: Partial<
+      Pick<
+        Task,
+        "dueDate" | "plannedFor" | "plannedStart" | "plannedEnd" | "myDay"
+      >
+    >,
   ) => void;
   onSetPriority: (task: Task, p: Priority) => void;
   onSetImportant: (task: Task, important: boolean) => void;
@@ -2505,6 +2546,7 @@ function PlanTasksView({
   const [myDayComposerClosing, setMyDayComposerClosing] = React.useState(false);
   const [myDayCompletedOpen, setMyDayCompletedOpen] = React.useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
+  const [suggestionsOpen, setSuggestionsOpen] = React.useState(false);
   const [boardTaskMenu, setBoardTaskMenu] = React.useState<BoardTaskMenuState | null>(null);
   const [customListMenu, setCustomListMenu] = React.useState<CustomListMenuState | null>(null);
   const listDraftRef = React.useRef<HTMLInputElement | null>(null);
@@ -2516,6 +2558,16 @@ function PlanTasksView({
   const myDayComposerCloseTimerRef = React.useRef<number | null>(null);
 
   const todayISO = isoDate(new Date());
+  const yesterdayISO = React.useMemo(() => {
+    const date = new Date();
+    date.setDate(date.getDate() - 1);
+    return isoDate(date);
+  }, []);
+  const recentSinceISO = React.useMemo(() => {
+    const date = new Date();
+    date.setDate(date.getDate() - 7);
+    return isoDate(date);
+  }, []);
   const discoveredCustomLists = React.useMemo(
     () =>
       Array.from(
@@ -2662,7 +2714,7 @@ function PlanTasksView({
       }
 
       if (selectedList === "my-day") {
-        return getTaskDateKey(t) === todayISO && t.status !== "done";
+        return isTaskInMyDay(t, todayISO) && t.status !== "done";
       }
 
       if (selectedList === "important") return !!t.important;
@@ -2679,7 +2731,7 @@ function PlanTasksView({
   const completedBoardTasks = tasks
     .filter((t) => {
       if (selectedList === "my-day") {
-        return getTaskDateKey(t) === todayISO && t.status === "done";
+        return isTaskInMyDay(t, todayISO) && t.status === "done";
       }
 
       if (isCustomSelectedList) {
@@ -2689,6 +2741,35 @@ function PlanTasksView({
       return false;
     })
     .sort(sortImportantFirst);
+  const suggestionGroups = React.useMemo(() => {
+    const openTasks = tasks.filter(
+      (task) => task.status !== "done" && !isTaskInMyDay(task, todayISO),
+    );
+    const newestFirst = (items: Task[]) =>
+      [...items].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+    return {
+      yesterday: newestFirst(
+        openTasks.filter((task) => {
+          const createdDateKey = getCreatedDateKey(task);
+          const dueDateKey = getTaskDateKey(task);
+          return createdDateKey === yesterdayISO || dueDateKey === yesterdayISO;
+        }),
+      ),
+      later: newestFirst(
+        openTasks.filter((task) => {
+          const dueDateKey = getTaskDateKey(task);
+          return (!!dueDateKey && dueDateKey > todayISO) || !task.myDay;
+        }),
+      ),
+      recently: newestFirst(
+        openTasks.filter((task) => {
+          const createdDateKey = getCreatedDateKey(task);
+          return !!createdDateKey && createdDateKey >= recentSinceISO;
+        }),
+      ),
+    };
+  }, [tasks, todayISO, yesterdayISO, recentSinceISO]);
   const canAddToSelectedList = canAdd && selectedList !== "assigned";
 
   function addCurrentTask() {
@@ -2703,8 +2784,7 @@ function PlanTasksView({
     const extraPatch: Partial<Task> = {};
 
     if (selectedList === "my-day") {
-      extraPatch.dueDate = todayISO;
-      extraPatch.plannedFor = todayISO;
+      extraPatch.myDay = todayISO;
     }
 
     if (selectedList === "important") {
@@ -2890,24 +2970,19 @@ function PlanTasksView({
   }
 
   function addOrRemoveMyDay(task: Task) {
-    const isInMyDay = getTaskDateKey(task) === todayISO;
+    const isInMyDay = isTaskInMyDay(task, todayISO);
 
     if (isInMyDay) {
-      onSetTaskSchedule(task, {
-        dueDate: undefined,
-        plannedFor: undefined,
-        plannedStart: undefined,
-        plannedEnd: undefined,
-      });
+      onSetTaskSchedule(task, { myDay: undefined });
       return;
     }
 
-    onSetTaskSchedule(task, {
-      dueDate: todayISO,
-      plannedFor: todayISO,
-      plannedStart: undefined,
-      plannedEnd: undefined,
-    });
+    onSetTaskSchedule(task, { myDay: todayISO });
+  }
+
+  function addTaskToMyDay(task: Task) {
+    if (isTaskInMyDay(task, todayISO)) return;
+    onSetTaskSchedule(task, { myDay: todayISO });
   }
 
   function setBoardTaskDue(task: Task, date: string) {
@@ -2951,7 +3026,11 @@ function PlanTasksView({
   }
 
   function getMoveCleanupPatch(): Partial<Task> {
-    if (selectedList === "my-day" || selectedList === "planned") {
+    if (selectedList === "my-day") {
+      return { myDay: undefined };
+    }
+
+    if (selectedList === "planned") {
       return {
         dueDate: undefined,
         plannedFor: undefined,
@@ -3117,6 +3196,15 @@ function PlanTasksView({
                     aria-label="Search tasks"
                   />
                 </div>
+
+                <button
+                  type="button"
+                  className="lo-plan-tasks-toolbar-action"
+                  onClick={() => setSuggestionsOpen(true)}
+                >
+                  <img src={SUGGESTIONS_ICON} alt="" />
+                  <span>Suggestions</span>
+                </button>
               </div>
             </Card>
 
@@ -3201,6 +3289,15 @@ function PlanTasksView({
                 aria-label="Search tasks"
               />
             </div>
+
+            <button
+              type="button"
+              className="lo-plan-tasks-toolbar-action"
+              onClick={() => setSuggestionsOpen(true)}
+            >
+              <img src={SUGGESTIONS_ICON} alt="" />
+              <span>Suggestions</span>
+            </button>
           </div>
         </Card>
 
@@ -3344,6 +3441,17 @@ function PlanTasksView({
             document.body,
           )
         : null}
+      {suggestionsOpen
+        ? createPortal(
+            <SuggestionsPanel
+              groups={suggestionGroups}
+              onClose={() => setSuggestionsOpen(false)}
+              onAddToMyDay={addTaskToMyDay}
+              onComplete={(task) => onSetStatus(task, "done")}
+            />,
+            document.body,
+          )
+        : null}
     </div>
   );
 }
@@ -3413,6 +3521,129 @@ const CustomListContextMenu = React.forwardRef<
   );
 });
 
+function SuggestionsPanel({
+  groups,
+  onClose,
+  onAddToMyDay,
+  onComplete,
+}: {
+  groups: {
+    yesterday: Task[];
+    later: Task[];
+    recently: Task[];
+  };
+  onClose: () => void;
+  onAddToMyDay: (task: Task) => void;
+  onComplete: (task: Task) => void;
+}) {
+  React.useEffect(() => {
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [onClose]);
+
+  return (
+    <div className="lo-suggestions-shell" role="dialog" aria-label="Suggestions">
+      <button
+        type="button"
+        className="lo-suggestions-backdrop"
+        aria-label="Close suggestions"
+        onClick={onClose}
+      />
+
+      <aside className="lo-suggestions-panel">
+        <header className="lo-suggestions-panel__header">
+          <div className="lo-suggestions-panel__title">
+            <img src={SUGGESTIONS_ICON} alt="" />
+            <h3>Suggestions</h3>
+          </div>
+          <button
+            type="button"
+            className="lo-suggestions-panel__close"
+            aria-label="Close suggestions"
+            onClick={onClose}
+          >
+            x
+          </button>
+        </header>
+
+        <div className="lo-suggestions-panel__body">
+          <SuggestionGroup
+            title="Yesterday"
+            tasks={groups.yesterday}
+            onAddToMyDay={onAddToMyDay}
+            onComplete={onComplete}
+          />
+          <SuggestionGroup
+            title="Later"
+            tasks={groups.later}
+            onAddToMyDay={onAddToMyDay}
+            onComplete={onComplete}
+          />
+          <SuggestionGroup
+            title="Recently added"
+            tasks={groups.recently}
+            onAddToMyDay={onAddToMyDay}
+            onComplete={onComplete}
+          />
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+function SuggestionGroup({
+  title,
+  tasks,
+  onAddToMyDay,
+  onComplete,
+}: {
+  title: string;
+  tasks: Task[];
+  onAddToMyDay: (task: Task) => void;
+  onComplete: (task: Task) => void;
+}) {
+  return (
+    <section className="lo-suggestions-group">
+      <h4>{title}</h4>
+      {tasks.length === 0 ? (
+        <p className="lo-suggestions-group__empty">No tasks</p>
+      ) : (
+        <div className="lo-suggestions-group__list">
+          {tasks.map((task) => (
+            <div key={task.id} className="lo-suggestion-row">
+              <button
+                type="button"
+                className="lo-suggestion-row__complete"
+                aria-label={`Complete ${task.title}`}
+                onClick={() => onComplete(task)}
+              >
+                <img src={COMPLETE_ICON} alt="" />
+              </button>
+
+              <span className="lo-suggestion-row__title" title={task.title}>
+                {task.title}
+              </span>
+
+              <button
+                type="button"
+                className="lo-suggestion-row__add"
+                aria-label={`Add ${task.title} to My Day`}
+                onClick={() => onAddToMyDay(task)}
+              >
+                +
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
 const BoardTaskContextMenu = React.forwardRef<
   HTMLDivElement,
   {
@@ -3451,7 +3682,7 @@ const BoardTaskContextMenu = React.forwardRef<
   ref,
 ) {
   const task = menu.task;
-  const isInMyDay = getTaskDateKey(task) === todayISO;
+  const isInMyDay = isTaskInMyDay(task, todayISO);
   const hasDueDate = !!(task.dueDate || task.plannedFor || task.plannedStart || task.plannedEnd);
 
   return (

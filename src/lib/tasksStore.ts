@@ -13,6 +13,14 @@ function nowISO() {
   return new Date().toISOString();
 }
 
+function todayDateKey() {
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, "0");
+  const dd = String(today.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 function uid(prefix = "t") {
   return `${prefix}_${crypto.randomUUID()}`;
 }
@@ -134,6 +142,7 @@ export function createTask(
     tags: partial.tags ?? parsed.tags,
     important: partial.important ?? false,
     focus: partial.focus ?? parsed.focus,
+    myDay: partial.myDay ?? todayDateKey(),
     plannedFor: partial.plannedFor ?? parsed.plannedFor,
     sortOrder:
       partial.sortOrder ??

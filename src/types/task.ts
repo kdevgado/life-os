@@ -16,6 +16,7 @@ export type Task = {
   tags?: string[];
   important?: boolean;
   focus?: boolean;
+  myDay?: string;
   plannedFor?: string;
   plannedStart?: string;
   plannedEnd?: string;
