@@ -2476,6 +2476,20 @@ const REMOVE_DUE_ICON = "/icons/white/calendar-xmark.png";
 const MOVE_UP_ICON = "/icons/white/menu-burger.png";
 const PRINT_LIST_ICON = "/icons/white/notes.png";
 const SUGGESTIONS_ICON = "/icons/white/bulb.png";
+const SORT_ICON = "/icons/white/sort-alt.png";
+
+type BoardSortMode = "importance" | "due-date" | "alphabetical" | "creation-date";
+
+const BOARD_SORT_OPTIONS: Array<{
+  mode: BoardSortMode;
+  label: string;
+  icon: string;
+}> = [
+  { mode: "importance", label: "Importance", icon: PLAN_SIDEBAR_ICONS.important },
+  { mode: "due-date", label: "Due date", icon: PLAN_SIDEBAR_ICONS.planned },
+  { mode: "alphabetical", label: "Alphabetically", icon: CUSTOM_LIST_ICON },
+  { mode: "creation-date", label: "Creation date", icon: PLAN_SIDEBAR_ICONS.planned },
+];
 
 type BoardTaskMenuState = {
   task: Task;
@@ -2579,6 +2593,9 @@ function PlanTasksView({
   const [myDayCompletedOpen, setMyDayCompletedOpen] = React.useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
   const [suggestionsOpen, setSuggestionsOpen] = React.useState(false);
+  const [sortMenuOpen, setSortMenuOpen] = React.useState(false);
+  const [sortMenuClosing, setSortMenuClosing] = React.useState(false);
+  const [boardSortMode, setBoardSortMode] = React.useState<BoardSortMode>("importance");
   const [boardTaskMenu, setBoardTaskMenu] = React.useState<BoardTaskMenuState | null>(null);
   const [customListMenu, setCustomListMenu] = React.useState<CustomListMenuState | null>(null);
   const listDraftRef = React.useRef<HTMLInputElement | null>(null);
@@ -2588,7 +2605,9 @@ function PlanTasksView({
   const myDayTitleRef = React.useRef<HTMLDivElement | null>(null);
   const boardTaskMenuRef = React.useRef<HTMLDivElement | null>(null);
   const customListMenuRef = React.useRef<HTMLDivElement | null>(null);
+  const sortMenuRef = React.useRef<HTMLDivElement | null>(null);
   const myDayComposerCloseTimerRef = React.useRef<number | null>(null);
+  const sortMenuCloseTimerRef = React.useRef<number | null>(null);
 
   const todayISO = isoDate(new Date());
   const yesterdayISO = React.useMemo(() => {
@@ -2626,6 +2645,11 @@ function PlanTasksView({
   const isCustomSelectedList = customLists.includes(selectedList);
   const usesCompactComposer = true;
   const showSuggestionsButton = selectedList === "my-day";
+  const showSortButton =
+    selectedList === "my-day" ||
+    selectedList === "important" ||
+    selectedList === "tasks" ||
+    isCustomSelectedList;
 
   React.useEffect(() => {
     if (!editingListHeading) return;
@@ -2679,6 +2703,9 @@ function PlanTasksView({
     return () => {
       if (myDayComposerCloseTimerRef.current) {
         window.clearTimeout(myDayComposerCloseTimerRef.current);
+      }
+      if (sortMenuCloseTimerRef.current) {
+        window.clearTimeout(sortMenuCloseTimerRef.current);
       }
     };
   }, []);
@@ -2748,6 +2775,30 @@ function PlanTasksView({
   }, [customListMenu]);
 
   React.useEffect(() => {
+    if (!sortMenuOpen) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target as Node;
+      if (sortMenuRef.current?.contains(target)) return;
+      closeSortMenu();
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        closeSortMenu();
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown, true);
+    window.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown, true);
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [sortMenuOpen]);
+
+  React.useEffect(() => {
     const el = myDayTitleRef.current;
     if (!el || document.activeElement === el) return;
     if ((el.textContent ?? "") !== title) {
@@ -2760,8 +2811,41 @@ function PlanTasksView({
     setSuggestionsOpen(false);
   }, [showSuggestionsButton]);
 
-  const sortImportantFirst = (a: Task, b: Task) =>
-    Number(!!b.important) - Number(!!a.important);
+  React.useEffect(() => {
+    if (showSortButton) return;
+    closeSortMenu();
+  }, [showSortButton]);
+
+  function compareTasksBySortMode(a: Task, b: Task) {
+    const importanceCompare = Number(!!b.important) - Number(!!a.important);
+
+    if (boardSortMode === "importance" && importanceCompare !== 0) {
+      return importanceCompare;
+    }
+
+    if (boardSortMode === "due-date") {
+      const aDate = getTaskDateKey(a) ?? "9999-12-31";
+      const bDate = getTaskDateKey(b) ?? "9999-12-31";
+      const dateCompare = aDate.localeCompare(bDate);
+      if (dateCompare !== 0) return dateCompare;
+    }
+
+    if (boardSortMode === "alphabetical") {
+      const titleCompare = a.title.localeCompare(b.title, undefined, {
+        sensitivity: "base",
+      });
+      if (titleCompare !== 0) return titleCompare;
+    }
+
+    if (boardSortMode === "creation-date") {
+      const createdCompare = b.createdAt.localeCompare(a.createdAt);
+      if (createdCompare !== 0) return createdCompare;
+    }
+
+    if (importanceCompare !== 0) return importanceCompare;
+    return b.createdAt.localeCompare(a.createdAt);
+  }
+
   const visibleTasks = tasks
     .filter((t) => {
       if (selectedList === "tasks") {
@@ -2791,7 +2875,7 @@ function PlanTasksView({
 
       return t.list === selectedList;
     })
-    .sort(sortImportantFirst);
+    .sort(compareTasksBySortMode);
   const completedBoardTasks = tasks
     .filter((t) => {
       if (selectedList === "my-day") {
@@ -2823,7 +2907,7 @@ function PlanTasksView({
 
       return false;
     })
-    .sort(sortImportantFirst);
+    .sort(compareTasksBySortMode);
   const suggestionGroups = React.useMemo(() => {
     const openTasks = tasks.filter(
       (task) => task.status !== "done" && !isTaskInMyDay(task, todayISO),
@@ -3230,6 +3314,36 @@ function PlanTasksView({
     }, 180);
   }
 
+  function openSortMenu() {
+    if (sortMenuCloseTimerRef.current) {
+      window.clearTimeout(sortMenuCloseTimerRef.current);
+      sortMenuCloseTimerRef.current = null;
+    }
+
+    setSortMenuClosing(false);
+    setSortMenuOpen(true);
+  }
+
+  function closeSortMenu() {
+    if (!sortMenuOpen || sortMenuClosing) return;
+
+    setSortMenuClosing(true);
+    sortMenuCloseTimerRef.current = window.setTimeout(() => {
+      setSortMenuOpen(false);
+      setSortMenuClosing(false);
+      sortMenuCloseTimerRef.current = null;
+    }, 150);
+  }
+
+  function toggleSortMenu() {
+    if (sortMenuOpen) {
+      closeSortMenu();
+      return;
+    }
+
+    openSortMenu();
+  }
+
   function renderSidebarButton(list: PlanListId) {
     const icon = PLAN_SIDEBAR_ICONS[list];
 
@@ -3294,6 +3408,72 @@ function PlanTasksView({
     }
 
     return <h3>{labelForList(selectedList)}</h3>;
+  }
+
+  function renderToolbarActions() {
+    if (!showSortButton && !showSuggestionsButton) {
+      return <span className="lo-plan-tasks-toolbar-spacer" aria-hidden="true" />;
+    }
+
+    return (
+      <div className="lo-plan-tasks-toolbar-actions" ref={sortMenuRef}>
+        {showSortButton ? (
+          <div className="lo-plan-sort-wrap">
+            <button
+              type="button"
+              className={`lo-plan-tasks-toolbar-action ${sortMenuOpen ? "is-active" : ""}`}
+              aria-label="Sort tasks"
+              aria-expanded={sortMenuOpen}
+              aria-haspopup="menu"
+              onClick={toggleSortMenu}
+            >
+              <img src={SORT_ICON} alt="" />
+              <span className="lo-plan-tasks-toolbar-tooltip">Sort</span>
+            </button>
+
+            {sortMenuOpen ? (
+              <div
+                className={`lo-plan-sort-menu ${sortMenuClosing ? "is-closing" : ""}`}
+                role="menu"
+              >
+                <div className="lo-plan-sort-menu__title">Sort by</div>
+                <div className="lo-task-menu__divider" />
+                <div className="lo-plan-sort-menu__content">
+                  {BOARD_SORT_OPTIONS.map((option) => (
+                    <button
+                      key={option.mode}
+                      type="button"
+                      className={`lo-plan-sort-menu__item ${boardSortMode === option.mode ? "is-active" : ""}`}
+                      role="menuitemradio"
+                      aria-checked={boardSortMode === option.mode}
+                      onClick={() => {
+                        setBoardSortMode(option.mode);
+                        closeSortMenu();
+                      }}
+                    >
+                      <img src={option.icon} alt="" />
+                      <span>{option.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        {showSuggestionsButton ? (
+          <button
+            type="button"
+            className="lo-plan-tasks-toolbar-action"
+            aria-label="Suggestions"
+            onClick={() => setSuggestionsOpen(true)}
+          >
+            <img src={SUGGESTIONS_ICON} alt="" />
+            <span className="lo-plan-tasks-toolbar-tooltip">Suggestions</span>
+          </button>
+        ) : null}
+      </div>
+    );
   }
 
   return (
@@ -3389,21 +3569,7 @@ function PlanTasksView({
                   />
                 </div>
 
-                {showSuggestionsButton ? (
-                  <button
-                    type="button"
-                    className="lo-plan-tasks-toolbar-action"
-                    aria-label="Suggestions"
-                    onClick={() => setSuggestionsOpen(true)}
-                  >
-                    <img src={SUGGESTIONS_ICON} alt="" />
-                    <span className="lo-plan-tasks-toolbar-tooltip">
-                      Suggestions
-                    </span>
-                  </button>
-                ) : (
-                  <span className="lo-plan-tasks-toolbar-spacer" aria-hidden="true" />
-                )}
+                {renderToolbarActions()}
               </div>
             </Card>
 
@@ -3489,21 +3655,7 @@ function PlanTasksView({
               />
             </div>
 
-            {showSuggestionsButton ? (
-              <button
-                type="button"
-                className="lo-plan-tasks-toolbar-action"
-                aria-label="Suggestions"
-                onClick={() => setSuggestionsOpen(true)}
-              >
-                <img src={SUGGESTIONS_ICON} alt="" />
-                <span className="lo-plan-tasks-toolbar-tooltip">
-                  Suggestions
-                </span>
-              </button>
-            ) : (
-              <span className="lo-plan-tasks-toolbar-spacer" aria-hidden="true" />
-            )}
+            {renderToolbarActions()}
           </div>
         </Card>
 

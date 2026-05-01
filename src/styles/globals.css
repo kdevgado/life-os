@@ -1118,6 +1118,11 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   align-content: start;
 }
 
+.lo-plan-tasks-main > .toolbar-card:first-child {
+  position: relative;
+  z-index: 60;
+}
+
 .lo-plan-tasks-heading {
   display: inline-flex;
   align-items: center;
@@ -1219,7 +1224,6 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
 .lo-plan-tasks-toolbar-action {
   position: relative;
-  justify-self: end;
   width: 36px;
   height: 36px;
   min-height: 36px;
@@ -1239,8 +1243,23 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   transition: background 0.16s ease, transform 0.16s ease;
 }
 
+.lo-plan-tasks-toolbar-actions {
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
+
+.lo-plan-sort-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
 .lo-plan-tasks-toolbar-action:hover,
-.lo-plan-tasks-toolbar-action:focus-visible {
+.lo-plan-tasks-toolbar-action:focus-visible,
+.lo-plan-tasks-toolbar-action.is-active {
   background: rgba(255,255,255,0.14);
   transform: translateY(-1px);
   outline: none;
@@ -1289,6 +1308,122 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   justify-self: end;
   width: 1px;
   min-height: 36px;
+}
+
+.lo-plan-sort-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 10060;
+  width: min(220px, calc(100vw - 24px));
+  padding: 8px;
+  border-radius: 10px;
+  border: 1px solid var(--shell-border);
+  background: var(--shell-surface-strong);
+  color: var(--shell-title);
+  box-shadow: var(--shell-shadow);
+  transform-origin: top right;
+  animation: loSortMenuIn 170ms ease-out both;
+}
+
+.lo-plan-sort-menu.is-closing {
+  animation: loSortMenuOut 150ms ease-in both;
+}
+
+.lo-plan-sort-menu__title {
+  padding: 6px 8px 4px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--shell-muted);
+}
+
+.lo-plan-sort-menu__content {
+  display: grid;
+  gap: 2px;
+  overflow: hidden;
+  animation: loSortContentIn 190ms ease-out both;
+}
+
+.lo-plan-sort-menu.is-closing .lo-plan-sort-menu__content {
+  animation: loSortContentOut 140ms ease-in both;
+}
+
+.lo-plan-sort-menu__item {
+  width: 100%;
+  min-height: 34px;
+  border: 0;
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: transparent;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.lo-plan-sort-menu__item:hover,
+.lo-plan-sort-menu__item.is-active {
+  background: var(--shell-btn-hover);
+}
+
+.lo-plan-sort-menu__item img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  flex: 0 0 auto;
+  opacity: 0.86;
+}
+
+@keyframes loSortMenuIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes loSortMenuOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+}
+
+@keyframes loSortContentIn {
+  from {
+    max-height: 0;
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    max-height: 180px;
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes loSortContentOut {
+  from {
+    max-height: 180px;
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    max-height: 0;
+    opacity: 0;
+    transform: translateY(-4px);
+  }
 }
 
 .lo-suggestions-shell {
@@ -1785,6 +1920,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 :root[data-theme="duna"] .lo-plan-tasks-heading img,
 :root[data-theme="duna"] .lo-plan-tasks-search img,
 :root[data-theme="duna"] .lo-plan-tasks-toolbar-action img,
+:root[data-theme="duna"] .lo-plan-sort-menu__item img,
 :root[data-theme="duna"] .lo-suggestions-panel__title img,
 :root[data-theme="duna"] .lo-suggestion-row__complete img,
 :root[data-theme="duna"] .lo-task-check img,
@@ -1823,6 +1959,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 :root[data-theme="nebula"] .lo-plan-tasks-heading img,
 :root[data-theme="nebula"] .lo-plan-tasks-search img,
 :root[data-theme="nebula"] .lo-plan-tasks-toolbar-action img,
+:root[data-theme="nebula"] .lo-plan-sort-menu__item img,
 :root[data-theme="nebula"] .lo-suggestions-panel__title img,
 :root[data-theme="nebula"] .lo-suggestion-row__complete img,
 :root[data-theme="nebula"] .lo-task-check img,
