@@ -2591,8 +2591,8 @@ function PlanTasksView({
     [discoveredCustomLists, sessionLists],
   );
   const isCustomSelectedList = customLists.includes(selectedList);
-  const usesCompactComposer =
-    selectedList === "my-day" || isCustomSelectedList;
+  const usesCompactComposer = true;
+  const showSuggestionsButton = selectedList === "my-day";
 
   React.useEffect(() => {
     if (!isCreatingList) return;
@@ -2705,21 +2705,35 @@ function PlanTasksView({
     }
   }, [title]);
 
+  React.useEffect(() => {
+    if (showSuggestionsButton) return;
+    setSuggestionsOpen(false);
+  }, [showSuggestionsButton]);
+
   const sortImportantFirst = (a: Task, b: Task) =>
     Number(!!b.important) - Number(!!a.important);
   const visibleTasks = tasks
     .filter((t) => {
       if (selectedList === "tasks") {
-        return (t.list ?? "tasks") === "tasks" || (t.list ?? "inbox") === "inbox";
+        return (
+          ((t.list ?? "tasks") === "tasks" || (t.list ?? "inbox") === "inbox") &&
+          t.status !== "done"
+        );
       }
 
       if (selectedList === "my-day") {
         return isTaskInMyDay(t, todayISO) && t.status !== "done";
       }
 
-      if (selectedList === "important") return !!t.important;
-      if (selectedList === "planned") return !!getTaskDateKey(t);
-      if (selectedList === "assigned") return false;
+      if (selectedList === "important") {
+        return !!t.important && t.status !== "done";
+      }
+      if (selectedList === "planned") {
+        return !!getTaskDateKey(t) && t.status !== "done";
+      }
+      if (selectedList === "assigned") {
+        return t.list === "assigned" && t.status !== "done";
+      }
 
       if (isCustomSelectedList) {
         return t.list === selectedList && t.status !== "done";
@@ -2732,6 +2746,25 @@ function PlanTasksView({
     .filter((t) => {
       if (selectedList === "my-day") {
         return isTaskInMyDay(t, todayISO) && t.status === "done";
+      }
+
+      if (selectedList === "tasks") {
+        return (
+          ((t.list ?? "tasks") === "tasks" || (t.list ?? "inbox") === "inbox") &&
+          t.status === "done"
+        );
+      }
+
+      if (selectedList === "important") {
+        return !!t.important && t.status === "done";
+      }
+
+      if (selectedList === "planned") {
+        return !!getTaskDateKey(t) && t.status === "done";
+      }
+
+      if (selectedList === "assigned") {
+        return t.list === "assigned" && t.status === "done";
       }
 
       if (isCustomSelectedList) {
@@ -2770,15 +2803,14 @@ function PlanTasksView({
       ),
     };
   }, [tasks, todayISO, yesterdayISO, recentSinceISO]);
-  const canAddToSelectedList = canAdd && selectedList !== "assigned";
+  const canAddToSelectedList = canAdd;
 
   function addCurrentTask() {
-    if (selectedList === "assigned") return;
-
     const forcedList =
       selectedList === "my-day" ||
       selectedList === "important" ||
-      selectedList === "planned"
+      selectedList === "planned" ||
+      selectedList === "tasks"
         ? "tasks"
         : selectedList;
     const extraPatch: Partial<Task> = {};
@@ -2789,6 +2821,11 @@ function PlanTasksView({
 
     if (selectedList === "important") {
       extraPatch.important = true;
+    }
+
+    if (selectedList === "planned") {
+      extraPatch.dueDate = todayISO;
+      extraPatch.plannedFor = todayISO;
     }
 
     onAdd(forcedList, extraPatch);
@@ -3197,14 +3234,18 @@ function PlanTasksView({
                   />
                 </div>
 
-                <button
-                  type="button"
-                  className="lo-plan-tasks-toolbar-action"
-                  onClick={() => setSuggestionsOpen(true)}
-                >
-                  <img src={SUGGESTIONS_ICON} alt="" />
-                  <span>Suggestions</span>
-                </button>
+                {showSuggestionsButton ? (
+                  <button
+                    type="button"
+                    className="lo-plan-tasks-toolbar-action"
+                    onClick={() => setSuggestionsOpen(true)}
+                  >
+                    <img src={SUGGESTIONS_ICON} alt="" />
+                    <span>Suggestions</span>
+                  </button>
+                ) : (
+                  <span className="lo-plan-tasks-toolbar-spacer" aria-hidden="true" />
+                )}
               </div>
             </Card>
 
@@ -3290,14 +3331,18 @@ function PlanTasksView({
               />
             </div>
 
-            <button
-              type="button"
-              className="lo-plan-tasks-toolbar-action"
-              onClick={() => setSuggestionsOpen(true)}
-            >
-              <img src={SUGGESTIONS_ICON} alt="" />
-              <span>Suggestions</span>
-            </button>
+            {showSuggestionsButton ? (
+              <button
+                type="button"
+                className="lo-plan-tasks-toolbar-action"
+                onClick={() => setSuggestionsOpen(true)}
+              >
+                <img src={SUGGESTIONS_ICON} alt="" />
+                <span>Suggestions</span>
+              </button>
+            ) : (
+              <span className="lo-plan-tasks-toolbar-spacer" aria-hidden="true" />
+            )}
           </div>
         </Card>
 
@@ -3441,7 +3486,7 @@ function PlanTasksView({
             document.body,
           )
         : null}
-      {suggestionsOpen
+      {suggestionsOpen && showSuggestionsButton
         ? createPortal(
             <SuggestionsPanel
               groups={suggestionGroups}

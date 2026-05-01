@@ -1138,6 +1138,12 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   flex: 0 0 auto;
 }
 
+.lo-plan-tasks-toolbar-spacer {
+  justify-self: end;
+  width: 1px;
+  min-height: 36px;
+}
+
 .lo-suggestions-shell {
   position: fixed;
   inset: 0;
