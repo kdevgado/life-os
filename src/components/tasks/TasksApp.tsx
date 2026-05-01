@@ -823,6 +823,39 @@ export default function TasksApp({
     window.setTimeout(() => setJustAddedId(null), 1600);
   }
 
+  function onDuplicateTaskList(sourceList: string, newList: string) {
+    const now = new Date().toISOString();
+    const sourceTasks = tasks.filter((task) => task.list === sourceList);
+    if (sourceTasks.length === 0) return;
+
+    const highestSortOrder = tasks.length
+      ? Math.max(...tasks.map((task) => task.sortOrder ?? 0))
+      : 0;
+
+    const copies = sourceTasks.map((task, index): Task => ({
+      ...task,
+      id: crypto.randomUUID(),
+      list: newList,
+      sortOrder: highestSortOrder + index + 1,
+      createdAt: now,
+      updatedAt: now,
+    }));
+
+    setTasks((prev) => [...copies, ...prev]);
+    setJustAddedId(copies[0]?.id ?? null);
+    window.setTimeout(() => setJustAddedId(null), 1600);
+  }
+
+  function onDeleteTaskList(list: string) {
+    if (!authed) {
+      tasks
+        .filter((task) => task.list === list)
+        .forEach((task) => deleteTask(task.id));
+    }
+
+    setTasks((prev) => prev.filter((task) => task.list !== list));
+  }
+
   function onRemove(task: Task) {
     if (!authed) deleteTask(task.id);
     setTasks((prev) => prev.filter((t) => t.id !== task.id));
@@ -1621,6 +1654,8 @@ export default function TasksApp({
           onSetStatus={onSetStatus}
           onMoveTaskToList={onMoveTaskToList}
           onCopyTaskToList={onCopyTaskToList}
+          onDuplicateTaskList={onDuplicateTaskList}
+          onDeleteTaskList={onDeleteTaskList}
         />
       )}
       {contextMenu && (
@@ -2375,9 +2410,17 @@ const CUSTOM_LIST_ICON = "/icons/white/list.png";
 const COMPLETE_ICON = "/icons/white/circle.png";
 const DELETE_ICON = "/icons/white/trash-xmark.png";
 const REMOVE_DUE_ICON = "/icons/white/calendar-xmark.png";
+const MOVE_UP_ICON = "/icons/white/menu-burger.png";
+const PRINT_LIST_ICON = "/icons/white/notes.png";
 
 type BoardTaskMenuState = {
   task: Task;
+  x: number;
+  y: number;
+};
+
+type CustomListMenuState = {
+  list: string;
   x: number;
   y: number;
 };
@@ -2420,6 +2463,8 @@ function PlanTasksView({
   onSetStatus,
   onMoveTaskToList,
   onCopyTaskToList,
+  onDuplicateTaskList,
+  onDeleteTaskList,
 }: {
   query: string;
   setQuery: (value: string) => void;
@@ -2449,6 +2494,8 @@ function PlanTasksView({
     extraPatch?: Partial<Task>,
   ) => void;
   onCopyTaskToList: (task: Task, list: string) => void;
+  onDuplicateTaskList: (sourceList: string, newList: string) => void;
+  onDeleteTaskList: (list: string) => void;
 }) {
   const [selectedList, setSelectedList] = React.useState<PlanListId>("my-day");
   const [listDraft, setListDraft] = React.useState("");
@@ -2459,29 +2506,37 @@ function PlanTasksView({
   const [myDayCompletedOpen, setMyDayCompletedOpen] = React.useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
   const [boardTaskMenu, setBoardTaskMenu] = React.useState<BoardTaskMenuState | null>(null);
+  const [customListMenu, setCustomListMenu] = React.useState<CustomListMenuState | null>(null);
   const listDraftRef = React.useRef<HTMLInputElement | null>(null);
   const newListWrapRef = React.useRef<HTMLDivElement | null>(null);
   const myDayComposerRef = React.useRef<HTMLDivElement | null>(null);
   const myDayTitleRef = React.useRef<HTMLDivElement | null>(null);
   const boardTaskMenuRef = React.useRef<HTMLDivElement | null>(null);
+  const customListMenuRef = React.useRef<HTMLDivElement | null>(null);
   const myDayComposerCloseTimerRef = React.useRef<number | null>(null);
 
   const todayISO = isoDate(new Date());
-  const customLists = React.useMemo(
+  const discoveredCustomLists = React.useMemo(
     () =>
       Array.from(
         new Set(
-          [
-            ...sessionLists,
-            ...tasks.map((task) => task.list ?? "tasks"),
-          ].filter(
-            (list) =>
-              !["inbox", "tasks", "focus"].includes(list) &&
-              !["my-day", "important", "planned", "assigned"].includes(list),
-          ),
+          tasks
+            .map((task) => task.list ?? "tasks")
+            .filter(
+              (list) =>
+                !["inbox", "tasks", "focus"].includes(list) &&
+                !["my-day", "important", "planned", "assigned"].includes(list),
+            ),
         ),
       ).sort((a, b) => labelForList(a).localeCompare(labelForList(b))),
-    [sessionLists, tasks],
+    [tasks],
+  );
+  const customLists = React.useMemo(
+    () => [
+      ...sessionLists,
+      ...discoveredCustomLists.filter((list) => !sessionLists.includes(list)),
+    ],
+    [discoveredCustomLists, sessionLists],
   );
   const isCustomSelectedList = customLists.includes(selectedList);
   const usesCompactComposer =
@@ -2557,6 +2612,38 @@ function PlanTasksView({
       window.removeEventListener("scroll", handleViewportChange, true);
     };
   }, [boardTaskMenu]);
+
+  React.useEffect(() => {
+    if (!customListMenu) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target as Node;
+      if (customListMenuRef.current?.contains(target)) return;
+      setCustomListMenu(null);
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setCustomListMenu(null);
+      }
+    }
+
+    function handleViewportChange() {
+      setCustomListMenu(null);
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown, true);
+    window.addEventListener("keydown", handleEscape);
+    window.addEventListener("resize", handleViewportChange);
+    window.addEventListener("scroll", handleViewportChange, true);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown, true);
+      window.removeEventListener("keydown", handleEscape);
+      window.removeEventListener("resize", handleViewportChange);
+      window.removeEventListener("scroll", handleViewportChange, true);
+    };
+  }, [customListMenu]);
 
   React.useEffect(() => {
     const el = myDayTitleRef.current;
@@ -2672,13 +2759,134 @@ function PlanTasksView({
     setBoardTaskMenu({ task, x, y });
   }
 
+  function openCustomListMenu(event: React.MouseEvent, list: string) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const menuWidth = 210;
+    const menuHeight = 210;
+    const padding = 8;
+    const x = Math.min(
+      Math.max(padding, event.clientX + 6),
+      window.innerWidth - menuWidth - padding,
+    );
+    const y = Math.min(
+      Math.max(padding, event.clientY + 6),
+      window.innerHeight - menuHeight - padding,
+    );
+
+    setCustomListMenu({ list, x, y });
+  }
+
   function closeBoardTaskMenu() {
     setBoardTaskMenu(null);
+  }
+
+  function closeCustomListMenu() {
+    setCustomListMenu(null);
   }
 
   function runBoardTaskAction(action: () => void) {
     action();
     closeBoardTaskMenu();
+  }
+
+  function runCustomListAction(action: () => void) {
+    action();
+    closeCustomListMenu();
+  }
+
+  function moveCustomListUp(list: string) {
+    const ordered = customLists;
+    const index = ordered.indexOf(list);
+    if (index <= 0) return;
+
+    const next = [...ordered];
+    [next[index - 1], next[index]] = [next[index], next[index - 1]];
+    setSessionLists(next);
+  }
+
+  function getDuplicateListId(list: string) {
+    const base = `${list}-copy`;
+    const used = new Set(customLists);
+    if (!used.has(base)) return base;
+
+    let index = 2;
+    while (used.has(`${base}-${index}`)) {
+      index += 1;
+    }
+
+    return `${base}-${index}`;
+  }
+
+  function duplicateCustomList(list: string) {
+    const nextList = getDuplicateListId(list);
+    setSessionLists((prev) => (prev.includes(nextList) ? prev : [...prev, nextList]));
+    onDuplicateTaskList(list, nextList);
+    setSelectedList(nextList);
+  }
+
+  function printCustomList(list: string) {
+    const title = labelForList(list);
+    const listTasks = tasks.filter((task) => task.list === list);
+    const printWindow = window.open("", "_blank", "width=720,height=900");
+    if (!printWindow) {
+      window.print();
+      return;
+    }
+
+    const escapeHtml = (value: string) =>
+      value
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+
+    printWindow.document.write(`
+      <!doctype html>
+      <html>
+        <head>
+          <title>${escapeHtml(title)}</title>
+          <style>
+            body { font-family: system-ui, sans-serif; padding: 32px; color: #111827; }
+            h1 { font-size: 24px; margin: 0 0 18px; }
+            ul { display: grid; gap: 10px; padding-left: 20px; }
+            li { line-height: 1.4; }
+            .done { text-decoration: line-through; color: #6b7280; }
+          </style>
+        </head>
+        <body>
+          <h1>${escapeHtml(title)}</h1>
+          <ul>
+            ${listTasks
+              .map(
+                (task) =>
+                  `<li class="${task.status === "done" ? "done" : ""}">${escapeHtml(task.title)}</li>`,
+              )
+              .join("")}
+          </ul>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  }
+
+  function deleteCustomList(list: string) {
+    const taskCount = tasks.filter((task) => task.list === list).length;
+    const confirmed = window.confirm(
+      `Delete "${labelForList(list)}" and its ${taskCount} task${taskCount === 1 ? "" : "s"}?`,
+    );
+
+    if (!confirmed) return;
+
+    setSessionLists((prev) => prev.filter((item) => item !== list));
+    onDeleteTaskList(list);
+
+    if (selectedList === list) {
+      setSelectedList("my-day");
+    }
   }
 
   function addOrRemoveMyDay(task: Task) {
@@ -2847,6 +3055,7 @@ function PlanTasksView({
               type="button"
               className={selectedList === list ? "is-active" : ""}
               onClick={() => setSelectedList(list)}
+              onContextMenu={(event) => openCustomListMenu(event, list)}
               title={labelForList(list)}
               aria-label={labelForList(list)}
             >
@@ -3120,9 +3329,89 @@ function PlanTasksView({
             document.body,
           )
         : null}
+      {customListMenu
+        ? createPortal(
+            <CustomListContextMenu
+              ref={customListMenuRef}
+              menu={customListMenu}
+              canMoveUp={customLists.indexOf(customListMenu.list) > 0}
+              onAction={runCustomListAction}
+              onMoveUp={moveCustomListUp}
+              onDuplicate={duplicateCustomList}
+              onPrint={printCustomList}
+              onDelete={deleteCustomList}
+            />,
+            document.body,
+          )
+        : null}
     </div>
   );
 }
+
+const CustomListContextMenu = React.forwardRef<
+  HTMLDivElement,
+  {
+    menu: CustomListMenuState;
+    canMoveUp: boolean;
+    onAction: (action: () => void) => void;
+    onMoveUp: (list: string) => void;
+    onDuplicate: (list: string) => void;
+    onPrint: (list: string) => void;
+    onDelete: (list: string) => void;
+  }
+>(function CustomListContextMenu(
+  {
+    menu,
+    canMoveUp,
+    onAction,
+    onMoveUp,
+    onDuplicate,
+    onPrint,
+    onDelete,
+  },
+  ref,
+) {
+  return (
+    <div
+      ref={ref}
+      className="lo-task-menu lo-custom-list-menu"
+      role="menu"
+      style={{
+        position: "fixed",
+        top: menu.y,
+        left: menu.x,
+      }}
+      onClick={(event) => event.stopPropagation()}
+      onContextMenu={(event) => event.preventDefault()}
+    >
+      <BoardMenuButton
+        icon={MOVE_UP_ICON}
+        label="Move up"
+        disabled={!canMoveUp}
+        onClick={() => onAction(() => onMoveUp(menu.list))}
+      />
+      <BoardMenuButton
+        icon={CUSTOM_LIST_ICON}
+        label="Duplicate list"
+        onClick={() => onAction(() => onDuplicate(menu.list))}
+      />
+      <BoardMenuButton
+        icon={PRINT_LIST_ICON}
+        label="Print list"
+        onClick={() => onAction(() => onPrint(menu.list))}
+      />
+
+      <div className="lo-task-menu__divider" />
+
+      <BoardMenuButton
+        icon={DELETE_ICON}
+        label="Delete list"
+        isDanger
+        onClick={() => onAction(() => onDelete(menu.list))}
+      />
+    </div>
+  );
+});
 
 const BoardTaskContextMenu = React.forwardRef<
   HTMLDivElement,
@@ -3254,11 +3543,13 @@ function BoardMenuButton({
   icon,
   label,
   isDanger = false,
+  disabled = false,
   onClick,
 }: {
   icon: string;
   label: string;
   isDanger?: boolean;
+  disabled?: boolean;
   onClick: () => void;
 }) {
   return (
@@ -3266,6 +3557,7 @@ function BoardMenuButton({
       type="button"
       className={`lo-task-menu__item ${isDanger ? "is-danger" : ""}`}
       role="menuitem"
+      disabled={disabled}
       onClick={onClick}
     >
       <img className="lo-task-menu__icon" src={icon} alt="" />

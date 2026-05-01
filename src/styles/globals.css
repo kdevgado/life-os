@@ -1683,6 +1683,10 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   overflow: visible;
 }
 
+.lo-custom-list-menu {
+  width: min(210px, calc(100vw - 16px));
+}
+
 .lo-task-menu__item {
   width: 100%;
   border: 0;
@@ -1700,6 +1704,15 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
 .lo-task-menu__item:hover {
   background: var(--shell-btn-hover);
+}
+
+.lo-task-menu__item:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.lo-task-menu__item:disabled:hover {
+  background: transparent;
 }
 
 .lo-task-menu__item.is-danger {
