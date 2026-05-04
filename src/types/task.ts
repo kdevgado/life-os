@@ -20,5 +20,6 @@ export type Task = {
   plannedFor?: string;
   plannedStart?: string;
   plannedEnd?: string;
+  reminderAt?: string;
   sortOrder?: number;
 };

@@ -1835,6 +1835,10 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   position: relative;
 }
 
+.lo-task-details-reminder-wrap {
+  position: relative;
+}
+
 .lo-task-details-divider {
   height: 1px;
   background: var(--shell-border);
@@ -1846,6 +1850,23 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   left: 12px;
   right: 12px;
   z-index: 2;
+  padding: 8px;
+  border-radius: 10px;
+  background: var(--shell-surface-strong);
+  color: var(--shell-text);
+  border: 1px solid var(--shell-border);
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.18);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  animation: loSuggestionsContentIn 160ms ease both;
+}
+
+.lo-task-details-reminder-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 12px;
+  right: 12px;
+  z-index: 3;
   padding: 8px;
   border-radius: 10px;
   background: var(--shell-surface-strong);
@@ -1911,6 +1932,77 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   background: var(--shell-surface-soft);
   color: var(--shell-title);
   font: inherit;
+  outline: none;
+}
+
+.lo-task-details-reminder-picker {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px;
+  border-radius: 10px;
+  background: var(--shell-surface-strong);
+  color: var(--shell-text);
+  border: 1px solid var(--shell-border);
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.14);
+  animation: loSuggestionsContentIn 160ms ease both;
+}
+
+.lo-task-details-reminder-picker__date {
+  width: calc(100% - 20px);
+  min-height: 38px;
+  margin: 0 10px 8px;
+  border: 1px solid var(--shell-border);
+  border-radius: 8px;
+  padding: 0 10px;
+  box-sizing: border-box;
+  background: var(--shell-surface-soft);
+  color: var(--shell-title);
+  font: inherit;
+  outline: none;
+}
+
+.lo-task-details-reminder-picker__times {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  padding: 0 10px 10px;
+}
+
+.lo-task-details-reminder-picker__times button {
+  min-height: 34px;
+  border: 1px solid var(--shell-border);
+  border-radius: 8px;
+  background: var(--shell-surface-soft);
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.lo-task-details-reminder-picker__times button:hover,
+.lo-task-details-reminder-picker__times button:focus-visible,
+.lo-task-details-reminder-picker__times button.is-active {
+  background: var(--shell-btn-hover);
+  outline: none;
+}
+
+.lo-task-details-reminder-picker__save {
+  width: calc(100% - 20px);
+  min-height: 38px;
+  margin: 0 10px 2px;
+  border: 0;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--grad1) 78%, transparent);
+  color: white;
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.lo-task-details-reminder-picker__save:hover,
+.lo-task-details-reminder-picker__save:focus-visible {
+  filter: brightness(1.06);
   outline: none;
 }
 

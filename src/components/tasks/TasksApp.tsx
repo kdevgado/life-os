@@ -3277,6 +3277,10 @@ function PlanTasksView({
     setBoardTaskDue(task, date);
   }
 
+  function updateTaskReminder(task: Task, reminderAt: string) {
+    onUpdateTask(task, { reminderAt });
+  }
+
   function toggleTaskTag(task: Task) {
     const tags = task.tags ?? [];
     const nextTags = tags.includes("tagged")
@@ -3670,8 +3674,12 @@ function PlanTasksView({
                       <button type="button" title="Due date" aria-label="Due date">
                         <img src="/icons/white/calendar.png" alt="" />
                       </button>
-                      <button type="button">Alarm</button>
-                      <button type="button">Repeat</button>
+                      <button type="button" title="Remind me" aria-label="Remind me">
+                        <img src="/icons/white/alarm.png" alt="" />
+                      </button>
+                      <button type="button" title="Repeat" aria-label="Repeat">
+                        <img src="/icons/white/repeat.png" alt="" />
+                      </button>
                     </div>
 
                     <Button onClick={submitMyDayTask} disabled={!canAddToSelectedList}>
@@ -3871,6 +3879,7 @@ function PlanTasksView({
               onToggleMyDay={addOrRemoveMyDay}
               onUpdateTitle={updateTaskTitle}
               onUpdateDueDate={updateTaskDueDate}
+              onUpdateReminder={updateTaskReminder}
               onUpdateNotes={updateTaskNotes}
               onToggleTag={toggleTaskTag}
               onDelete={(task) => {
@@ -4035,6 +4044,35 @@ function formatCreatedDate(iso: string) {
   })}`;
 }
 
+function nextWholeHour(from = new Date()) {
+  const date = new Date(from);
+  date.setHours(date.getHours() + 1, 0, 0, 0);
+  return date;
+}
+
+function atHourFromToday(daysFromToday: number, hour: number) {
+  const date = new Date();
+  date.setDate(date.getDate() + daysFromToday);
+  date.setHours(hour, 0, 0, 0);
+  return date;
+}
+
+function formatReminderTime(date: Date) {
+  return date.toLocaleDateString(undefined, {
+    weekday: "short",
+  }) + `, ${date.toLocaleTimeString(undefined, {
+    hour: "numeric",
+  }).replace(":00", "")}`;
+}
+
+function dateInputValue(date: Date) {
+  return isoDate(date);
+}
+
+function timeInputValue(date: Date) {
+  return `${String(date.getHours()).padStart(2, "0")}:00`;
+}
+
 function TaskDetailsPanel({
   task,
   todayISO,
@@ -4044,6 +4082,7 @@ function TaskDetailsPanel({
   onToggleMyDay,
   onUpdateTitle,
   onUpdateDueDate,
+  onUpdateReminder,
   onUpdateNotes,
   onToggleTag,
   onDelete,
@@ -4056,6 +4095,7 @@ function TaskDetailsPanel({
   onToggleMyDay: (task: Task) => void;
   onUpdateTitle: (task: Task, title: string) => void;
   onUpdateDueDate: (task: Task, date: string) => void;
+  onUpdateReminder: (task: Task, reminderAt: string) => void;
   onUpdateNotes: (task: Task, notes: string) => void;
   onToggleTag: (task: Task) => void;
   onDelete: (task: Task) => void;
@@ -4063,8 +4103,19 @@ function TaskDetailsPanel({
   const [titleDraft, setTitleDraft] = React.useState(task.title);
   const [dueMenuOpen, setDueMenuOpen] = React.useState(false);
   const [showDatePicker, setShowDatePicker] = React.useState(false);
+  const [reminderMenuOpen, setReminderMenuOpen] = React.useState(false);
+  const [reminderPickerOpen, setReminderPickerOpen] = React.useState(false);
+  const defaultReminder = React.useMemo(() => nextWholeHour(), []);
+  const [customReminderDate, setCustomReminderDate] = React.useState(() =>
+    dateInputValue(defaultReminder),
+  );
+  const [customReminderTime, setCustomReminderTime] = React.useState(() =>
+    timeInputValue(defaultReminder),
+  );
   const titleTextareaRef = React.useRef<HTMLTextAreaElement | null>(null);
   const dueMenuRef = React.useRef<HTMLDivElement | null>(null);
+  const reminderMenuRef = React.useRef<HTMLDivElement | null>(null);
+  const reminderPickerRef = React.useRef<HTMLDivElement | null>(null);
   const isInMyDay = isTaskInMyDay(task, todayISO);
   const dueDate = getTaskDateKey(task) ?? "";
   const hasTag = (task.tags ?? []).includes("tagged");
@@ -4076,6 +4127,26 @@ function TaskDetailsPanel({
     [],
   );
   const todayLabel = weekdayLabel(new Date());
+  const laterTodayReminder = React.useMemo(() => nextWholeHour(), []);
+  const tomorrowReminder = React.useMemo(() => atHourFromToday(1, 9), []);
+  const nextWeekReminder = React.useMemo(() => atHourFromToday(7, 9), []);
+  const reminderHours = React.useMemo(
+    () =>
+      Array.from({ length: 12 }, (_, index) => {
+        const hour = index + 7;
+        const date = new Date();
+        date.setHours(hour, 0, 0, 0);
+        return {
+          value: `${String(hour).padStart(2, "0")}:00`,
+          label: date
+            .toLocaleTimeString(undefined, {
+              hour: "numeric",
+            })
+            .replace(":00", ""),
+        };
+      }),
+    [],
+  );
   const tomorrow = React.useMemo(() => {
     const date = new Date();
     date.setDate(date.getDate() + 1);
@@ -4109,6 +4180,22 @@ function TaskDetailsPanel({
   }, [dueMenuOpen]);
 
   React.useEffect(() => {
+    if (!reminderMenuOpen && !reminderPickerOpen) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target as Node;
+      if (reminderMenuRef.current?.contains(target)) return;
+      if (reminderPickerRef.current?.contains(target)) return;
+      setReminderMenuOpen(false);
+      setReminderPickerOpen(false);
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown, true);
+    return () =>
+      document.removeEventListener("pointerdown", handlePointerDown, true);
+  }, [reminderMenuOpen, reminderPickerOpen]);
+
+  React.useEffect(() => {
     setTitleDraft(task.title);
   }, [task.id, task.title]);
 
@@ -4127,18 +4214,39 @@ function TaskDetailsPanel({
         setDueMenuOpen(false);
         return;
       }
+      if (reminderMenuOpen || reminderPickerOpen) {
+        setReminderMenuOpen(false);
+        setReminderPickerOpen(false);
+        return;
+      }
 
       onClose();
     }
 
     window.addEventListener("keydown", handleEscape);
     return () => window.removeEventListener("keydown", handleEscape);
-  }, [dueMenuOpen, onClose]);
+  }, [dueMenuOpen, reminderMenuOpen, reminderPickerOpen, onClose]);
 
   function chooseDueDate(date: string) {
     onUpdateDueDate(task, date);
     setDueMenuOpen(false);
     setShowDatePicker(false);
+  }
+
+  function chooseReminder(date: Date) {
+    onUpdateReminder(task, date.toISOString());
+    setReminderMenuOpen(false);
+    setReminderPickerOpen(false);
+  }
+
+  function openCustomReminderPicker() {
+    setReminderMenuOpen(false);
+    setReminderPickerOpen(true);
+  }
+
+  function saveCustomReminder() {
+    if (!customReminderDate || !customReminderTime) return;
+    chooseReminder(new Date(`${customReminderDate}T${customReminderTime}:00`));
   }
 
   return (
@@ -4222,10 +4330,65 @@ function TaskDetailsPanel({
           </div>
 
           <div className="lo-task-details-card">
-            <button type="button" className="lo-task-details-action">
-              <img src="/icons/white/alarm.png" alt="" />
-              <span>Remind me</span>
-            </button>
+            <div className="lo-task-details-reminder-wrap" ref={reminderMenuRef}>
+              <button
+                type="button"
+                className="lo-task-details-action"
+                onClick={() => setReminderMenuOpen((open) => !open)}
+                aria-expanded={reminderMenuOpen}
+                aria-haspopup="menu"
+              >
+                <img src="/icons/white/alarm.png" alt="" />
+                <span>Remind me</span>
+              </button>
+
+              {reminderMenuOpen ? (
+                <div className="lo-task-details-reminder-menu" role="menu">
+                  <div className="lo-task-details-due-menu__title">Reminder</div>
+                  <div className="lo-task-details-divider" />
+                  <button
+                    type="button"
+                    className="lo-task-details-due-menu__item"
+                    role="menuitem"
+                    onClick={() => chooseReminder(laterTodayReminder)}
+                  >
+                    <img src="/icons/white/alarm.png" alt="" />
+                    <span>Later today</span>
+                    <span>{formatReminderTime(laterTodayReminder)}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="lo-task-details-due-menu__item"
+                    role="menuitem"
+                    onClick={() => chooseReminder(tomorrowReminder)}
+                  >
+                    <img src={PLAN_SIDEBAR_ICONS.planned} alt="" />
+                    <span>Tomorrow</span>
+                    <span>{formatReminderTime(tomorrowReminder)}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="lo-task-details-due-menu__item"
+                    role="menuitem"
+                    onClick={() => chooseReminder(nextWeekReminder)}
+                  >
+                    <img src="/icons/white/repeat.png" alt="" />
+                    <span>Next week</span>
+                    <span>{formatReminderTime(nextWeekReminder)}</span>
+                  </button>
+                  <div className="lo-task-details-divider" />
+                  <button
+                    type="button"
+                    className="lo-task-details-due-menu__item"
+                    role="menuitem"
+                    onClick={openCustomReminderPicker}
+                  >
+                    <img src={PLAN_SIDEBAR_ICONS.planned} alt="" />
+                    <span>Pick a Date & Time</span>
+                  </button>
+                </div>
+              ) : null}
+            </div>
 
             <div className="lo-task-details-divider" />
 
@@ -4306,6 +4469,47 @@ function TaskDetailsPanel({
               <span>Repeat</span>
             </button>
           </div>
+
+          {reminderPickerOpen ? (
+            <div
+              ref={reminderPickerRef}
+              className="lo-task-details-reminder-picker"
+              role="dialog"
+              aria-label="Pick reminder date and time"
+            >
+              <div className="lo-task-details-due-menu__title">Calendar</div>
+              <input
+                className="lo-task-details-reminder-picker__date"
+                type="date"
+                value={customReminderDate}
+                onChange={(event) => setCustomReminderDate(event.target.value)}
+                aria-label="Reminder date"
+              />
+              <div className="lo-task-details-divider" />
+              <div className="lo-task-details-due-menu__title">Time Picker</div>
+              <div className="lo-task-details-reminder-picker__times">
+                {reminderHours.map((hour) => (
+                  <button
+                    key={hour.value}
+                    type="button"
+                    className={
+                      customReminderTime === hour.value ? "is-active" : ""
+                    }
+                    onClick={() => setCustomReminderTime(hour.value)}
+                  >
+                    {hour.label}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                className="lo-task-details-reminder-picker__save"
+                onClick={saveCustomReminder}
+              >
+                Save
+              </button>
+            </div>
+          ) : null}
 
           <div className="lo-task-details-card">
             <button
