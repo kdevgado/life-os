@@ -975,6 +975,68 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   transform: rotate(45deg) translate(-1px, -1px);
 }
 
+.lo-planned-groups {
+  display: grid;
+  gap: 12px;
+}
+
+.lo-planned-groups__divider {
+  height: 1px;
+  background: var(--shell-border, var(--border));
+  opacity: 0.9;
+}
+
+.lo-planned-group {
+  gap: 10px;
+}
+
+.lo-planned-group__toggle {
+  width: fit-content;
+  min-height: 34px;
+  border: 0;
+  border-radius: 10px;
+  padding: 6px 10px;
+  background: transparent;
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.lo-planned-group__toggle:hover,
+.lo-planned-group__toggle:focus-visible {
+  background: rgba(255,255,255,0.08);
+  color: inherit;
+  outline: none;
+}
+
+.lo-planned-group__count {
+  min-width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+
+.lo-planned-group__chevron {
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 0.14s ease;
+}
+
+.lo-planned-group__chevron.is-open {
+  transform: rotate(45deg) translate(-1px, -1px);
+}
+
 /* Plan layout */
 .lo-plan-tasks-layout {
   display: grid;
@@ -2433,11 +2495,14 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 }
 
 :root[data-theme="duna"] .lo-plan-completed__toggle:hover,
-:root[data-theme="duna"] .lo-plan-completed__toggle:focus-visible {
+:root[data-theme="duna"] .lo-plan-completed__toggle:focus-visible,
+:root[data-theme="duna"] .lo-planned-group__toggle:hover,
+:root[data-theme="duna"] .lo-planned-group__toggle:focus-visible {
   background: rgba(15, 23, 42, 0.08);
 }
 
-:root[data-theme="duna"] .lo-plan-completed__count {
+:root[data-theme="duna"] .lo-plan-completed__count,
+:root[data-theme="duna"] .lo-planned-group__count {
   background: rgba(15, 23, 42, 0.08);
 }
 
@@ -7974,6 +8039,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 .lo-plan-tasks-new-list-button,
 .lo-plan-tasks-toolbar-action,
 .lo-plan-completed__toggle,
+.lo-planned-group__toggle,
 .lo-my-day-composer__input,
 .lo-task-details-action,
 .lo-task-details-due-menu__title,

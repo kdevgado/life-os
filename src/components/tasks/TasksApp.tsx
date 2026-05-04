@@ -2508,6 +2508,8 @@ type BoardTaskMenuState = {
   y: number;
 };
 
+type PlannedSectionId = "earlier" | "today" | "later";
+
 type CustomListMenuState = {
   list: string;
   x: number;
@@ -2610,6 +2612,13 @@ function PlanTasksView({
   const [sortMenuOpen, setSortMenuOpen] = React.useState(false);
   const [sortMenuClosing, setSortMenuClosing] = React.useState(false);
   const [boardSortMode, setBoardSortMode] = React.useState<BoardSortMode>("importance");
+  const [plannedSectionsOpen, setPlannedSectionsOpen] = React.useState<
+    Record<PlannedSectionId, boolean>
+  >({
+    earlier: true,
+    today: true,
+    later: true,
+  });
   const [boardTaskMenu, setBoardTaskMenu] = React.useState<BoardTaskMenuState | null>(null);
   const [customListMenu, setCustomListMenu] = React.useState<CustomListMenuState | null>(null);
   const listDraftRef = React.useRef<HTMLInputElement | null>(null);
@@ -2890,6 +2899,27 @@ function PlanTasksView({
       return t.list === selectedList;
     })
     .sort(compareTasksBySortMode);
+  const plannedTaskGroups = React.useMemo(
+    () => ({
+      earlier: visibleTasks.filter((task) => {
+        const dateKey = getTaskDateKey(task);
+        return !!dateKey && dateKey < todayISO;
+      }),
+      today: visibleTasks.filter((task) => getTaskDateKey(task) === todayISO),
+      later: visibleTasks.filter((task) => {
+        const dateKey = getTaskDateKey(task);
+        return !!dateKey && dateKey > todayISO;
+      }),
+    }),
+    [visibleTasks, todayISO],
+  );
+  const visiblePlannedGroups = (
+    [
+      { id: "earlier", title: "Earlier", tasks: plannedTaskGroups.earlier },
+      { id: "today", title: "Today", tasks: plannedTaskGroups.today },
+      { id: "later", title: "Later", tasks: plannedTaskGroups.later },
+    ] as Array<{ id: PlannedSectionId; title: string; tasks: Task[] }>
+  ).filter((group) => group.tasks.length > 0);
   const selectedTask = selectedTaskId
     ? (tasks.find((task) => task.id === selectedTaskId) ?? null)
     : null;
@@ -3396,6 +3426,13 @@ function PlanTasksView({
     openSortMenu();
   }
 
+  function togglePlannedSection(section: PlannedSectionId) {
+    setPlannedSectionsOpen((prev) => ({
+      ...prev,
+      [section]: !prev[section],
+    }));
+  }
+
   function renderSidebarButton(list: PlanListId) {
     const icon = PLAN_SIDEBAR_ICONS[list];
 
@@ -3765,20 +3802,48 @@ function PlanTasksView({
           </>
         )}
 
-        <TaskSection
-          title={labelForList(selectedList)}
-          tasks={visibleTasks}
-          justAddedId={justAddedId}
-          onToggleDone={onToggleDone}
-          onRemove={onRemove}
-          onSetDue={onSetDue}
-          onSetPriority={onSetPriority}
-          onSetImportant={onSetImportant}
-          onOpenTaskMenu={openBoardTaskMenu}
-          onOpenTaskDetails={openTaskDetails}
-        />
+        {selectedList === "planned" ? (
+          <div className="lo-planned-groups">
+            {visiblePlannedGroups.map((group, index) => (
+              <React.Fragment key={group.id}>
+                {index > 0 ? (
+                  <div className="lo-planned-groups__divider" aria-hidden="true" />
+                ) : null}
+                <PlannedTaskGroup
+                  title={group.title}
+                  tasks={group.tasks}
+                  isOpen={plannedSectionsOpen[group.id]}
+                  justAddedId={justAddedId}
+                  onToggle={() => togglePlannedSection(group.id)}
+                  onToggleDone={onToggleDone}
+                  onRemove={onRemove}
+                  onSetDue={onSetDue}
+                  onSetPriority={onSetPriority}
+                  onSetImportant={onSetImportant}
+                  onOpenTaskMenu={openBoardTaskMenu}
+                  onOpenTaskDetails={openTaskDetails}
+                />
+              </React.Fragment>
+            ))}
+          </div>
+        ) : (
+          <TaskSection
+            title={labelForList(selectedList)}
+            tasks={visibleTasks}
+            justAddedId={justAddedId}
+            onToggleDone={onToggleDone}
+            onRemove={onRemove}
+            onSetDue={onSetDue}
+            onSetPriority={onSetPriority}
+            onSetImportant={onSetImportant}
+            onOpenTaskMenu={openBoardTaskMenu}
+            onOpenTaskDetails={openTaskDetails}
+          />
+        )}
 
-        {usesCompactComposer && completedBoardTasks.length > 0 && (
+        {usesCompactComposer &&
+          selectedList !== "planned" &&
+          completedBoardTasks.length > 0 && (
           <section className="lo-plan-completed lo-stack">
             <button
               type="button"
@@ -4872,6 +4937,68 @@ function BoardMenuGroup({
         )}
       </div>
     </div>
+  );
+}
+
+function PlannedTaskGroup({
+  title,
+  tasks,
+  isOpen,
+  justAddedId,
+  onToggle,
+  onToggleDone,
+  onRemove,
+  onSetDue,
+  onSetPriority,
+  onSetImportant,
+  onOpenTaskMenu,
+  onOpenTaskDetails,
+}: {
+  title: string;
+  tasks: Task[];
+  isOpen: boolean;
+  justAddedId: string | null;
+  onToggle: () => void;
+  onToggleDone: (task: Task) => void;
+  onRemove: (task: Task) => void;
+  onSetDue: (task: Task, dueDate: string) => void;
+  onSetPriority: (task: Task, p: Priority) => void;
+  onSetImportant: (task: Task, important: boolean) => void;
+  onOpenTaskMenu: (e: React.MouseEvent, task: Task) => void;
+  onOpenTaskDetails: (task: Task) => void;
+}) {
+  return (
+    <section className="lo-planned-group lo-stack">
+      <button
+        type="button"
+        className="lo-planned-group__toggle"
+        aria-expanded={isOpen}
+        onClick={onToggle}
+      >
+        <span>{title}</span>
+        <span className="lo-planned-group__count">{tasks.length}</span>
+        <span
+          className={`lo-planned-group__chevron ${isOpen ? "is-open" : ""}`}
+          aria-hidden="true"
+        />
+      </button>
+
+      {isOpen ? (
+        <TaskSection
+          title={title}
+          showTitle={false}
+          tasks={tasks}
+          justAddedId={justAddedId}
+          onToggleDone={onToggleDone}
+          onRemove={onRemove}
+          onSetDue={onSetDue}
+          onSetPriority={onSetPriority}
+          onSetImportant={onSetImportant}
+          onOpenTaskMenu={onOpenTaskMenu}
+          onOpenTaskDetails={onOpenTaskDetails}
+        />
+      ) : null}
+    </section>
   );
 }
 
