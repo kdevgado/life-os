@@ -4091,6 +4091,25 @@ function formatReminderDisplay(iso?: string) {
     : formatReminderTime(date);
 }
 
+function formatDueDateDisplay(dateKey?: string | null) {
+  if (!dateKey) return "";
+  const date = new Date(`${dateKey}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const today = startOfToday();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  if (isSameDate(date, today)) return "Today";
+  if (isSameDate(date, tomorrow)) return "Tomorrow";
+
+  return date.toLocaleDateString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 function dateInputValue(date: Date) {
   return isoDate(date);
 }
@@ -4146,6 +4165,7 @@ function TaskDetailsPanel({
   const dueDate = getTaskDateKey(task) ?? "";
   const hasTag = (task.tags ?? []).includes("tagged");
   const reminderLabel = formatReminderDisplay(task.reminderAt);
+  const dueDateLabel = formatDueDateDisplay(dueDate);
   const weekdayLabel = React.useCallback(
     (date: Date) =>
       date.toLocaleDateString(undefined, {
@@ -4429,13 +4449,20 @@ function TaskDetailsPanel({
             <div className="lo-task-details-due-wrap" ref={dueMenuRef}>
               <button
                 type="button"
-                className="lo-task-details-action lo-task-details-action--date"
+                className={`lo-task-details-action lo-task-details-action--date ${dueDateLabel ? "is-set" : ""}`}
                 onClick={() => setDueMenuOpen((open) => !open)}
                 aria-expanded={dueMenuOpen}
                 aria-haspopup="menu"
               >
-                <img src={PLAN_SIDEBAR_ICONS.planned} alt="" />
-                <span>{dueDate ? "Due date" : "Add due date"}</span>
+                <span
+                  className="lo-task-details-action__mask-icon"
+                  style={{
+                    WebkitMaskImage: `url(${PLAN_SIDEBAR_ICONS.planned})`,
+                    maskImage: `url(${PLAN_SIDEBAR_ICONS.planned})`,
+                  }}
+                  aria-hidden="true"
+                />
+                <span>{dueDateLabel || "Add due date"}</span>
               </button>
 
               {dueMenuOpen ? (
@@ -4880,6 +4907,7 @@ function TaskSection({
         {tasks.map((task) => {
           const isNew = task.id === justAddedId;
           const reminderLabel = formatReminderDisplay(task.reminderAt);
+          const dueDateLabel = formatDueDateDisplay(getTaskDateKey(task));
           const priorityLabel =
             task.priority === 1 ? "High" : task.priority === 2 ? "Med" : "Low";
           const priClass =
@@ -4928,10 +4956,23 @@ function TaskSection({
                   >
                     {task.title}
                   </div>
-                  {reminderLabel ? (
-                    <div className="lo-task-reminder-subtitle">
-                      <img src="/icons/white/alarm.png" alt="" />
-                      <span>{reminderLabel}</span>
+                  {dueDateLabel || reminderLabel ? (
+                    <div className="lo-task-meta-subtitle">
+                      {dueDateLabel ? (
+                        <span className="lo-task-due-subtitle">
+                          <img src={PLAN_SIDEBAR_ICONS.planned} alt="" />
+                          <span>{dueDateLabel}</span>
+                        </span>
+                      ) : null}
+                      {dueDateLabel && reminderLabel ? (
+                        <span className="lo-task-meta-subtitle__dot" aria-hidden="true" />
+                      ) : null}
+                      {reminderLabel ? (
+                        <span className="lo-task-reminder-subtitle">
+                          <img src="/icons/white/alarm.png" alt="" />
+                          <span>{reminderLabel}</span>
+                        </span>
+                      ) : null}
                     </div>
                   ) : null}
                 </div>
