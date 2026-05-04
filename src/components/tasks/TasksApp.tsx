@@ -97,6 +97,7 @@ function getCreatedDateKey(task: Task) {
 }
 
 function getMyDayDateKey(task: Task) {
+  if (task.myDay === "") return null;
   if (task.myDay) return String(task.myDay).slice(0, 10);
   return getCreatedDateKey(task);
 }
@@ -1714,6 +1715,16 @@ export default function TasksApp({
           onSetPriority={onSetPriority}
           onSetImportant={onSetImportant}
           onSetStatus={onSetStatus}
+          onUpdateTask={(task, patch) => {
+            applyTaskPatch(task, patch, {
+              broadcastUpdate:
+                "title" in patch ||
+                "dueDate" in patch ||
+                "plannedFor" in patch ||
+                "plannedStart" in patch ||
+                "plannedEnd" in patch,
+            });
+          }}
           onMoveTaskToList={onMoveTaskToList}
           onCopyTaskToList={onCopyTaskToList}
           onDuplicateTaskList={onDuplicateTaskList}
@@ -2539,6 +2550,7 @@ function PlanTasksView({
   onSetPriority,
   onSetImportant,
   onSetStatus,
+  onUpdateTask,
   onMoveTaskToList,
   onCopyTaskToList,
   onDuplicateTaskList,
@@ -2572,6 +2584,7 @@ function PlanTasksView({
   onSetPriority: (task: Task, p: Priority) => void;
   onSetImportant: (task: Task, important: boolean) => void;
   onSetStatus: (task: Task, status: "todo" | "doing" | "done") => void;
+  onUpdateTask: (task: Task, patch: Partial<Task>) => void;
   onMoveTaskToList: (
     task: Task,
     list: string,
@@ -2593,6 +2606,7 @@ function PlanTasksView({
   const [myDayCompletedOpen, setMyDayCompletedOpen] = React.useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
   const [suggestionsOpen, setSuggestionsOpen] = React.useState(false);
+  const [selectedTaskId, setSelectedTaskId] = React.useState<string | null>(null);
   const [sortMenuOpen, setSortMenuOpen] = React.useState(false);
   const [sortMenuClosing, setSortMenuClosing] = React.useState(false);
   const [boardSortMode, setBoardSortMode] = React.useState<BoardSortMode>("importance");
@@ -2876,6 +2890,9 @@ function PlanTasksView({
       return t.list === selectedList;
     })
     .sort(compareTasksBySortMode);
+  const selectedTask = selectedTaskId
+    ? (tasks.find((task) => task.id === selectedTaskId) ?? null)
+    : null;
   const completedBoardTasks = tasks
     .filter((t) => {
       if (selectedList === "my-day") {
@@ -3074,6 +3091,11 @@ function PlanTasksView({
     setBoardTaskMenu({ task, x, y });
   }
 
+  function openTaskDetails(task: Task) {
+    setSelectedTaskId(task.id);
+    setBoardTaskMenu(null);
+  }
+
   function openCustomListMenu(event: React.MouseEvent, list: string) {
     event.preventDefault();
     event.stopPropagation();
@@ -3208,11 +3230,19 @@ function PlanTasksView({
     const isInMyDay = isTaskInMyDay(task, todayISO);
 
     if (isInMyDay) {
-      onSetTaskSchedule(task, { myDay: undefined });
+      onSetTaskSchedule(task, { myDay: "" });
       return;
     }
 
     onSetTaskSchedule(task, { myDay: todayISO });
+  }
+
+  function updateTaskNotes(task: Task, notes: string) {
+    onUpdateTask(task, { notes });
+  }
+
+  function updateTaskTitle(task: Task, title: string) {
+    onUpdateTask(task, { title: title.trim() || task.title });
   }
 
   function addTaskToMyDay(task: Task) {
@@ -3236,6 +3266,24 @@ function PlanTasksView({
       plannedStart: undefined,
       plannedEnd: undefined,
     });
+  }
+
+  function updateTaskDueDate(task: Task, date: string) {
+    if (!date) {
+      removeBoardTaskDue(task);
+      return;
+    }
+
+    setBoardTaskDue(task, date);
+  }
+
+  function toggleTaskTag(task: Task) {
+    const tags = task.tags ?? [];
+    const nextTags = tags.includes("tagged")
+      ? tags.filter((tag) => tag !== "tagged")
+      : [...tags, "tagged"];
+
+    onUpdateTask(task, { tags: nextTags });
   }
 
   function createListFromTask(task: Task) {
@@ -3719,6 +3767,7 @@ function PlanTasksView({
           onSetPriority={onSetPriority}
           onSetImportant={onSetImportant}
           onOpenTaskMenu={openBoardTaskMenu}
+          onOpenTaskDetails={openTaskDetails}
         />
 
         {usesCompactComposer && completedBoardTasks.length > 0 && (
@@ -3751,6 +3800,7 @@ function PlanTasksView({
                 onSetPriority={onSetPriority}
                 onSetImportant={onSetImportant}
                 onOpenTaskMenu={openBoardTaskMenu}
+                onOpenTaskDetails={openTaskDetails}
               />
             )}
           </section>
@@ -3806,6 +3856,27 @@ function PlanTasksView({
               onClose={() => setSuggestionsOpen(false)}
               onAddToMyDay={addTaskToMyDay}
               onComplete={(task) => onSetStatus(task, "done")}
+            />,
+            document.body,
+          )
+        : null}
+      {selectedTask
+        ? createPortal(
+            <TaskDetailsPanel
+              task={selectedTask}
+              todayISO={todayISO}
+              onClose={() => setSelectedTaskId(null)}
+              onToggleDone={onToggleDone}
+              onToggleImportant={(task) => onSetImportant(task, !task.important)}
+              onToggleMyDay={addOrRemoveMyDay}
+              onUpdateTitle={updateTaskTitle}
+              onUpdateDueDate={updateTaskDueDate}
+              onUpdateNotes={updateTaskNotes}
+              onToggleTag={toggleTaskTag}
+              onDelete={(task) => {
+                onRemove(task);
+                setSelectedTaskId(null);
+              }}
             />,
             document.body,
           )
@@ -3948,6 +4019,346 @@ function SuggestionsPanel({
             onComplete={onComplete}
           />
         </div>
+      </aside>
+    </div>
+  );
+}
+
+function formatCreatedDate(iso: string) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "Created on unknown date";
+
+  return `Created on ${date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  })}`;
+}
+
+function TaskDetailsPanel({
+  task,
+  todayISO,
+  onClose,
+  onToggleDone,
+  onToggleImportant,
+  onToggleMyDay,
+  onUpdateTitle,
+  onUpdateDueDate,
+  onUpdateNotes,
+  onToggleTag,
+  onDelete,
+}: {
+  task: Task;
+  todayISO: string;
+  onClose: () => void;
+  onToggleDone: (task: Task) => void;
+  onToggleImportant: (task: Task) => void;
+  onToggleMyDay: (task: Task) => void;
+  onUpdateTitle: (task: Task, title: string) => void;
+  onUpdateDueDate: (task: Task, date: string) => void;
+  onUpdateNotes: (task: Task, notes: string) => void;
+  onToggleTag: (task: Task) => void;
+  onDelete: (task: Task) => void;
+}) {
+  const [titleDraft, setTitleDraft] = React.useState(task.title);
+  const [dueMenuOpen, setDueMenuOpen] = React.useState(false);
+  const [showDatePicker, setShowDatePicker] = React.useState(false);
+  const titleTextareaRef = React.useRef<HTMLTextAreaElement | null>(null);
+  const dueMenuRef = React.useRef<HTMLDivElement | null>(null);
+  const isInMyDay = isTaskInMyDay(task, todayISO);
+  const dueDate = getTaskDateKey(task) ?? "";
+  const hasTag = (task.tags ?? []).includes("tagged");
+  const weekdayLabel = React.useCallback(
+    (date: Date) =>
+      date.toLocaleDateString(undefined, {
+        weekday: "short",
+      }),
+    [],
+  );
+  const todayLabel = weekdayLabel(new Date());
+  const tomorrow = React.useMemo(() => {
+    const date = new Date();
+    date.setDate(date.getDate() + 1);
+    return {
+      date: isoDate(date),
+      label: weekdayLabel(date),
+    };
+  }, [weekdayLabel]);
+  const nextWeek = React.useMemo(() => {
+    const date = new Date();
+    date.setDate(date.getDate() + 7);
+    return {
+      date: isoDate(date),
+      label: weekdayLabel(date),
+    };
+  }, [weekdayLabel]);
+
+  React.useEffect(() => {
+    if (!dueMenuOpen) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target as Node;
+      if (dueMenuRef.current?.contains(target)) return;
+      setDueMenuOpen(false);
+      setShowDatePicker(false);
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown, true);
+    return () =>
+      document.removeEventListener("pointerdown", handlePointerDown, true);
+  }, [dueMenuOpen]);
+
+  React.useEffect(() => {
+    setTitleDraft(task.title);
+  }, [task.id, task.title]);
+
+  React.useEffect(() => {
+    const textarea = titleTextareaRef.current;
+    if (!textarea) return;
+
+    textarea.style.height = "0px";
+    textarea.style.height = `${textarea.scrollHeight}px`;
+  }, [titleDraft]);
+
+  React.useEffect(() => {
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      if (dueMenuOpen) {
+        setDueMenuOpen(false);
+        return;
+      }
+
+      onClose();
+    }
+
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [dueMenuOpen, onClose]);
+
+  function chooseDueDate(date: string) {
+    onUpdateDueDate(task, date);
+    setDueMenuOpen(false);
+    setShowDatePicker(false);
+  }
+
+  return (
+    <div
+      className="lo-task-details-shell"
+      role="dialog"
+      aria-label="Task details"
+    >
+      <button
+        type="button"
+        className="lo-task-details-backdrop"
+        aria-label="Close task details"
+        onClick={onClose}
+      />
+
+      <aside className="lo-task-details-panel">
+        <div className="lo-task-details-panel__body">
+          <div className="lo-task-details-card">
+            <div className="lo-task-details-panel__top">
+            <button
+              type="button"
+              className={`lo-task-check lo-task-details-panel__check ${task.status === "done" ? "is-checked" : ""}`}
+              onClick={() => onToggleDone(task)}
+              aria-pressed={task.status === "done"}
+              aria-label={task.status === "done" ? "Mark not done" : "Mark done"}
+            >
+              <img src="/icons/white/circle.png" alt="" />
+            </button>
+
+            <textarea
+              ref={titleTextareaRef}
+              className={`lo-task-details-panel__title ${task.status === "done" ? "is-done" : ""}`}
+              value={titleDraft}
+              onChange={(event) => setTitleDraft(event.target.value)}
+              onBlur={() => onUpdateTitle(task, titleDraft)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  event.currentTarget.blur();
+                }
+              }}
+              rows={2}
+              aria-label="Task name"
+            />
+
+            <button
+              type="button"
+              className={`lo-task-important lo-task-details-panel__important ${task.important ? "is-active" : ""}`}
+              onClick={() => onToggleImportant(task)}
+              aria-label={task.important ? "Remove from Important" : "Mark important"}
+              title={task.important ? "Remove from Important" : "Mark important"}
+            >
+              <img
+                src={
+                  task.important
+                    ? "/icons/white/star-filled.png"
+                    : "/icons/white/star.png"
+                }
+                alt=""
+              />
+            </button>
+            </div>
+          </div>
+
+          <div className="lo-task-details-card">
+            <button
+              type="button"
+              className={`lo-task-details-action lo-task-details-action--my-day ${isInMyDay ? "is-added" : ""}`}
+              onClick={() => onToggleMyDay(task)}
+            >
+              <span
+                className="lo-task-details-action__mask-icon"
+                style={{
+                  WebkitMaskImage: `url(${PLAN_SIDEBAR_ICONS["my-day"]})`,
+                  maskImage: `url(${PLAN_SIDEBAR_ICONS["my-day"]})`,
+                }}
+                aria-hidden="true"
+              />
+              <span>{isInMyDay ? "Added to My Day" : "Add to My Day"}</span>
+            </button>
+          </div>
+
+          <div className="lo-task-details-card">
+            <button type="button" className="lo-task-details-action">
+              <img src="/icons/white/alarm.png" alt="" />
+              <span>Remind me</span>
+            </button>
+
+            <div className="lo-task-details-divider" />
+
+            <div className="lo-task-details-due-wrap" ref={dueMenuRef}>
+              <button
+                type="button"
+                className="lo-task-details-action lo-task-details-action--date"
+                onClick={() => setDueMenuOpen((open) => !open)}
+                aria-expanded={dueMenuOpen}
+                aria-haspopup="menu"
+              >
+                <img src={PLAN_SIDEBAR_ICONS.planned} alt="" />
+                <span>{dueDate ? "Due date" : "Add due date"}</span>
+              </button>
+
+              {dueMenuOpen ? (
+                <div className="lo-task-details-due-menu" role="menu">
+                  <div className="lo-task-details-due-menu__title">Due</div>
+                  <div className="lo-task-details-divider" />
+                  <button
+                    type="button"
+                    className="lo-task-details-due-menu__item"
+                    role="menuitem"
+                    onClick={() => chooseDueDate(todayISO)}
+                  >
+                    <img src={PLAN_SIDEBAR_ICONS["my-day"]} alt="" />
+                    <span>Today</span>
+                    <span>{todayLabel}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="lo-task-details-due-menu__item"
+                    role="menuitem"
+                    onClick={() => chooseDueDate(tomorrow.date)}
+                  >
+                    <img src={PLAN_SIDEBAR_ICONS.planned} alt="" />
+                    <span>Tomorrow</span>
+                    <span>{tomorrow.label}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="lo-task-details-due-menu__item"
+                    role="menuitem"
+                    onClick={() => chooseDueDate(nextWeek.date)}
+                  >
+                    <img src="/icons/white/repeat.png" alt="" />
+                    <span>Next Week</span>
+                    <span>{nextWeek.label}</span>
+                  </button>
+                  <div className="lo-task-details-divider" />
+                  <button
+                    type="button"
+                    className="lo-task-details-due-menu__item"
+                    role="menuitem"
+                    onClick={() => setShowDatePicker((show) => !show)}
+                  >
+                    <img src={PLAN_SIDEBAR_ICONS.planned} alt="" />
+                    <span>Pick a Date</span>
+                  </button>
+                  {showDatePicker ? (
+                    <input
+                      className="lo-task-details-due-menu__date"
+                      type="date"
+                      value={dueDate}
+                      onChange={(event) => chooseDueDate(event.target.value)}
+                      aria-label="Pick a due date"
+                      autoFocus
+                    />
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+
+            <div className="lo-task-details-divider" />
+
+            <button type="button" className="lo-task-details-action">
+              <img src="/icons/white/repeat.png" alt="" />
+              <span>Repeat</span>
+            </button>
+          </div>
+
+          <div className="lo-task-details-card">
+            <button
+              type="button"
+              className={`lo-task-details-action ${hasTag ? "is-active" : ""}`}
+              onClick={() => onToggleTag(task)}
+            >
+              <img src="/icons/white/tags.png" alt="" />
+              <span>Tag</span>
+            </button>
+          </div>
+
+          <div className="lo-task-details-card">
+            <button type="button" className="lo-task-details-action">
+              <img src="/icons/white/clip.png" alt="" />
+              <span>Add file</span>
+            </button>
+          </div>
+
+          <textarea
+            className="lo-task-details-note"
+            value={task.notes ?? ""}
+            onChange={(event) => onUpdateNotes(task, event.target.value)}
+            placeholder="add note"
+            aria-label="Task note"
+          />
+        </div>
+
+        <footer className="lo-task-details-panel__footer">
+          <button
+            type="button"
+            className="lo-task-details-footer-btn"
+            onClick={onClose}
+            aria-label="Hide details view"
+            title="Hide details view"
+          >
+            <img src="/icons/white/hide.png" alt="" />
+          </button>
+
+          <span className="lo-task-details-created">
+            {formatCreatedDate(task.createdAt)}
+          </span>
+
+          <button
+            type="button"
+            className="lo-task-details-footer-btn is-danger"
+            onClick={() => onDelete(task)}
+            aria-label="Delete task"
+            title="Delete task"
+          >
+            <img src={DELETE_ICON} alt="" />
+          </button>
+        </footer>
       </aside>
     </div>
   );
@@ -4210,6 +4621,7 @@ function TaskSection({
   onSetPriority,
   onSetImportant,
   onOpenTaskMenu,
+  onOpenTaskDetails,
 }: {
   title: string;
   showTitle?: boolean;
@@ -4221,6 +4633,7 @@ function TaskSection({
   onSetPriority: (task: Task, p: Priority) => void;
   onSetImportant: (task: Task, important: boolean) => void;
   onOpenTaskMenu: (e: React.MouseEvent, task: Task) => void;
+  onOpenTaskDetails: (task: Task) => void;
 }) {
 
   return (
@@ -4239,6 +4652,7 @@ function TaskSection({
               className={`lo-task ${task.status === "done" ? "is-done" : ""} ${isNew ? "is-new" : ""}`}
               draggable={task.title.trim() !== ""}
               onContextMenu={(e) => onOpenTaskMenu(e, task)}
+              onClick={() => onOpenTaskDetails(task)}
               onDragStart={(e) => {
                 if (!task.title.trim()) return;
                 e.dataTransfer.effectAllowed = "move";
