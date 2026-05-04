@@ -757,6 +757,51 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   text-overflow: ellipsis;
 }
 
+.lo-task-title-wrap {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.lo-task-title-wrap .lo-task-title {
+  width: 100%;
+}
+
+.lo-task-reminder-subtitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  color: #f97316;
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.1;
+}
+
+:root[data-theme="nebula"] .lo-task-reminder-subtitle {
+  color: #a78bfa;
+}
+
+.lo-task-reminder-subtitle img {
+  width: 13px;
+  height: 13px;
+  object-fit: contain;
+  flex: 0 0 auto;
+  filter: brightness(0) saturate(100%) invert(63%) sepia(76%) saturate(1470%) hue-rotate(359deg) brightness(100%) contrast(93%);
+}
+
+:root[data-theme="nebula"] .lo-task-reminder-subtitle img {
+  filter: brightness(0) saturate(100%) invert(68%) sepia(63%) saturate(2169%) hue-rotate(211deg) brightness(101%) contrast(96%);
+}
+
+.lo-task-reminder-subtitle span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Plan task meta row */
 .lo-tasks .lo-meta-row {
   display: flex;
@@ -1810,6 +1855,14 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 }
 
 :root[data-theme="nebula"] .lo-task-details-action--my-day.is-added {
+  color: #a78bfa;
+}
+
+.lo-task-details-action--reminder.is-set {
+  color: #f97316;
+}
+
+:root[data-theme="nebula"] .lo-task-details-action--reminder.is-set {
   color: #a78bfa;
 }
 
@@ -7727,7 +7780,6 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   border-color: rgba(255, 255, 255, 0.1);
 }
 
-
 .lo-top-dock__divider {
   width: 1px;
   height: 24px;
@@ -7854,4 +7906,43 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
 .lo-account-settings__danger {
   color: #c0392b;
+}
+
+/* Task typography: keep task windows readable without heavy bolding. */
+.lo-tasks,
+.lo-task-details-panel,
+.lo-task-menu,
+.lo-suggestions-panel {
+  font-weight: 400;
+}
+
+.lo-tasks .lo-task-title,
+.lo-task-title,
+.lo-task-title-editable,
+.lo-task-inline-edit,
+.lo-task-details-panel__title,
+.lo-suggestion-row__title {
+  font-weight: 520;
+}
+
+.lo-plan-tasks-heading h3,
+.lo-plan-tasks-heading__button,
+.lo-plan-tasks-heading__input,
+.lo-plan-tasks-sidebar button,
+.lo-plan-tasks-new-list-button,
+.lo-plan-tasks-toolbar-action,
+.lo-plan-completed__toggle,
+.lo-my-day-composer__input,
+.lo-task-details-action,
+.lo-task-details-due-menu__title,
+.lo-task-details-due-menu__item,
+.lo-task-details-reminder-picker__times button,
+.lo-task-details-reminder-picker__save,
+.lo-task-details-created,
+.lo-task-reminder-subtitle,
+.lo-tasks .lo-chip label,
+.lo-tasks .lo-pill,
+.lo-task-menu__item,
+.lo-task-menu__submenu-trigger {
+  font-weight: 500;
 }

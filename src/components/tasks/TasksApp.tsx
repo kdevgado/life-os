@@ -4065,6 +4065,32 @@ function formatReminderTime(date: Date) {
   }).replace(":00", "")}`;
 }
 
+function formatReminderHour(date: Date) {
+  return date
+    .toLocaleTimeString(undefined, {
+      hour: "numeric",
+    })
+    .replace(":00", "");
+}
+
+function isSameDate(a: Date, b: Date) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+function formatReminderDisplay(iso?: string) {
+  if (!iso) return "";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+
+  return isSameDate(date, new Date())
+    ? formatReminderHour(date)
+    : formatReminderTime(date);
+}
+
 function dateInputValue(date: Date) {
   return isoDate(date);
 }
@@ -4119,6 +4145,7 @@ function TaskDetailsPanel({
   const isInMyDay = isTaskInMyDay(task, todayISO);
   const dueDate = getTaskDateKey(task) ?? "";
   const hasTag = (task.tags ?? []).includes("tagged");
+  const reminderLabel = formatReminderDisplay(task.reminderAt);
   const weekdayLabel = React.useCallback(
     (date: Date) =>
       date.toLocaleDateString(undefined, {
@@ -4333,13 +4360,20 @@ function TaskDetailsPanel({
             <div className="lo-task-details-reminder-wrap" ref={reminderMenuRef}>
               <button
                 type="button"
-                className="lo-task-details-action"
+                className={`lo-task-details-action lo-task-details-action--reminder ${reminderLabel ? "is-set" : ""}`}
                 onClick={() => setReminderMenuOpen((open) => !open)}
                 aria-expanded={reminderMenuOpen}
                 aria-haspopup="menu"
               >
-                <img src="/icons/white/alarm.png" alt="" />
-                <span>Remind me</span>
+                <span
+                  className="lo-task-details-action__mask-icon"
+                  style={{
+                    WebkitMaskImage: "url(/icons/white/alarm.png)",
+                    maskImage: "url(/icons/white/alarm.png)",
+                  }}
+                  aria-hidden="true"
+                />
+                <span>{reminderLabel || "Remind me"}</span>
               </button>
 
               {reminderMenuOpen ? (
@@ -4354,7 +4388,7 @@ function TaskDetailsPanel({
                   >
                     <img src="/icons/white/alarm.png" alt="" />
                     <span>Later today</span>
-                    <span>{formatReminderTime(laterTodayReminder)}</span>
+                    <span>{formatReminderHour(laterTodayReminder)}</span>
                   </button>
                   <button
                     type="button"
@@ -4845,6 +4879,7 @@ function TaskSection({
       <div className="lo-tasklist lo-stack">
         {tasks.map((task) => {
           const isNew = task.id === justAddedId;
+          const reminderLabel = formatReminderDisplay(task.reminderAt);
           const priorityLabel =
             task.priority === 1 ? "High" : task.priority === 2 ? "Med" : "Low";
           const priClass =
@@ -4886,11 +4921,19 @@ function TaskSection({
                   <img src="/icons/white/circle.png" alt="" />
                 </button>
 
-                <div
-                  className={`lo-task-title ${task.status === "done" ? "is-done" : ""}`}
-                  title={task.title}
-                >
-                  {task.title}
+                <div className="lo-task-title-wrap">
+                  <div
+                    className={`lo-task-title ${task.status === "done" ? "is-done" : ""}`}
+                    title={task.title}
+                  >
+                    {task.title}
+                  </div>
+                  {reminderLabel ? (
+                    <div className="lo-task-reminder-subtitle">
+                      <img src="/icons/white/alarm.png" alt="" />
+                      <span>{reminderLabel}</span>
+                    </div>
+                  ) : null}
                 </div>
 
                 <button
