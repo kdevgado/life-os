@@ -25,6 +25,10 @@ function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
 }
 
+function clampWindowAxis(n: number, min: number, max: number) {
+  return clamp(n, Math.min(min, max), Math.max(min, max));
+}
+
 function titleFor(k: Exclude<PanelKey, null>) {
   switch (k) {
     case "spaces":
@@ -289,8 +293,8 @@ function WindowShell({
     const dx = e.clientX - d.startX;
     const dy = e.clientY - d.startY;
 
-    const nx = clamp(d.originX + dx, 70, window.innerWidth - 180);
-    const ny = clamp(d.originY + dy, 14, window.innerHeight - 80);
+    const nx = clampWindowAxis(d.originX + dx, 70, window.innerWidth - w - 24);
+    const ny = clampWindowAxis(d.originY + dy, 14, window.innerHeight - h - 24);
 
     onMove(nx, ny);
   };
