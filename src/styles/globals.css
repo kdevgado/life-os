@@ -780,7 +780,8 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
 .lo-task-reminder-subtitle,
 .lo-task-list-subtitle,
-.lo-task-due-subtitle {
+.lo-task-due-subtitle,
+.lo-task-repeat-subtitle {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -799,6 +800,12 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   color: #f97316;
 }
 
+.lo-task-repeat-subtitle {
+  color: #f97316;
+  width: 16px;
+  justify-content: center;
+}
+
 .lo-task-due-subtitle.is-overdue {
   color: #dc2626;
 }
@@ -807,12 +814,17 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   color: #a78bfa;
 }
 
+:root[data-theme="nebula"] .lo-task-repeat-subtitle {
+  color: #a78bfa;
+}
+
 :root[data-theme="nebula"] .lo-task-due-subtitle.is-overdue {
   color: #f87171;
 }
 
 .lo-task-reminder-subtitle img,
-.lo-task-due-subtitle img {
+.lo-task-due-subtitle img,
+.lo-task-repeat-subtitle img {
   width: 13px;
   height: 13px;
   object-fit: contain;
@@ -828,11 +840,19 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   filter: brightness(0) saturate(100%) invert(63%) sepia(76%) saturate(1470%) hue-rotate(359deg) brightness(100%) contrast(93%);
 }
 
+.lo-task-repeat-subtitle img {
+  filter: brightness(0) saturate(100%) invert(63%) sepia(76%) saturate(1470%) hue-rotate(359deg) brightness(100%) contrast(93%);
+}
+
 .lo-task-due-subtitle.is-overdue img {
   filter: brightness(0) saturate(100%) invert(31%) sepia(80%) saturate(2136%) hue-rotate(338deg) brightness(92%) contrast(91%);
 }
 
 :root[data-theme="nebula"] .lo-task-due-subtitle img {
+  filter: brightness(0) saturate(100%) invert(68%) sepia(63%) saturate(2169%) hue-rotate(211deg) brightness(101%) contrast(96%);
+}
+
+:root[data-theme="nebula"] .lo-task-repeat-subtitle img {
   filter: brightness(0) saturate(100%) invert(68%) sepia(63%) saturate(2169%) hue-rotate(211deg) brightness(101%) contrast(96%);
 }
 
@@ -2118,11 +2138,19 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   color: #f97316;
 }
 
+.lo-task-details-action--repeat.is-set {
+  color: #f97316;
+}
+
 .lo-task-details-action--date.is-overdue {
   color: #dc2626;
 }
 
 :root[data-theme="nebula"] .lo-task-details-action--date.is-set {
+  color: #a78bfa;
+}
+
+:root[data-theme="nebula"] .lo-task-details-action--repeat.is-set {
   color: #a78bfa;
 }
 
@@ -2156,12 +2184,17 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   position: relative;
 }
 
+.lo-task-details-repeat-wrap {
+  position: relative;
+}
+
 .lo-task-details-divider {
   height: 1px;
   background: var(--shell-border);
 }
 
-.lo-task-details-due-menu {
+.lo-task-details-due-menu,
+.lo-task-details-repeat-menu {
   position: absolute;
   top: calc(100% + 8px);
   left: 12px;
@@ -2176,6 +2209,10 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   animation: loSuggestionsContentIn 160ms ease both;
+}
+
+.lo-task-details-repeat-menu {
+  z-index: 4;
 }
 
 .lo-task-details-reminder-menu {
@@ -8376,6 +8413,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 .lo-task-reminder-subtitle,
 .lo-task-list-subtitle,
 .lo-task-due-subtitle,
+.lo-task-repeat-subtitle,
 .lo-tasks .lo-chip label,
 .lo-tasks .lo-pill,
 .lo-task-menu__item,

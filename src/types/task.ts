@@ -1,6 +1,13 @@
 export type TaskStatus = "todo" | "doing" | "done";
 
 export type TaskPriority = 1 | 2 | 3; // 1=High, 2=Med, 3=Low
+export type TaskRepeatRule =
+  | "daily"
+  | "weekdays"
+  | "weekly"
+  | "monthly"
+  | "yearly"
+  | "custom";
 
 export type Task = {
   id: string;
@@ -21,5 +28,6 @@ export type Task = {
   plannedStart?: string;
   plannedEnd?: string;
   reminderAt?: string;
+  repeatRule?: TaskRepeatRule;
   sortOrder?: number;
 };

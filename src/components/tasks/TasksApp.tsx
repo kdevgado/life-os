@@ -5,7 +5,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import type { Task } from "../../types/task";
+import type { Task, TaskRepeatRule } from "../../types/task";
 import {
   createTask,
   deleteTask,
@@ -90,6 +90,63 @@ function isTaskOverdue(task: Task) {
   return dateKey < today;
 }
 
+function repeatLabel(rule?: TaskRepeatRule) {
+  return rule ? REPEAT_RULE_LABELS[rule] : "";
+}
+
+function addMonthsClamped(date: Date, amount: number) {
+  const next = new Date(date);
+  const originalDay = next.getDate();
+  next.setDate(1);
+  next.setMonth(next.getMonth() + amount);
+  const lastDay = new Date(
+    next.getFullYear(),
+    next.getMonth() + 1,
+    0,
+  ).getDate();
+  next.setDate(Math.min(originalDay, lastDay));
+  return next;
+}
+
+function nextRepeatDateKey(task: Task) {
+  if (!task.repeatRule) return "";
+
+  const baseKey = getTaskDateKey(task) ?? isoDate(startOfToday());
+  let next = new Date(`${baseKey}T00:00:00`);
+  if (Number.isNaN(next.getTime())) next = startOfToday();
+
+  const today = startOfToday();
+  const advance = () => {
+    switch (task.repeatRule) {
+      case "daily":
+      case "custom":
+        next.setDate(next.getDate() + 1);
+        break;
+      case "weekdays":
+        do {
+          next.setDate(next.getDate() + 1);
+        } while (next.getDay() === 0 || next.getDay() === 6);
+        break;
+      case "weekly":
+        next.setDate(next.getDate() + 7);
+        break;
+      case "monthly":
+        next = addMonthsClamped(next, 1);
+        break;
+      case "yearly":
+        next = addMonthsClamped(next, 12);
+        break;
+      default:
+        next.setDate(next.getDate() + 1);
+    }
+  };
+
+  advance();
+  while (next < today) advance();
+
+  return isoDate(next);
+}
+
 function getCreatedDateKey(task: Task) {
   if (!task.createdAt) return null;
   return isoDate(new Date(task.createdAt));
@@ -117,6 +174,15 @@ type ReminderAlert = {
   title: string;
   reminderAt: string;
   listLabel: string;
+};
+
+const REPEAT_RULE_LABELS: Record<TaskRepeatRule, string> = {
+  daily: "Daily",
+  weekdays: "Weekdays",
+  weekly: "Weekly",
+  monthly: "Monthly",
+  yearly: "Yearly",
+  custom: "Custom",
 };
 
 function formatDateForEditor(date?: string) {
@@ -766,6 +832,12 @@ export default function TasksApp({
 
     const shouldPlayCompleteSound = nextStatus === "done";
 
+    if (shouldPlayCompleteSound && task.repeatRule) {
+      rescheduleRepeatingTask(task);
+      playTaskCompleteSound();
+      return;
+    }
+
     applyTaskPatch(
       task,
       {
@@ -784,6 +856,12 @@ export default function TasksApp({
   function onSetStatus(task: Task, status: "todo" | "doing" | "done") {
     const shouldPlayCompleteSound = status === "done" && task.status !== "done";
 
+    if (shouldPlayCompleteSound && task.repeatRule) {
+      rescheduleRepeatingTask(task);
+      playTaskCompleteSound();
+      return;
+    }
+
     applyTaskPatch(
       task,
       {
@@ -797,6 +875,25 @@ export default function TasksApp({
     if (shouldPlayCompleteSound) {
       playTaskCompleteSound();
     }
+  }
+
+  function rescheduleRepeatingTask(task: Task) {
+    const nextDueDate = nextRepeatDateKey(task);
+    if (!nextDueDate) return;
+
+    applyTaskPatch(
+      task,
+      {
+        status: "todo",
+        dueDate: nextDueDate,
+        plannedFor: undefined,
+        plannedStart: undefined,
+        plannedEnd: undefined,
+      },
+      {
+        broadcastUpdate: true,
+      },
+    );
   }
 
   function dismissReminderAlert(key: string) {
@@ -3456,6 +3553,14 @@ function PlanTasksView({
     onUpdateTask(task, { reminderAt });
   }
 
+  function updateTaskRepeat(task: Task, repeatRule: TaskRepeatRule | "") {
+    const nextDueDate = getTaskDateKey(task) ?? todayISO;
+    onUpdateTask(task, {
+      repeatRule: repeatRule || undefined,
+      dueDate: repeatRule ? nextDueDate : task.dueDate,
+    });
+  }
+
   function toggleTaskTag(task: Task) {
     const tags = task.tags ?? [];
     const nextTags = tags.includes("tagged")
@@ -4126,6 +4231,7 @@ function PlanTasksView({
               onUpdateTitle={updateTaskTitle}
               onUpdateDueDate={updateTaskDueDate}
               onUpdateReminder={updateTaskReminder}
+              onUpdateRepeat={updateTaskRepeat}
               onUpdateNotes={updateTaskNotes}
               onToggleTag={toggleTaskTag}
               onDelete={(task) => {
@@ -4447,6 +4553,7 @@ function TaskDetailsPanel({
   onUpdateTitle,
   onUpdateDueDate,
   onUpdateReminder,
+  onUpdateRepeat,
   onUpdateNotes,
   onToggleTag,
   onDelete,
@@ -4460,6 +4567,7 @@ function TaskDetailsPanel({
   onUpdateTitle: (task: Task, title: string) => void;
   onUpdateDueDate: (task: Task, date: string) => void;
   onUpdateReminder: (task: Task, reminderAt: string) => void;
+  onUpdateRepeat: (task: Task, repeatRule: TaskRepeatRule | "") => void;
   onUpdateNotes: (task: Task, notes: string) => void;
   onToggleTag: (task: Task) => void;
   onDelete: (task: Task) => void;
@@ -4469,6 +4577,7 @@ function TaskDetailsPanel({
   const [showDatePicker, setShowDatePicker] = React.useState(false);
   const [reminderMenuOpen, setReminderMenuOpen] = React.useState(false);
   const [reminderPickerOpen, setReminderPickerOpen] = React.useState(false);
+  const [repeatMenuOpen, setRepeatMenuOpen] = React.useState(false);
   const defaultReminder = React.useMemo(() => nextWholeHour(), []);
   const [customReminderDate, setCustomReminderDate] = React.useState(() =>
     dateInputValue(defaultReminder),
@@ -4480,10 +4589,13 @@ function TaskDetailsPanel({
   const dueMenuRef = React.useRef<HTMLDivElement | null>(null);
   const reminderMenuRef = React.useRef<HTMLDivElement | null>(null);
   const reminderPickerRef = React.useRef<HTMLDivElement | null>(null);
+  const repeatMenuRef = React.useRef<HTMLDivElement | null>(null);
   const isInMyDay = isTaskInMyDay(task, todayISO);
   const dueDate = getTaskDateKey(task) ?? "";
   const hasTag = (task.tags ?? []).includes("tagged");
   const reminderLabel = formatReminderDisplay(task.reminderAt);
+  const repeatRule = task.repeatRule;
+  const repeatRuleLabel = repeatLabel(repeatRule);
   const overdue = isTaskOverdue(task);
   const dueDateLabel = formatDueDateDisplay(dueDate, { overdue });
   const weekdayLabel = React.useCallback(
@@ -4563,6 +4675,20 @@ function TaskDetailsPanel({
   }, [reminderMenuOpen, reminderPickerOpen]);
 
   React.useEffect(() => {
+    if (!repeatMenuOpen) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target as Node;
+      if (repeatMenuRef.current?.contains(target)) return;
+      setRepeatMenuOpen(false);
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown, true);
+    return () =>
+      document.removeEventListener("pointerdown", handlePointerDown, true);
+  }, [repeatMenuOpen]);
+
+  React.useEffect(() => {
     setTitleDraft(task.title);
   }, [task.id, task.title]);
 
@@ -4586,13 +4712,17 @@ function TaskDetailsPanel({
         setReminderPickerOpen(false);
         return;
       }
+      if (repeatMenuOpen) {
+        setRepeatMenuOpen(false);
+        return;
+      }
 
       onClose();
     }
 
     window.addEventListener("keydown", handleEscape);
     return () => window.removeEventListener("keydown", handleEscape);
-  }, [dueMenuOpen, reminderMenuOpen, reminderPickerOpen, onClose]);
+  }, [dueMenuOpen, reminderMenuOpen, reminderPickerOpen, repeatMenuOpen, onClose]);
 
   function chooseDueDate(date: string) {
     onUpdateDueDate(task, date);
@@ -4614,6 +4744,25 @@ function TaskDetailsPanel({
   function saveCustomReminder() {
     if (!customReminderDate || !customReminderTime) return;
     chooseReminder(new Date(`${customReminderDate}T${customReminderTime}:00`));
+  }
+
+  function openRepeatMenu() {
+    setDueMenuOpen(false);
+    setShowDatePicker(false);
+    setReminderMenuOpen(false);
+    setReminderPickerOpen(false);
+    setRepeatMenuOpen((open) => !open);
+  }
+
+  function chooseRepeatOption(rule: TaskRepeatRule) {
+    onUpdateRepeat(task, rule);
+    setRepeatMenuOpen(false);
+  }
+
+  function clearRepeat(event: React.MouseEvent<HTMLButtonElement>) {
+    event.stopPropagation();
+    onUpdateRepeat(task, "");
+    setRepeatMenuOpen(false);
   }
 
   function clearMyDay(event: React.MouseEvent<HTMLButtonElement>) {
@@ -4910,10 +5059,100 @@ function TaskDetailsPanel({
 
             <div className="lo-task-details-divider" />
 
-            <button type="button" className="lo-task-details-action">
-              <img src="/icons/white/repeat.png" alt="" />
-              <span>Repeat</span>
-            </button>
+            <div className="lo-task-details-repeat-wrap" ref={repeatMenuRef}>
+              <div className={`lo-task-details-action-wrap ${repeatRule ? "has-remove" : ""}`}>
+                <button
+                  type="button"
+                  className={`lo-task-details-action lo-task-details-action--repeat ${repeatRule ? "is-set lo-task-details-action--has-remove" : ""}`}
+                  onClick={openRepeatMenu}
+                  aria-expanded={repeatMenuOpen}
+                  aria-haspopup="menu"
+                >
+                  <span
+                    className="lo-task-details-action__mask-icon"
+                    style={{
+                      WebkitMaskImage: "url(/icons/white/repeat.png)",
+                      maskImage: "url(/icons/white/repeat.png)",
+                    }}
+                    aria-hidden="true"
+                  />
+                  <span>{repeatRuleLabel || "Repeat"}</span>
+                </button>
+                {repeatRule ? (
+                  <button
+                    type="button"
+                    className="lo-task-details-action-remove"
+                    onClick={clearRepeat}
+                    aria-label="Remove repeat"
+                    title="Remove repeat"
+                  >
+                    ×
+                  </button>
+                ) : null}
+              </div>
+
+              {repeatMenuOpen ? (
+                <div className="lo-task-details-repeat-menu" role="menu">
+                  <div className="lo-task-details-due-menu__title">Repeat</div>
+                  <div className="lo-task-details-divider" />
+                  <button
+                    type="button"
+                    className="lo-task-details-due-menu__item"
+                    role="menuitem"
+                    onClick={() => chooseRepeatOption("daily")}
+                  >
+                    <img src="/icons/white/day.png" alt="" />
+                    <span>Daily</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="lo-task-details-due-menu__item"
+                    role="menuitem"
+                    onClick={() => chooseRepeatOption("weekdays")}
+                  >
+                    <img src={PLAN_SIDEBAR_ICONS["my-day"]} alt="" />
+                    <span>Weekdays</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="lo-task-details-due-menu__item"
+                    role="menuitem"
+                    onClick={() => chooseRepeatOption("weekly")}
+                  >
+                    <img src="/icons/white/repeat.png" alt="" />
+                    <span>Weekly</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="lo-task-details-due-menu__item"
+                    role="menuitem"
+                    onClick={() => chooseRepeatOption("monthly")}
+                  >
+                    <img src={PLAN_SIDEBAR_ICONS.planned} alt="" />
+                    <span>Monthly</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="lo-task-details-due-menu__item"
+                    role="menuitem"
+                    onClick={() => chooseRepeatOption("yearly")}
+                  >
+                    <img src="/icons/white/calendar.png" alt="" />
+                    <span>Yearly</span>
+                  </button>
+                  <div className="lo-task-details-divider" />
+                  <button
+                    type="button"
+                    className="lo-task-details-due-menu__item"
+                    role="menuitem"
+                    onClick={() => chooseRepeatOption("custom")}
+                  >
+                    <img src="/icons/white/setting.png" alt="" />
+                    <span>Custom</span>
+                  </button>
+                </div>
+              ) : null}
+            </div>
           </div>
 
           {reminderPickerOpen ? (
@@ -5368,6 +5607,7 @@ function TaskSection({
           const isNew = task.id === justAddedId;
           const listLabel = labelForTaskList(task);
           const reminderLabel = formatReminderDisplay(task.reminderAt);
+          const repeatRuleLabel = repeatLabel(task.repeatRule);
           const overdue = isTaskOverdue(task);
           const dueDateLabel = formatDueDateDisplay(getTaskDateKey(task), {
             overdue,
@@ -5420,14 +5660,14 @@ function TaskSection({
                   >
                     {task.title}
                   </div>
-                  {listLabel || dueDateLabel || reminderLabel ? (
+                  {listLabel || dueDateLabel || reminderLabel || repeatRuleLabel ? (
                     <div className="lo-task-meta-subtitle">
                       {listLabel ? (
                         <span className="lo-task-list-subtitle">
                           {listLabel}
                         </span>
                       ) : null}
-                      {listLabel && (dueDateLabel || reminderLabel) ? (
+                      {listLabel && (dueDateLabel || reminderLabel || repeatRuleLabel) ? (
                         <span className="lo-task-meta-subtitle__dot" aria-hidden="true" />
                       ) : null}
                       {dueDateLabel ? (
@@ -5436,13 +5676,25 @@ function TaskSection({
                           <span>{dueDateLabel}</span>
                         </span>
                       ) : null}
-                      {dueDateLabel && reminderLabel ? (
+                      {dueDateLabel && (reminderLabel || repeatRuleLabel) ? (
                         <span className="lo-task-meta-subtitle__dot" aria-hidden="true" />
                       ) : null}
                       {reminderLabel ? (
                         <span className="lo-task-reminder-subtitle">
                           <img src="/icons/white/alarm.png" alt="" />
                           <span>{reminderLabel}</span>
+                        </span>
+                      ) : null}
+                      {reminderLabel && repeatRuleLabel ? (
+                        <span className="lo-task-meta-subtitle__dot" aria-hidden="true" />
+                      ) : null}
+                      {repeatRuleLabel ? (
+                        <span
+                          className="lo-task-repeat-subtitle"
+                          aria-label={`Repeats ${repeatRuleLabel}`}
+                          title={`Repeats ${repeatRuleLabel}`}
+                        >
+                          <img src="/icons/white/repeat.png" alt="" />
                         </span>
                       ) : null}
                     </div>
