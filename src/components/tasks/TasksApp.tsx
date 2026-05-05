@@ -2605,7 +2605,11 @@ function PlanTasksView({
   const [selectedTaskId, setSelectedTaskId] = React.useState<string | null>(null);
   const [sortMenuOpen, setSortMenuOpen] = React.useState(false);
   const [sortMenuClosing, setSortMenuClosing] = React.useState(false);
-  const [boardSortMode, setBoardSortMode] = React.useState<BoardSortMode>("importance");
+  const [boardSortMode, setBoardSortMode] =
+    React.useState<BoardSortMode | null>(null);
+  const [boardSortDirection, setBoardSortDirection] = React.useState<
+    "asc" | "desc"
+  >("asc");
   const [plannedSectionsOpen, setPlannedSectionsOpen] = React.useState<
     Record<PlannedSectionId, boolean>
   >({
@@ -2834,34 +2838,42 @@ function PlanTasksView({
   }, [showSortButton]);
 
   function compareTasksBySortMode(a: Task, b: Task) {
+    if (!boardSortMode) return 0;
+
     const importanceCompare = Number(!!b.important) - Number(!!a.important);
+    let result = 0;
 
     if (boardSortMode === "importance" && importanceCompare !== 0) {
-      return importanceCompare;
+      result = importanceCompare;
     }
 
-    if (boardSortMode === "due-date") {
+    if (result === 0 && boardSortMode === "due-date") {
       const aDate = getTaskDateKey(a) ?? "9999-12-31";
       const bDate = getTaskDateKey(b) ?? "9999-12-31";
       const dateCompare = aDate.localeCompare(bDate);
-      if (dateCompare !== 0) return dateCompare;
+      if (dateCompare !== 0) result = dateCompare;
     }
 
-    if (boardSortMode === "alphabetical") {
+    if (result === 0 && boardSortMode === "alphabetical") {
       const titleCompare = a.title.localeCompare(b.title, undefined, {
         sensitivity: "base",
       });
-      if (titleCompare !== 0) return titleCompare;
+      if (titleCompare !== 0) result = titleCompare;
     }
 
-    if (boardSortMode === "creation-date") {
+    if (result === 0 && boardSortMode === "creation-date") {
       const createdCompare = b.createdAt.localeCompare(a.createdAt);
-      if (createdCompare !== 0) return createdCompare;
+      if (createdCompare !== 0) result = createdCompare;
     }
 
-    if (importanceCompare !== 0) return importanceCompare;
-    return b.createdAt.localeCompare(a.createdAt);
+    return boardSortDirection === "desc" ? result * -1 : result;
   }
+
+  const activeSortOption =
+    boardSortMode === null
+      ? null
+      : (BOARD_SORT_OPTIONS.find((option) => option.mode === boardSortMode) ??
+        null);
 
   const visibleTasks = tasks
     .filter((t) => {
@@ -3526,6 +3538,7 @@ function PlanTasksView({
                       aria-checked={boardSortMode === option.mode}
                       onClick={() => {
                         setBoardSortMode(option.mode);
+                        setBoardSortDirection("asc");
                         closeSortMenu();
                       }}
                     >
@@ -3558,73 +3571,108 @@ function PlanTasksView({
     <div
       className={`lo-plan-tasks-layout ${sidebarCollapsed ? "is-sidebar-collapsed" : ""}`}
     >
-      <Card className="lo-plan-tasks-sidebar">
-        <button
-          type="button"
-          className="lo-plan-tasks-sidebar__toggle"
-          onClick={() => setSidebarCollapsed((value) => !value)}
-          aria-label={sidebarCollapsed ? "Expand task sidebar" : "Collapse task sidebar"}
-          title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          <img src="/icons/white/menu-burger.png" alt="" />
-        </button>
-
-        {renderSidebarButton("my-day")}
-        {renderSidebarButton("important")}
-        {renderSidebarButton("planned")}
-        {renderSidebarButton("assigned")}
-        {renderSidebarButton("tasks")}
-
-        <div className="lo-plan-tasks-sidebar__divider" />
-
-        <div className="lo-plan-tasks-sidebar__custom-list">
-          {customLists.map((list) => (
-            <button
-              key={list}
-              type="button"
-              className={selectedList === list ? "is-active" : ""}
-              onClick={() => setSelectedList(list)}
-              onContextMenu={(event) => openCustomListMenu(event, list)}
-              title={labelForList(list)}
-              aria-label={labelForList(list)}
-            >
-              <img
-                className="lo-plan-tasks-sidebar__icon"
-                src={CUSTOM_LIST_ICON}
-                alt=""
-              />
-              <span className="lo-plan-tasks-sidebar__text">
-                {labelForList(list)}
-              </span>
-            </button>
-          ))}
-        </div>
-
-        {isCreatingList ? (
-          <div className="lo-plan-tasks-new-list" ref={newListWrapRef}>
-            <input
-              ref={listDraftRef}
-              type="text"
-              value={listDraft}
-              onChange={(e) => setListDraft(e.target.value)}
-              placeholder="New list"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") addCustomList();
-                if (e.key === "Escape") cancelCustomListDraft();
-              }}
-              aria-label="New list name"
-            />
-          </div>
-        ) : (
+      <div className="lo-plan-tasks-sidebar-wrap">
+        <Card className="lo-plan-tasks-sidebar">
           <button
             type="button"
-            className="lo-plan-tasks-new-list-button"
-            onClick={startCustomListDraft}
+            className="lo-plan-tasks-sidebar__toggle"
+            onClick={() => setSidebarCollapsed((value) => !value)}
+            aria-label={sidebarCollapsed ? "Expand task sidebar" : "Collapse task sidebar"}
+            title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
-            <span className="lo-plan-tasks-sidebar__text">+ New List</span>
+            <img src="/icons/white/menu-burger.png" alt="" />
           </button>
-        )}
-      </Card>
+
+          {renderSidebarButton("my-day")}
+          {renderSidebarButton("important")}
+          {renderSidebarButton("planned")}
+          {renderSidebarButton("assigned")}
+          {renderSidebarButton("tasks")}
+
+          <div className="lo-plan-tasks-sidebar__divider" />
+
+          <div className="lo-plan-tasks-sidebar__custom-list">
+            {customLists.map((list) => (
+              <button
+                key={list}
+                type="button"
+                className={selectedList === list ? "is-active" : ""}
+                onClick={() => setSelectedList(list)}
+                onContextMenu={(event) => openCustomListMenu(event, list)}
+                title={labelForList(list)}
+                aria-label={labelForList(list)}
+              >
+                <img
+                  className="lo-plan-tasks-sidebar__icon"
+                  src={CUSTOM_LIST_ICON}
+                  alt=""
+                />
+                <span className="lo-plan-tasks-sidebar__text">
+                  {labelForList(list)}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {isCreatingList ? (
+            <div className="lo-plan-tasks-new-list" ref={newListWrapRef}>
+              <input
+                ref={listDraftRef}
+                type="text"
+                value={listDraft}
+                onChange={(e) => setListDraft(e.target.value)}
+                placeholder="New list"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") addCustomList();
+                  if (e.key === "Escape") cancelCustomListDraft();
+                }}
+                aria-label="New list name"
+              />
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="lo-plan-tasks-new-list-button"
+              onClick={startCustomListDraft}
+            >
+              <span className="lo-plan-tasks-sidebar__text">+ New List</span>
+            </button>
+          )}
+        </Card>
+
+        {activeSortOption && !sidebarCollapsed ? (
+          <div className="lo-plan-sort-status" aria-label="Current sort order">
+            <button
+              type="button"
+              className="lo-plan-sort-status__reverse"
+              onClick={() =>
+                setBoardSortDirection((direction) =>
+                  direction === "asc" ? "desc" : "asc",
+                )
+              }
+              aria-label="Reverse sort order"
+              title="Reverse sort order"
+            >
+              {boardSortDirection === "asc" ? "↑" : "↓"}
+            </button>
+            <span className="lo-plan-sort-status__label">
+              Sorted by {activeSortOption.label}
+            </span>
+            <button
+              type="button"
+              className="lo-plan-sort-status__remove"
+              onClick={() => {
+                setBoardSortMode(null);
+                setBoardSortDirection("asc");
+              }}
+              aria-label="Remove sort order"
+              title="Remove sort order"
+            >
+              x
+            </button>
+          </div>
+        ) : null}
+      </div>
 
       <div className="lo-plan-tasks-main lo-stack">
         {usesCompactComposer ? (

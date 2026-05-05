@@ -1077,6 +1077,14 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
     gap 240ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+.lo-plan-tasks-sidebar-wrap {
+  display: grid;
+  gap: 8px;
+  align-self: start;
+  position: sticky;
+  top: 0;
+}
+
 .lo-plan-tasks-sidebar button {
   width: 100%;
   text-align: left;
@@ -1175,6 +1183,51 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
     transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+.lo-plan-sort-status {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) 30px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 6px;
+  color: var(--shell-muted);
+}
+
+.lo-plan-sort-status button {
+  width: 30px;
+  min-height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  justify-content: center;
+  text-align: center;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.lo-plan-sort-status button:hover,
+.lo-plan-sort-status button:focus-visible {
+  background: var(--shell-btn-hover);
+  color: var(--shell-text);
+  outline: none;
+}
+
+.lo-plan-sort-status__label {
+  min-width: 0;
+  color: var(--shell-muted);
+  font-size: 12px;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lo-plan-sort-status__remove {
+  color: var(--shell-muted);
+}
+
 .lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-sidebar {
   justify-items: center;
 }
@@ -1193,7 +1246,8 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 .lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-sidebar__custom-list,
 .lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-add-list,
 .lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-new-list,
-.lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-new-list-button {
+.lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-new-list-button,
+.lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-sort-status {
   max-height: 0;
   opacity: 0;
   margin: 0;
