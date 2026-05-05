@@ -2357,6 +2357,172 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   }
 }
 
+.lo-reminder-popups {
+  position: fixed;
+  right: 18px;
+  top: 18px;
+  z-index: 10020;
+  width: min(360px, calc(100vw - 28px));
+  display: grid;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.lo-reminder-popup {
+  position: relative;
+  isolation: isolate;
+  min-height: 92px;
+  padding: 13px;
+  border: 1px solid var(--shell-border);
+  border-radius: 14px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--shell-surface-strong) 94%, transparent), var(--shell-surface-soft)),
+    var(--shell-surface-strong);
+  color: var(--shell-text);
+  box-shadow: 0 22px 55px rgba(15, 23, 42, 0.22);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 11px;
+  overflow: hidden;
+  pointer-events: auto;
+  animation: loReminderPopupIn 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--lo-reminder-index, 0) * 55ms);
+}
+
+.lo-reminder-popup__glow {
+  position: absolute;
+  inset: -45% auto auto -12%;
+  width: 170px;
+  height: 170px;
+  border-radius: 999px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--grad1) 28%, transparent), transparent 64%);
+  opacity: 0.72;
+  z-index: -1;
+  animation: loReminderGlow 2.4s ease-in-out infinite;
+}
+
+.lo-reminder-popup__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--grad1) 20%, transparent);
+  color: var(--shell-title);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--grad1) 24%, transparent);
+  animation: loReminderIconPulse 1.8s ease-in-out infinite;
+}
+
+.lo-reminder-popup__icon img {
+  width: 19px;
+  height: 19px;
+  object-fit: contain;
+}
+
+.lo-reminder-popup__body {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.lo-reminder-popup__eyebrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--shell-muted);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.lo-reminder-popup h3 {
+  margin: 0;
+  color: var(--shell-title);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.lo-reminder-popup p {
+  margin: 0;
+  color: var(--shell-muted);
+  font-size: 12px;
+  font-weight: 550;
+}
+
+.lo-reminder-popup__actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 3px;
+}
+
+.lo-reminder-popup__actions button {
+  min-height: 30px;
+  border: 1px solid var(--shell-border);
+  border-radius: 9px;
+  padding: 0 11px;
+  background: var(--shell-surface-soft);
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.lo-reminder-popup__actions button:hover,
+.lo-reminder-popup__actions button:focus-visible {
+  background: var(--shell-btn-hover);
+  outline: none;
+}
+
+.lo-reminder-popup__actions button.is-primary {
+  border-color: color-mix(in srgb, var(--grad1) 38%, var(--shell-border));
+  background: color-mix(in srgb, var(--grad1) 78%, transparent);
+  color: white;
+}
+
+@keyframes loReminderPopupIn {
+  from {
+    opacity: 0;
+    transform: translateY(-16px) scale(0.96);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(2px) scale(1.01);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes loReminderGlow {
+  0%,
+  100% {
+    transform: scale(0.95);
+    opacity: 0.56;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 0.82;
+  }
+}
+
+@keyframes loReminderIconPulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
+
 .lo-my-day-composer {
   padding: 0;
   overflow: hidden;

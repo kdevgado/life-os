@@ -109,6 +109,15 @@ type TasksMode = "focus" | "plan";
 type FocusFilter = "all" | "today" | "overdue";
 type StatusFilter = "all" | "inprogress" | "completed";
 const TASKS_FILTER_DROPDOWN_ID = "tasks-filter";
+const TASK_REMINDER_FIRED_KEY = "lifeos_task_reminders_fired_v1";
+
+type ReminderAlert = {
+  key: string;
+  taskId: string;
+  title: string;
+  reminderAt: string;
+  listLabel: string;
+};
 
 function formatDateForEditor(date?: string) {
   if (!date) return "";
@@ -123,6 +132,30 @@ function parseEditorDate(value: string) {
   if (!match) return "";
   const [, dd, mm, yyyy] = match;
   return `${yyyy}-${mm}-${dd}`;
+}
+
+function reminderAlertKey(task: Task) {
+  return `${task.id}:${task.reminderAt ?? ""}`;
+}
+
+function readFiredReminderKeys() {
+  if (typeof window === "undefined") return new Set<string>();
+
+  try {
+    const raw = window.localStorage.getItem(TASK_REMINDER_FIRED_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return new Set(Array.isArray(parsed) ? parsed.filter(Boolean) : []);
+  } catch {
+    return new Set<string>();
+  }
+}
+
+function writeFiredReminderKeys(keys: Set<string>) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(
+    TASK_REMINDER_FIRED_KEY,
+    JSON.stringify([...keys].slice(-500)),
+  );
 }
 
 export default function TasksApp({
@@ -154,6 +187,10 @@ export default function TasksApp({
   // ✅ error handling for load
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [reminderAlerts, setReminderAlerts] = useState<ReminderAlert[]>([]);
+  const reminderStartedAtRef = useRef(Date.now());
+  const reminderFiredRef = useRef<Set<string>>(new Set());
+  const reminderStorageLoadedRef = useRef(false);
 
   // ✅ focus mode filter (hide completed)
   const [focusFilter, setFocusFilter] = useState<FocusFilter>("all");
@@ -760,6 +797,34 @@ export default function TasksApp({
     if (shouldPlayCompleteSound) {
       playTaskCompleteSound();
     }
+  }
+
+  function dismissReminderAlert(key: string) {
+    setReminderAlerts((prev) => prev.filter((alert) => alert.key !== key));
+  }
+
+  function completeReminderAlert(alert: ReminderAlert) {
+    const task = tasks.find((item) => item.id === alert.taskId);
+    if (task) {
+      onSetStatus(task, "done");
+    }
+
+    dismissReminderAlert(alert.key);
+  }
+
+  function snoozeReminderAlert(alert: ReminderAlert) {
+    const task = tasks.find((item) => item.id === alert.taskId);
+    if (!task) {
+      dismissReminderAlert(alert.key);
+      return;
+    }
+
+    const snoozedReminderAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
+    applyTaskPatch(task, {
+      reminderAt: snoozedReminderAt,
+    });
+    dismissReminderAlert(alert.key);
   }
 
   function onSetDue(task: Task, dueDate: string) {
@@ -1515,6 +1580,80 @@ export default function TasksApp({
     });
   }, [editingTask, editorDraft, buildEditorTaskPatch]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    if (!reminderStorageLoadedRef.current) {
+      reminderFiredRef.current = readFiredReminderKeys();
+      reminderStorageLoadedRef.current = true;
+    }
+
+    function scanReminders() {
+      const now = Date.now();
+      const nextAlerts: ReminderAlert[] = [];
+      let firedChanged = false;
+
+      for (const task of tasks) {
+        if (!task.reminderAt || task.status === "done") continue;
+
+        const reminderTime = new Date(task.reminderAt).getTime();
+        if (Number.isNaN(reminderTime) || reminderTime > now) continue;
+
+        const key = reminderAlertKey(task);
+        if (reminderFiredRef.current.has(key)) continue;
+
+        reminderFiredRef.current.add(key);
+        firedChanged = true;
+
+        const reminderWasMissedBeforeOpen =
+          reminderTime < reminderStartedAtRef.current - 30_000;
+        if (reminderWasMissedBeforeOpen) continue;
+
+        nextAlerts.push({
+          key,
+          taskId: task.id,
+          title: task.title,
+          reminderAt: task.reminderAt,
+          listLabel: labelForTaskList(task),
+        });
+      }
+
+      if (firedChanged) {
+        writeFiredReminderKeys(reminderFiredRef.current);
+      }
+
+      if (!nextAlerts.length) return;
+
+      setReminderAlerts((prev) => {
+        const existingKeys = new Set(prev.map((alert) => alert.key));
+        const merged = [
+          ...prev,
+          ...nextAlerts.filter((alert) => !existingKeys.has(alert.key)),
+        ];
+
+        return merged.slice(-4);
+      });
+    }
+
+    scanReminders();
+    const interval = window.setInterval(scanReminders, 15_000);
+
+    return () => window.clearInterval(interval);
+  }, [tasks]);
+
+  useEffect(() => {
+    setReminderAlerts((prev) =>
+      prev.filter((alert) =>
+        tasks.some(
+          (task) =>
+            task.id === alert.taskId &&
+            task.status !== "done" &&
+            task.reminderAt === alert.reminderAt,
+        ),
+      ),
+    );
+  }, [tasks]);
+
   const activeFocusFilterCount =
     (hideCompleted ? 1 : 0) +
     (focusFilter === "today" ? 1 : 0) +
@@ -1531,6 +1670,12 @@ export default function TasksApp({
           </button>
         </div>
       )}
+      <ReminderPopupStack
+        alerts={reminderAlerts}
+        onDismiss={dismissReminderAlert}
+        onSnooze={snoozeReminderAlert}
+        onComplete={completeReminderAlert}
+      />
 
       {!loading && mode === "focus" && (
         <>
@@ -3992,6 +4137,62 @@ function PlanTasksView({
           )
         : null}
     </div>
+  );
+}
+
+function ReminderPopupStack({
+  alerts,
+  onDismiss,
+  onSnooze,
+  onComplete,
+}: {
+  alerts: ReminderAlert[];
+  onDismiss: (key: string) => void;
+  onSnooze: (alert: ReminderAlert) => void;
+  onComplete: (alert: ReminderAlert) => void;
+}) {
+  if (typeof document === "undefined" || alerts.length === 0) return null;
+
+  return createPortal(
+    <div className="lo-reminder-popups" role="region" aria-label="Task reminders">
+      {alerts.map((alert, index) => (
+        <section
+          key={alert.key}
+          className="lo-reminder-popup"
+          style={{ "--lo-reminder-index": index } as React.CSSProperties}
+          aria-label={`Reminder for ${alert.title}`}
+        >
+          <div className="lo-reminder-popup__glow" aria-hidden="true" />
+          <div className="lo-reminder-popup__icon" aria-hidden="true">
+            <img src="/icons/white/alarm.png" alt="" />
+          </div>
+          <div className="lo-reminder-popup__body">
+            <div className="lo-reminder-popup__eyebrow">
+              <span>Reminder</span>
+              <span>{formatReminderDisplay(alert.reminderAt) || "Now"}</span>
+            </div>
+            <h3>{alert.title}</h3>
+            <p>{alert.listLabel}</p>
+          </div>
+          <div className="lo-reminder-popup__actions">
+            <button type="button" onClick={() => onDismiss(alert.key)}>
+              Dismiss
+            </button>
+            <button type="button" onClick={() => onSnooze(alert)}>
+              Snooze
+            </button>
+            <button
+              type="button"
+              className="is-primary"
+              onClick={() => onComplete(alert)}
+            >
+              Done
+            </button>
+          </div>
+        </section>
+      ))}
+    </div>,
+    document.body,
   );
 }
 
