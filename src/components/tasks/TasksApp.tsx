@@ -167,6 +167,33 @@ type FocusFilter = "all" | "today" | "overdue";
 type StatusFilter = "all" | "inprogress" | "completed";
 const TASKS_FILTER_DROPDOWN_ID = "tasks-filter";
 const TASK_REMINDER_FIRED_KEY = "lifeos_task_reminders_fired_v1";
+const CUSTOM_LISTS_KEY = "lifeos_task_custom_lists_v1";
+
+function customListsStorageKey(userId?: string | null) {
+  return userId ? `${CUSTOM_LISTS_KEY}:${userId}` : CUSTOM_LISTS_KEY;
+}
+
+function loadStoredCustomLists(userId?: string | null): string[] {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const raw = window.localStorage.getItem(customListsStorageKey(userId));
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed)
+      ? parsed.filter((item): item is string => typeof item === "string")
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveStoredCustomLists(lists: string[], userId?: string | null) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(
+    customListsStorageKey(userId),
+    JSON.stringify(Array.from(new Set(lists))),
+  );
+}
 
 type ReminderAlert = {
   key: string;
@@ -1989,6 +2016,7 @@ export default function TasksApp({
           onDuplicateTaskList={onDuplicateTaskList}
           onDeleteTaskList={onDeleteTaskList}
           onRenameTaskList={onRenameTaskList}
+          currentUserId={currentUserId}
         />
       )}
       {contextMenu && (
@@ -2823,6 +2851,7 @@ function PlanTasksView({
   onDuplicateTaskList,
   onDeleteTaskList,
   onRenameTaskList,
+  currentUserId,
 }: {
   query: string;
   setQuery: (value: string) => void;
@@ -2861,10 +2890,13 @@ function PlanTasksView({
   onDuplicateTaskList: (sourceList: string, newList: string) => void;
   onDeleteTaskList: (list: string) => void;
   onRenameTaskList: (oldList: string, newList: string) => void;
+  currentUserId: string | null;
 }) {
   const [selectedList, setSelectedList] = React.useState<PlanListId>("my-day");
   const [listDraft, setListDraft] = React.useState("");
-  const [sessionLists, setSessionLists] = React.useState<string[]>([]);
+  const [sessionLists, setSessionLists] = React.useState<string[]>(() =>
+    loadStoredCustomLists(currentUserId),
+  );
   const [editingListHeading, setEditingListHeading] = React.useState(false);
   const [listHeadingDraft, setListHeadingDraft] = React.useState("");
   const [isCreatingList, setIsCreatingList] = React.useState(false);
@@ -2908,6 +2940,21 @@ function PlanTasksView({
   const sortMenuRef = React.useRef<HTMLDivElement | null>(null);
   const myDayComposerCloseTimerRef = React.useRef<number | null>(null);
   const sortMenuCloseTimerRef = React.useRef<number | null>(null);
+
+  React.useEffect(() => {
+    setSessionLists(loadStoredCustomLists(currentUserId));
+  }, [currentUserId]);
+
+  function updateSessionLists(
+    updater: string[] | ((previous: string[]) => string[]),
+  ) {
+    setSessionLists((previous) => {
+      const next =
+        typeof updater === "function" ? updater(previous) : updater;
+      saveStoredCustomLists(next, currentUserId);
+      return next;
+    });
+  }
 
   const todayISO = isoDate(new Date());
   const composerTomorrow = React.useMemo(() => {
@@ -3346,7 +3393,7 @@ function PlanTasksView({
     const id = makeCustomListId(trimmed);
     if (!id) return;
 
-    setSessionLists((prev) => (prev.includes(id) ? prev : [...prev, id]));
+    updateSessionLists((prev) => (prev.includes(id) ? prev : [...prev, id]));
     setSelectedList(id);
     setListDraft("");
     setIsCreatingList(false);
@@ -3408,7 +3455,7 @@ function PlanTasksView({
       return;
     }
 
-    setSessionLists((prev) => {
+    updateSessionLists((prev) => {
       const ordered = customLists;
       const nextOrdered = ordered.map((list) =>
         list === selectedList ? nextList : list,
@@ -3497,7 +3544,7 @@ function PlanTasksView({
 
     const next = [...ordered];
     [next[index - 1], next[index]] = [next[index], next[index - 1]];
-    setSessionLists(next);
+    updateSessionLists(next);
   }
 
   function getDuplicateListId(list: string) {
@@ -3515,7 +3562,9 @@ function PlanTasksView({
 
   function duplicateCustomList(list: string) {
     const nextList = getDuplicateListId(list);
-    setSessionLists((prev) => (prev.includes(nextList) ? prev : [...prev, nextList]));
+    updateSessionLists((prev) =>
+      prev.includes(nextList) ? prev : [...prev, nextList],
+    );
     onDuplicateTaskList(list, nextList);
     setSelectedList(nextList);
   }
@@ -3575,7 +3624,7 @@ function PlanTasksView({
 
     if (!confirmed) return;
 
-    setSessionLists((prev) => prev.filter((item) => item !== list));
+    updateSessionLists((prev) => prev.filter((item) => item !== list));
     onDeleteTaskList(list);
 
     if (selectedList === list) {
@@ -3662,7 +3711,7 @@ function PlanTasksView({
     const id = makeCustomListId(name);
     if (!id) return;
 
-    setSessionLists((prev) => (prev.includes(id) ? prev : [...prev, id]));
+    updateSessionLists((prev) => (prev.includes(id) ? prev : [...prev, id]));
     setSelectedList(id);
     onMoveTaskToList(task, id, getMoveCleanupPatch());
   }

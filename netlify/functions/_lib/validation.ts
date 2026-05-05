@@ -1,7 +1,12 @@
 import { defaultPlannerState } from "../../../src/data/defaults";
 import { normalizePlannerState } from "../../../src/lib/plannerNormalize";
 import type { PlannerState } from "../../../src/types/planner";
-import type { Task, TaskPriority, TaskStatus } from "../../../src/types/task";
+import type {
+  Task,
+  TaskPriority,
+  TaskRepeatRule,
+  TaskStatus,
+} from "../../../src/types/task";
 import {
   asBoolean,
   asFiniteNumber,
@@ -114,9 +119,12 @@ function normalizeTask(raw: unknown): Task {
     tags: asStringArray(record.tags),
     important: asBoolean(record.important, false),
     focus: asBoolean(record.focus, false),
+    myDay: normalizeOptionalMyDay(record.myDay),
     plannedFor: normalizeOptionalDateTime(record.plannedFor),
     plannedStart: normalizeOptionalDateTime(record.plannedStart),
     plannedEnd: normalizeOptionalDateTime(record.plannedEnd),
+    reminderAt: normalizeOptionalDateTime(record.reminderAt),
+    repeatRule: normalizeTaskRepeatRule(record.repeatRule),
     sortOrder: Number.isFinite(asFiniteNumber(record.sortOrder, Number.NaN))
       ? asFiniteNumber(record.sortOrder, 0)
       : undefined,
@@ -280,6 +288,22 @@ function normalizeOptionalDateTime(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+}
+
+function normalizeOptionalMyDay(value: unknown): string | undefined {
+  if (value === "") return "";
+  return normalizeOptionalDate(value);
+}
+
+function normalizeTaskRepeatRule(value: unknown): TaskRepeatRule | undefined {
+  return value === "daily" ||
+    value === "weekdays" ||
+    value === "weekly" ||
+    value === "monthly" ||
+    value === "yearly" ||
+    value === "custom"
+    ? value
+    : undefined;
 }
 
 function normalizeProjectId(value: unknown): string | null | undefined {

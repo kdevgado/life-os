@@ -318,10 +318,6 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   color:var(--text);
 }
 
-.feature-card:hover{
-  transform:translateY(-4px);
-}
-
 /* =========================
    LIFE OS UI SYSTEM
 ========================= */
@@ -836,10 +832,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   filter: grayscale(1);
 }
 
-.lo-task-due-subtitle img {
-  filter: brightness(0) saturate(100%) invert(63%) sepia(76%) saturate(1470%) hue-rotate(359deg) brightness(100%) contrast(93%);
-}
-
+.lo-task-due-subtitle img,
 .lo-task-repeat-subtitle img {
   filter: brightness(0) saturate(100%) invert(63%) sepia(76%) saturate(1470%) hue-rotate(359deg) brightness(100%) contrast(93%);
 }
@@ -848,10 +841,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   filter: brightness(0) saturate(100%) invert(31%) sepia(80%) saturate(2136%) hue-rotate(338deg) brightness(92%) contrast(91%);
 }
 
-:root[data-theme="nebula"] .lo-task-due-subtitle img {
-  filter: brightness(0) saturate(100%) invert(68%) sepia(63%) saturate(2169%) hue-rotate(211deg) brightness(101%) contrast(96%);
-}
-
+:root[data-theme="nebula"] .lo-task-due-subtitle img,
 :root[data-theme="nebula"] .lo-task-repeat-subtitle img {
   filter: brightness(0) saturate(100%) invert(68%) sepia(63%) saturate(2169%) hue-rotate(211deg) brightness(101%) contrast(96%);
 }
@@ -2644,7 +2634,6 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   z-index: 120;
 }
 
-.lo-my-day-composer__circle,
 .lo-my-day-composer__tick {
   width: 18px;
   height: 18px;
@@ -3943,30 +3932,10 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   display: none;
 }
 
-.iw-wallpaper{
-  position: absolute;
-  inset: 0;
-  background-size: cover;
-  background-position: center;
-  transform: scale(1.06);
-  filter: saturate(1.05) contrast(1.02);
-  animation: iw-pan 18s ease-in-out infinite alternate;
-}
-
-@keyframes iw-pan{
-  from { transform: scale(1.06) translate3d(-0.8%, -0.4%, 0); }
-  to   { transform: scale(1.09) translate3d(0.8%, 0.5%, 0); }
-}
-
 .wallpaper-picker__stack{
   margin-top: 10px;
   display: grid;
   gap: 10px;
-}
-
-.wallpaper-picker__select{
-  width: 100%;
-  outline: none;
 }
 
 .wallpaper-picker__preview{
@@ -4962,7 +4931,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
 .lo-sounds {
   display: grid;
-  gap: 14px;
+  gap: 12px;
 }
 
 .lo-sounds__panel-heading{
@@ -5230,9 +5199,6 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   letter-spacing: 1px;
 }
 .lo-timer__row{ display:flex; gap: 10px; flex-wrap: wrap; }
-
-.lo-sounds{ display:grid; gap: 12px; }
-.lo-sounds__label{ font-weight: 650; }
 
 /* Day calendar */
 .lo-daycal {
@@ -5543,8 +5509,6 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 }
 
 .lo-daycal__track-hour {
-  position: relative;
-   min-height: 72px;
   padding-right: 2px;
 
   /* REMOVE old border */
@@ -8213,12 +8177,6 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   background: rgba(255, 255, 255, 0.06);
   border-color: rgba(255, 255, 255, 0.08);
   color: inherit;
-}
-
-.lo-account-menu__row {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 0.65rem;
 }
 
 /* focus mode */
