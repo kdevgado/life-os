@@ -4616,6 +4616,32 @@ function TaskDetailsPanel({
     chooseReminder(new Date(`${customReminderDate}T${customReminderTime}:00`));
   }
 
+  function clearMyDay(event: React.MouseEvent<HTMLButtonElement>) {
+    event.stopPropagation();
+    if (!isInMyDay) return;
+    onToggleMyDay(task);
+  }
+
+  function clearReminder(event: React.MouseEvent<HTMLButtonElement>) {
+    event.stopPropagation();
+    onUpdateReminder(task, "");
+    setReminderMenuOpen(false);
+    setReminderPickerOpen(false);
+  }
+
+  function clearDueDate(event: React.MouseEvent<HTMLButtonElement>) {
+    event.stopPropagation();
+    onUpdateDueDate(task, "");
+    setDueMenuOpen(false);
+    setShowDatePicker(false);
+  }
+
+  function clearTag(event: React.MouseEvent<HTMLButtonElement>) {
+    event.stopPropagation();
+    if (!hasTag) return;
+    onToggleTag(task);
+  }
+
   return (
     <div
       className="lo-task-details-shell"
@@ -4679,28 +4705,42 @@ function TaskDetailsPanel({
           </div>
 
           <div className="lo-task-details-card">
-            <button
-              type="button"
-              className={`lo-task-details-action lo-task-details-action--my-day ${isInMyDay ? "is-added" : ""}`}
-              onClick={() => onToggleMyDay(task)}
-            >
-              <span
-                className="lo-task-details-action__mask-icon"
-                style={{
-                  WebkitMaskImage: `url(${PLAN_SIDEBAR_ICONS["my-day"]})`,
-                  maskImage: `url(${PLAN_SIDEBAR_ICONS["my-day"]})`,
-                }}
-                aria-hidden="true"
-              />
-              <span>{isInMyDay ? "Added to My Day" : "Add to My Day"}</span>
-            </button>
+            <div className={`lo-task-details-action-wrap ${isInMyDay ? "has-remove" : ""}`}>
+              <button
+                type="button"
+                className={`lo-task-details-action lo-task-details-action--my-day ${isInMyDay ? "is-added lo-task-details-action--has-remove" : ""}`}
+                onClick={() => onToggleMyDay(task)}
+              >
+                <span
+                  className="lo-task-details-action__mask-icon"
+                  style={{
+                    WebkitMaskImage: `url(${PLAN_SIDEBAR_ICONS["my-day"]})`,
+                    maskImage: `url(${PLAN_SIDEBAR_ICONS["my-day"]})`,
+                  }}
+                  aria-hidden="true"
+                />
+                <span>{isInMyDay ? "Added to My Day" : "Add to My Day"}</span>
+              </button>
+              {isInMyDay ? (
+                <button
+                  type="button"
+                  className="lo-task-details-action-remove"
+                  onClick={clearMyDay}
+                  aria-label="Remove from My Day"
+                  title="Remove from My Day"
+                >
+                  ×
+                </button>
+              ) : null}
+            </div>
           </div>
 
           <div className="lo-task-details-card">
             <div className="lo-task-details-reminder-wrap" ref={reminderMenuRef}>
+              <div className={`lo-task-details-action-wrap ${reminderLabel ? "has-remove" : ""}`}>
               <button
                 type="button"
-                className={`lo-task-details-action lo-task-details-action--reminder ${reminderLabel ? "is-set" : ""}`}
+                className={`lo-task-details-action lo-task-details-action--reminder ${reminderLabel ? "is-set lo-task-details-action--has-remove" : ""}`}
                 onClick={() => setReminderMenuOpen((open) => !open)}
                 aria-expanded={reminderMenuOpen}
                 aria-haspopup="menu"
@@ -4715,6 +4755,18 @@ function TaskDetailsPanel({
                 />
                 <span>{reminderLabel || "Remind me"}</span>
               </button>
+              {reminderLabel ? (
+                <button
+                  type="button"
+                  className="lo-task-details-action-remove"
+                  onClick={clearReminder}
+                  aria-label="Remove reminder"
+                  title="Remove reminder"
+                >
+                  ×
+                </button>
+              ) : null}
+              </div>
 
               {reminderMenuOpen ? (
                 <div className="lo-task-details-reminder-menu" role="menu">
@@ -4767,9 +4819,10 @@ function TaskDetailsPanel({
             <div className="lo-task-details-divider" />
 
             <div className="lo-task-details-due-wrap" ref={dueMenuRef}>
+              <div className={`lo-task-details-action-wrap ${dueDateLabel ? "has-remove" : ""}`}>
               <button
                 type="button"
-                className={`lo-task-details-action lo-task-details-action--date ${dueDateLabel ? "is-set" : ""} ${overdue ? "is-overdue" : ""}`}
+                className={`lo-task-details-action lo-task-details-action--date ${dueDateLabel ? "is-set lo-task-details-action--has-remove" : ""} ${overdue ? "is-overdue" : ""}`}
                 onClick={() => setDueMenuOpen((open) => !open)}
                 aria-expanded={dueMenuOpen}
                 aria-haspopup="menu"
@@ -4784,6 +4837,18 @@ function TaskDetailsPanel({
                 />
                 <span>{dueDateLabel || "Add due date"}</span>
               </button>
+              {dueDateLabel ? (
+                <button
+                  type="button"
+                  className="lo-task-details-action-remove"
+                  onClick={clearDueDate}
+                  aria-label="Remove due date"
+                  title="Remove due date"
+                >
+                  ×
+                </button>
+              ) : null}
+              </div>
 
               {dueMenuOpen ? (
                 <div className="lo-task-details-due-menu" role="menu">
@@ -4893,14 +4958,27 @@ function TaskDetailsPanel({
           ) : null}
 
           <div className="lo-task-details-card">
-            <button
-              type="button"
-              className={`lo-task-details-action ${hasTag ? "is-active" : ""}`}
-              onClick={() => onToggleTag(task)}
-            >
-              <img src="/icons/white/tags.png" alt="" />
-              <span>Tag</span>
-            </button>
+            <div className={`lo-task-details-action-wrap ${hasTag ? "has-remove" : ""}`}>
+              <button
+                type="button"
+                className={`lo-task-details-action ${hasTag ? "is-active lo-task-details-action--has-remove" : ""}`}
+                onClick={() => onToggleTag(task)}
+              >
+                <img src="/icons/white/tags.png" alt="" />
+                <span>Tag</span>
+              </button>
+              {hasTag ? (
+                <button
+                  type="button"
+                  className="lo-task-details-action-remove"
+                  onClick={clearTag}
+                  aria-label="Remove tag"
+                  title="Remove tag"
+                >
+                  ×
+                </button>
+              ) : null}
+            </div>
           </div>
 
           <div className="lo-task-details-card">
