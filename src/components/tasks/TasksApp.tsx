@@ -141,7 +141,7 @@ export default function TasksApp({
   const [query, setQuery] = useState("");
 
   // ✅ defaults requested
-  const [dueDate, setDueDate] = useState<string>(() => isoDate(new Date())); // today
+  const [dueDate, setDueDate] = useState<string>("");
   const [priority, setPriority] = useState<Priority>(3); // low
 
   // ✅ for “new task” animation
@@ -612,7 +612,6 @@ export default function TasksApp({
   }
 
   function onCreateDraftTask() {
-    const today = isoDate(new Date());
     const now = new Date().toISOString();
     const nextSortOrder = tasks.length
       ? Math.max(...tasks.map((t) => t.sortOrder ?? 0)) + 1
@@ -624,9 +623,6 @@ export default function TasksApp({
           title: "",
           status: "todo",
           priority: 3,
-          dueDate: today,
-          plannedFor: today,
-          myDay: today,
           focus: true,
           list: "focus",
           tags: ["focus"],
@@ -634,11 +630,8 @@ export default function TasksApp({
           createdAt: now,
           updatedAt: now,
         }
-      : createTask({
+        : createTask({
           title: "",
-          dueDate: today,
-          plannedFor: today,
-          myDay: today,
           priority: 3,
           status: "todo",
           focus: true,
@@ -679,21 +672,17 @@ export default function TasksApp({
     const trimmed = title.trim();
     if (!trimmed) return;
 
-    const due = dueDate || undefined;
     const today = isoDate(new Date());
 
     const basePatch =
       mode === "focus"
         ? {
-            dueDate: today,
-            plannedFor: today,
             myDay: today,
             priority: priority ?? 3,
             status: "todo" as const,
             focus: true,
           }
         : {
-            dueDate: due,
             myDay: today,
             priority: priority ?? 3,
             status: "todo" as const,
@@ -703,7 +692,7 @@ export default function TasksApp({
 
     const newTask = authed
       ? {
-          ...makeTask(trimmed, due, priority ?? 3),
+          ...makeTask(trimmed, undefined, priority ?? 3),
           ...basePatch,
           ...extraPatch,
           list: taskList,
@@ -719,7 +708,7 @@ export default function TasksApp({
 
     setTasks((prev) => [newTask, ...prev]);
     setTitle("");
-    setDueDate(isoDate(new Date()));
+    setDueDate("");
     setPriority(3);
     setJustAddedId(newTask.id);
     window.setTimeout(() => setJustAddedId(null), 1600);
@@ -3002,11 +2991,6 @@ function PlanTasksView({
 
     if (selectedList === "important") {
       extraPatch.important = true;
-    }
-
-    if (selectedList === "planned") {
-      extraPatch.dueDate = todayISO;
-      extraPatch.plannedFor = todayISO;
     }
 
     onAdd(forcedList, extraPatch);
