@@ -779,6 +779,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 }
 
 .lo-task-reminder-subtitle,
+.lo-task-list-subtitle,
 .lo-task-due-subtitle {
   display: inline-flex;
   align-items: center;
@@ -787,6 +788,10 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 }
 
 .lo-task-reminder-subtitle {
+  color: var(--shell-muted);
+}
+
+.lo-task-list-subtitle {
   color: var(--shell-muted);
 }
 
@@ -822,6 +827,12 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 .lo-task-reminder-subtitle span,
 .lo-task-due-subtitle span {
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lo-task-list-subtitle {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -8048,6 +8059,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 .lo-task-details-reminder-picker__save,
 .lo-task-details-created,
 .lo-task-reminder-subtitle,
+.lo-task-list-subtitle,
 .lo-task-due-subtitle,
 .lo-tasks .lo-chip label,
 .lo-tasks .lo-pill,

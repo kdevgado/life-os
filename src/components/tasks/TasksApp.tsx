@@ -688,7 +688,7 @@ export default function TasksApp({
             status: "todo" as const,
           };
 
-    const taskList = mode === "plan" ? (forcedList ?? "inbox") : "focus";
+    const taskList = mode === "plan" ? (forcedList ?? "tasks") : "focus";
 
     const newTask = authed
       ? {
@@ -2519,6 +2519,11 @@ function labelForList(list: PlanListId) {
     .filter(Boolean)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
+}
+
+function labelForTaskList(task: Task) {
+  const list = task.list || "tasks";
+  return labelForList(list === "inbox" ? "tasks" : list);
 }
 
 function PlanTasksView({
@@ -5017,6 +5022,7 @@ function TaskSection({
       <div className="lo-tasklist lo-stack">
         {tasks.map((task) => {
           const isNew = task.id === justAddedId;
+          const listLabel = labelForTaskList(task);
           const reminderLabel = formatReminderDisplay(task.reminderAt);
           const dueDateLabel = formatDueDateDisplay(getTaskDateKey(task));
           const priorityLabel =
@@ -5067,8 +5073,16 @@ function TaskSection({
                   >
                     {task.title}
                   </div>
-                  {dueDateLabel || reminderLabel ? (
+                  {listLabel || dueDateLabel || reminderLabel ? (
                     <div className="lo-task-meta-subtitle">
+                      {listLabel ? (
+                        <span className="lo-task-list-subtitle">
+                          {listLabel}
+                        </span>
+                      ) : null}
+                      {listLabel && (dueDateLabel || reminderLabel) ? (
+                        <span className="lo-task-meta-subtitle__dot" aria-hidden="true" />
+                      ) : null}
                       {dueDateLabel ? (
                         <span className="lo-task-due-subtitle">
                           <img src={PLAN_SIDEBAR_ICONS.planned} alt="" />
