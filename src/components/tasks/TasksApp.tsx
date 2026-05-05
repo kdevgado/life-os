@@ -200,6 +200,35 @@ function parseEditorDate(value: string) {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+function detectDueDateFromTaskText(value: string) {
+  const normalized = value.toLowerCase();
+  if (/\b(tomorrow|tmrw)\b/.test(normalized)) {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return isoDate(tomorrow);
+  }
+
+  const weekdayAliases: Array<[RegExp, number]> = [
+    [/\b(mon|monday)\b/, 1],
+    [/\b(tue|tues|tuesday)\b/, 2],
+    [/\b(wed|weds|wednesday)\b/, 3],
+    [/\b(thu|thur|thurs|thursday)\b/, 4],
+    [/\b(fri|friday)\b/, 5],
+    [/\b(sat|saturday)\b/, 6],
+    [/\b(sun|sunday)\b/, 0],
+  ];
+
+  const match = weekdayAliases.find(([pattern]) => pattern.test(normalized));
+  if (!match) return "";
+
+  const today = new Date();
+  const targetDay = match[1];
+  const daysUntilTarget = (targetDay - today.getDay() + 7) % 7;
+  const targetDate = new Date(today);
+  targetDate.setDate(today.getDate() + daysUntilTarget);
+  return isoDate(targetDate);
+}
+
 function reminderAlertKey(task: Task) {
   return `${task.id}:${task.reminderAt ?? ""}`;
 }
@@ -2847,6 +2876,7 @@ function PlanTasksView({
   const [composerReminderAt, setComposerReminderAt] = React.useState("");
   const [composerRepeatRule, setComposerRepeatRule] =
     React.useState<TaskRepeatRule | "">("");
+  const [composerAutoDueDate, setComposerAutoDueDate] = React.useState("");
   const [myDayCompletedOpen, setMyDayCompletedOpen] = React.useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
   const [suggestionsOpen, setSuggestionsOpen] = React.useState(false);
@@ -2990,6 +3020,7 @@ function PlanTasksView({
     function handlePointerDown(event: MouseEvent) {
       const target = event.target as Node;
       if (myDayComposerRef.current?.contains(target)) return;
+      resetMyDayComposerPlaceholder();
       closeMyDayComposer();
     }
 
@@ -3303,6 +3334,7 @@ function PlanTasksView({
     onAdd(forcedList, extraPatch);
     setComposerReminderAt("");
     setComposerRepeatRule("");
+    setComposerAutoDueDate("");
     setComposerMenu(null);
     setComposerDatePickerOpen(false);
   }
@@ -3680,20 +3712,51 @@ function PlanTasksView({
     closeMyDayComposer();
   }
 
+  function resetMyDayComposerPlaceholder() {
+    const el = myDayTitleRef.current;
+    const text = (el?.textContent ?? "").trim();
+    if (text) return;
+
+    setTitle("");
+    if (el) {
+      el.textContent = "";
+      el.innerHTML = "";
+    }
+  }
+
   function toggleComposerMenu(menu: Exclude<ComposerMenu, null>) {
     openMyDayComposer();
     setComposerDatePickerOpen(false);
     setComposerMenu((current) => (current === menu ? null : menu));
   }
 
+  function updateComposerTitle(value: string) {
+    setTitle(value);
+    openMyDayComposer();
+
+    const detectedDueDate = detectDueDateFromTaskText(value);
+    if (detectedDueDate) {
+      setDueDate(detectedDueDate);
+      setComposerAutoDueDate(detectedDueDate);
+      return;
+    }
+
+    if (composerAutoDueDate && dueDate === composerAutoDueDate) {
+      setDueDate("");
+      setComposerAutoDueDate("");
+    }
+  }
+
   function chooseComposerDueDate(date: string) {
     setDueDate(date);
+    setComposerAutoDueDate("");
     setComposerMenu(null);
     setComposerDatePickerOpen(false);
   }
 
   function removeComposerDueDate() {
     setDueDate("");
+    setComposerAutoDueDate("");
     setComposerMenu(null);
     setComposerDatePickerOpen(false);
   }
@@ -3730,6 +3793,7 @@ function PlanTasksView({
   function closeMyDayComposer() {
     if (!myDayComposerOpen || myDayComposerClosing) return;
 
+    resetMyDayComposerPlaceholder();
     setMyDayComposerClosing(true);
     myDayComposerCloseTimerRef.current = window.setTimeout(() => {
       setMyDayComposerOpen(false);
@@ -4064,9 +4128,9 @@ function PlanTasksView({
                   data-placeholder="Add a task"
                   onFocus={openMyDayComposer}
                   onInput={(e) => {
-                    setTitle(e.currentTarget.textContent ?? "");
-                    openMyDayComposer();
+                    updateComposerTitle(e.currentTarget.textContent ?? "");
                   }}
+                  onBlur={resetMyDayComposerPlaceholder}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();

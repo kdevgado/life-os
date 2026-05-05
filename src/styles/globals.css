@@ -6661,6 +6661,19 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   font-size: 13px;
 }
 
+.lo-plan .lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-sidebar button {
+  width: 40px;
+  min-height: 40px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  gap: 0;
+}
+
+.lo-plan .lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-sidebar__text {
+  display: none;
+}
+
 .lo-plan .lo-toolbar,
 .lo-plan .lo-addbar,
 .lo-plan .lo-focusbar,
