@@ -2739,6 +2739,7 @@ type BoardTaskMenuState = {
 };
 
 type PlannedSectionId = "earlier" | "today" | "later";
+type ComposerMenu = "due" | "reminder" | "repeat" | null;
 
 type CustomListMenuState = {
   list: string;
@@ -2840,6 +2841,12 @@ function PlanTasksView({
   const [isCreatingList, setIsCreatingList] = React.useState(false);
   const [myDayComposerOpen, setMyDayComposerOpen] = React.useState(false);
   const [myDayComposerClosing, setMyDayComposerClosing] = React.useState(false);
+  const [composerMenu, setComposerMenu] = React.useState<ComposerMenu>(null);
+  const [composerDatePickerOpen, setComposerDatePickerOpen] =
+    React.useState(false);
+  const [composerReminderAt, setComposerReminderAt] = React.useState("");
+  const [composerRepeatRule, setComposerRepeatRule] =
+    React.useState<TaskRepeatRule | "">("");
   const [myDayCompletedOpen, setMyDayCompletedOpen] = React.useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
   const [suggestionsOpen, setSuggestionsOpen] = React.useState(false);
@@ -2864,6 +2871,7 @@ function PlanTasksView({
   const listHeadingInputRef = React.useRef<HTMLInputElement | null>(null);
   const newListWrapRef = React.useRef<HTMLDivElement | null>(null);
   const myDayComposerRef = React.useRef<HTMLDivElement | null>(null);
+  const composerToolsRef = React.useRef<HTMLDivElement | null>(null);
   const myDayTitleRef = React.useRef<HTMLDivElement | null>(null);
   const boardTaskMenuRef = React.useRef<HTMLDivElement | null>(null);
   const customListMenuRef = React.useRef<HTMLDivElement | null>(null);
@@ -2872,6 +2880,19 @@ function PlanTasksView({
   const sortMenuCloseTimerRef = React.useRef<number | null>(null);
 
   const todayISO = isoDate(new Date());
+  const composerTomorrow = React.useMemo(() => {
+    const date = new Date();
+    date.setDate(date.getDate() + 1);
+    return date;
+  }, []);
+  const composerNextWeek = React.useMemo(() => {
+    const date = new Date();
+    date.setDate(date.getDate() + 7);
+    return date;
+  }, []);
+  const composerLaterTodayReminder = React.useMemo(() => nextWholeHour(), []);
+  const composerTomorrowReminder = React.useMemo(() => atHourFromToday(1, 9), []);
+  const composerNextWeekReminder = React.useMemo(() => atHourFromToday(7, 9), []);
   const yesterdayISO = React.useMemo(() => {
     const date = new Date();
     date.setDate(date.getDate() - 1);
@@ -2947,6 +2968,21 @@ function PlanTasksView({
     document.addEventListener("mousedown", handlePointerDown);
     return () => document.removeEventListener("mousedown", handlePointerDown);
   }, [isCreatingList]);
+
+  React.useEffect(() => {
+    if (!composerMenu) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target as Node;
+      if (composerToolsRef.current?.contains(target)) return;
+      setComposerMenu(null);
+      setComposerDatePickerOpen(false);
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown, true);
+    return () =>
+      document.removeEventListener("pointerdown", handlePointerDown, true);
+  }, [composerMenu]);
 
   React.useEffect(() => {
     if (!myDayComposerOpen) return;
@@ -3251,7 +3287,24 @@ function PlanTasksView({
       extraPatch.important = true;
     }
 
+    if (dueDate) {
+      extraPatch.dueDate = dueDate;
+    }
+
+    if (composerReminderAt) {
+      extraPatch.reminderAt = composerReminderAt;
+    }
+
+    if (composerRepeatRule) {
+      extraPatch.repeatRule = composerRepeatRule;
+      extraPatch.dueDate = dueDate || todayISO;
+    }
+
     onAdd(forcedList, extraPatch);
+    setComposerReminderAt("");
+    setComposerRepeatRule("");
+    setComposerMenu(null);
+    setComposerDatePickerOpen(false);
   }
 
   function addCustomList() {
@@ -3627,6 +3680,45 @@ function PlanTasksView({
     closeMyDayComposer();
   }
 
+  function toggleComposerMenu(menu: Exclude<ComposerMenu, null>) {
+    openMyDayComposer();
+    setComposerDatePickerOpen(false);
+    setComposerMenu((current) => (current === menu ? null : menu));
+  }
+
+  function chooseComposerDueDate(date: string) {
+    setDueDate(date);
+    setComposerMenu(null);
+    setComposerDatePickerOpen(false);
+  }
+
+  function removeComposerDueDate() {
+    setDueDate("");
+    setComposerMenu(null);
+    setComposerDatePickerOpen(false);
+  }
+
+  function chooseComposerReminder(date: Date) {
+    setComposerReminderAt(date.toISOString());
+    setComposerMenu(null);
+  }
+
+  function removeComposerReminder() {
+    setComposerReminderAt("");
+    setComposerMenu(null);
+  }
+
+  function chooseComposerRepeat(rule: TaskRepeatRule) {
+    setComposerRepeatRule(rule);
+    if (!dueDate) setDueDate(todayISO);
+    setComposerMenu(null);
+  }
+
+  function removeComposerRepeat() {
+    setComposerRepeatRule("");
+    setComposerMenu(null);
+  }
+
   function openMyDayComposer() {
     if (myDayComposerCloseTimerRef.current) {
       window.clearTimeout(myDayComposerCloseTimerRef.current);
@@ -3993,16 +4085,218 @@ function PlanTasksView({
                   <div className="lo-my-day-composer__divider" />
 
                   <div className="lo-my-day-composer__bottom">
-                    <div className="lo-my-day-composer__tools">
-                      <button type="button" title="Due date" aria-label="Due date">
-                        <img src="/icons/white/calendar.png" alt="" />
-                      </button>
-                      <button type="button" title="Remind me" aria-label="Remind me">
-                        <img src="/icons/white/alarm.png" alt="" />
-                      </button>
-                      <button type="button" title="Repeat" aria-label="Repeat">
-                        <img src="/icons/white/repeat.png" alt="" />
-                      </button>
+                    <div className="lo-my-day-composer__tools" ref={composerToolsRef}>
+                      <div className="lo-my-day-composer__tool-wrap">
+                        <button
+                          type="button"
+                          className={dueDate ? "is-active" : ""}
+                          title="Due date"
+                          aria-label="Due date"
+                          aria-expanded={composerMenu === "due"}
+                          onClick={() => toggleComposerMenu("due")}
+                        >
+                          <img src="/icons/white/calendar.png" alt="" />
+                        </button>
+                        {composerMenu === "due" ? (
+                          <div className="lo-composer-menu" role="menu">
+                            <div className="lo-task-details-due-menu__title">Due</div>
+                            <div className="lo-task-details-divider" />
+                            <button
+                              type="button"
+                              className="lo-task-details-due-menu__item"
+                              role="menuitem"
+                              onClick={() => chooseComposerDueDate(todayISO)}
+                            >
+                              <img src={PLAN_SIDEBAR_ICONS["my-day"]} alt="" />
+                              <span>Today</span>
+                            </button>
+                            <button
+                              type="button"
+                              className="lo-task-details-due-menu__item"
+                              role="menuitem"
+                              onClick={() => chooseComposerDueDate(isoDate(composerTomorrow))}
+                            >
+                              <img src={PLAN_SIDEBAR_ICONS.planned} alt="" />
+                              <span>Tomorrow</span>
+                            </button>
+                            <button
+                              type="button"
+                              className="lo-task-details-due-menu__item"
+                              role="menuitem"
+                              onClick={() => chooseComposerDueDate(isoDate(composerNextWeek))}
+                            >
+                              <img src="/icons/white/repeat.png" alt="" />
+                              <span>Next Week</span>
+                            </button>
+                            <div className="lo-task-details-divider" />
+                            <button
+                              type="button"
+                              className="lo-task-details-due-menu__item"
+                              role="menuitem"
+                              onClick={() => setComposerDatePickerOpen((open) => !open)}
+                            >
+                              <img src={PLAN_SIDEBAR_ICONS.planned} alt="" />
+                              <span>Pick a Date</span>
+                            </button>
+                            {composerDatePickerOpen ? (
+                              <input
+                                className="lo-task-details-due-menu__date"
+                                type="date"
+                                value={dueDate}
+                                onChange={(event) =>
+                                  chooseComposerDueDate(event.target.value)
+                                }
+                                aria-label="Pick a due date"
+                                autoFocus
+                              />
+                            ) : null}
+                            {dueDate ? (
+                              <>
+                                <div className="lo-task-details-divider" />
+                                <button
+                                  type="button"
+                                  className="lo-task-details-due-menu__item is-danger"
+                                  role="menuitem"
+                                  onClick={removeComposerDueDate}
+                                >
+                                  <img src="/icons/white/calendar-xmark.png" alt="" />
+                                  <span>Remove due date</span>
+                                </button>
+                              </>
+                            ) : null}
+                          </div>
+                        ) : null}
+                      </div>
+                      <div className="lo-my-day-composer__tool-wrap">
+                        <button
+                          type="button"
+                          className={composerReminderAt ? "is-active" : ""}
+                          title="Remind me"
+                          aria-label="Remind me"
+                          aria-expanded={composerMenu === "reminder"}
+                          onClick={() => toggleComposerMenu("reminder")}
+                        >
+                          <img src="/icons/white/alarm.png" alt="" />
+                        </button>
+                        {composerMenu === "reminder" ? (
+                          <div className="lo-composer-menu" role="menu">
+                            <div className="lo-task-details-due-menu__title">Reminder</div>
+                            <div className="lo-task-details-divider" />
+                            <button
+                              type="button"
+                              className="lo-task-details-due-menu__item"
+                              role="menuitem"
+                              onClick={() =>
+                                chooseComposerReminder(composerLaterTodayReminder)
+                              }
+                            >
+                              <img src="/icons/white/alarm.png" alt="" />
+                              <span>Later today</span>
+                              <span>{formatReminderHour(composerLaterTodayReminder)}</span>
+                            </button>
+                            <button
+                              type="button"
+                              className="lo-task-details-due-menu__item"
+                              role="menuitem"
+                              onClick={() =>
+                                chooseComposerReminder(composerTomorrowReminder)
+                              }
+                            >
+                              <img src={PLAN_SIDEBAR_ICONS.planned} alt="" />
+                              <span>Tomorrow</span>
+                              <span>{formatReminderTime(composerTomorrowReminder)}</span>
+                            </button>
+                            <button
+                              type="button"
+                              className="lo-task-details-due-menu__item"
+                              role="menuitem"
+                              onClick={() =>
+                                chooseComposerReminder(composerNextWeekReminder)
+                              }
+                            >
+                              <img src="/icons/white/repeat.png" alt="" />
+                              <span>Next week</span>
+                              <span>{formatReminderTime(composerNextWeekReminder)}</span>
+                            </button>
+                            {composerReminderAt ? (
+                              <>
+                                <div className="lo-task-details-divider" />
+                                <button
+                                  type="button"
+                                  className="lo-task-details-due-menu__item is-danger"
+                                  role="menuitem"
+                                  onClick={removeComposerReminder}
+                                >
+                                  <img src="/icons/white/alarm.png" alt="" />
+                                  <span>Remove reminder</span>
+                                </button>
+                              </>
+                            ) : null}
+                          </div>
+                        ) : null}
+                      </div>
+                      <div className="lo-my-day-composer__tool-wrap">
+                        <button
+                          type="button"
+                          className={composerRepeatRule ? "is-active" : ""}
+                          title="Repeat"
+                          aria-label="Repeat"
+                          aria-expanded={composerMenu === "repeat"}
+                          onClick={() => toggleComposerMenu("repeat")}
+                        >
+                          <img src="/icons/white/repeat.png" alt="" />
+                        </button>
+                        {composerMenu === "repeat" ? (
+                          <div className="lo-composer-menu" role="menu">
+                            <div className="lo-task-details-due-menu__title">Repeat</div>
+                            <div className="lo-task-details-divider" />
+                            {(
+                              [
+                                ["daily", "Daily", "/icons/white/day.png"],
+                                ["weekdays", "Weekdays", PLAN_SIDEBAR_ICONS["my-day"]],
+                                ["weekly", "Weekly", "/icons/white/repeat.png"],
+                                ["monthly", "Monthly", PLAN_SIDEBAR_ICONS.planned],
+                                ["yearly", "Yearly", "/icons/white/calendar.png"],
+                              ] as Array<[TaskRepeatRule, string, string]>
+                            ).map(([rule, label, icon]) => (
+                              <button
+                                key={rule}
+                                type="button"
+                                className="lo-task-details-due-menu__item"
+                                role="menuitem"
+                                onClick={() => chooseComposerRepeat(rule)}
+                              >
+                                <img src={icon} alt="" />
+                                <span>{label}</span>
+                              </button>
+                            ))}
+                            <div className="lo-task-details-divider" />
+                            <button
+                              type="button"
+                              className="lo-task-details-due-menu__item"
+                              role="menuitem"
+                              onClick={() => chooseComposerRepeat("custom")}
+                            >
+                              <img src="/icons/white/setting.png" alt="" />
+                              <span>Custom</span>
+                            </button>
+                            {composerRepeatRule ? (
+                              <>
+                                <div className="lo-task-details-divider" />
+                                <button
+                                  type="button"
+                                  className="lo-task-details-due-menu__item is-danger"
+                                  role="menuitem"
+                                  onClick={removeComposerRepeat}
+                                >
+                                  <img src="/icons/white/repeat.png" alt="" />
+                                  <span>Remove repeat</span>
+                                </button>
+                              </>
+                            ) : null}
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
 
                     <Button onClick={submitMyDayTask} disabled={!canAddToSelectedList}>

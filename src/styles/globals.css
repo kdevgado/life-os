@@ -2264,6 +2264,15 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   outline: none;
 }
 
+.lo-task-details-due-menu__item.is-danger {
+  color: #ef4444;
+}
+
+.lo-task-details-due-menu__item.is-danger:hover,
+.lo-task-details-due-menu__item.is-danger:focus-visible {
+  background: color-mix(in srgb, #ef4444 14%, transparent);
+}
+
 .lo-task-details-due-menu__item img {
   width: 16px;
   height: 16px;
@@ -2630,7 +2639,9 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
 .lo-my-day-composer {
   padding: 0;
-  overflow: hidden;
+  overflow: visible;
+  position: relative;
+  z-index: 120;
 }
 
 .lo-my-day-composer__circle,
@@ -2660,7 +2671,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
 .lo-my-day-composer__actions {
   display: grid;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .lo-my-day-composer__top {
@@ -2706,7 +2717,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   justify-content: space-between;
   gap: 12px;
   padding: 10px 12px;
-  overflow: hidden;
+  overflow: visible;
   transform-origin: top center;
   animation: loMyDayComposerBottomIn 0.22s ease-out both;
 }
@@ -2724,9 +2735,15 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   align-items: center;
   gap: 8px;
   min-width: 0;
+  position: relative;
+  z-index: 121;
 }
 
-.lo-my-day-composer__tools button {
+.lo-my-day-composer__tool-wrap {
+  position: relative;
+}
+
+.lo-my-day-composer__tools > .lo-my-day-composer__tool-wrap > button {
   min-height: 34px;
   border: 0;
   border-radius: 10px;
@@ -2740,15 +2757,55 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   cursor: pointer;
 }
 
-.lo-my-day-composer__tools button:hover {
+.lo-my-day-composer__tools > .lo-my-day-composer__tool-wrap > button:hover {
   background: rgba(127, 127, 127, 0.12);
   color: inherit;
 }
 
-.lo-my-day-composer__tools img {
+.lo-my-day-composer__tools > .lo-my-day-composer__tool-wrap > button.is-active {
+  background: color-mix(in srgb, #f97316 14%, transparent);
+  color: #f97316;
+}
+
+:root[data-theme="nebula"] .lo-my-day-composer__tools > .lo-my-day-composer__tool-wrap > button.is-active {
+  background: color-mix(in srgb, #a78bfa 16%, transparent);
+  color: #a78bfa;
+}
+
+.lo-my-day-composer__tools > .lo-my-day-composer__tool-wrap > button > img {
   width: 17px;
   height: 17px;
   object-fit: contain;
+}
+
+.lo-my-day-composer__tools > .lo-my-day-composer__tool-wrap > button.is-active > img {
+  filter: brightness(0) saturate(100%) invert(63%) sepia(76%) saturate(1470%) hue-rotate(359deg) brightness(100%) contrast(93%);
+}
+
+:root[data-theme="nebula"] .lo-my-day-composer__tools > .lo-my-day-composer__tool-wrap > button.is-active > img {
+  filter: brightness(0) saturate(100%) invert(68%) sepia(63%) saturate(2169%) hue-rotate(211deg) brightness(101%) contrast(96%);
+}
+
+.lo-composer-menu {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 8px);
+  z-index: 10070;
+  width: 250px;
+  padding: 8px;
+  border-radius: 10px;
+  background: #070a14;
+  color: var(--shell-text);
+  border: 1px solid var(--shell-border);
+  box-shadow: 0 20px 48px rgba(15, 23, 42, 0.3);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  animation: loSuggestionsContentIn 160ms ease both;
+}
+
+.lo-composer-menu .lo-task-details-due-menu__item img {
+  width: 16px;
+  height: 16px;
 }
 
 @keyframes loMyDayComposerPanelIn {

@@ -144,6 +144,10 @@ export function createTask(
     focus: partial.focus ?? parsed.focus,
     myDay: partial.myDay ?? todayDateKey(),
     plannedFor: partial.plannedFor ?? parsed.plannedFor,
+    plannedStart: partial.plannedStart,
+    plannedEnd: partial.plannedEnd,
+    reminderAt: partial.reminderAt,
+    repeatRule: partial.repeatRule,
     sortOrder:
       partial.sortOrder ??
       (existing.length ? Math.max(...existing.map((t) => t.sortOrder ?? 0)) + 1 : 1),
