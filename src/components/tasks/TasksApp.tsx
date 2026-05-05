@@ -82,13 +82,12 @@ function getTaskDateKey(task: Task) {
 function isTaskOverdue(task: Task) {
   if (task.status === "done") return false;
 
-  const raw = task.dueDate ?? task.plannedFor;
-  if (!raw) return false;
+  const dateKey = getTaskDateKey(task);
+  if (!dateKey) return false;
 
-  const now = new Date();
-  const due = new Date(raw);
+  const today = isoDate(startOfToday());
 
-  return due < now;
+  return dateKey < today;
 }
 
 function getCreatedDateKey(task: Task) {
@@ -4193,14 +4192,31 @@ function formatReminderDisplay(iso?: string) {
     : formatReminderTime(date);
 }
 
-function formatDueDateDisplay(dateKey?: string | null) {
+function formatDueDateDisplay(
+  dateKey?: string | null,
+  options: { overdue?: boolean } = {},
+) {
   if (!dateKey) return "";
   const date = new Date(`${dateKey}T00:00:00`);
   if (Number.isNaN(date.getTime())) return "";
 
   const today = startOfToday();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
+
+  if (options.overdue) {
+    const overdueLabel = isSameDate(date, yesterday)
+      ? "Yesterday"
+      : date.toLocaleDateString(undefined, {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+        });
+
+    return `Overdue, ${overdueLabel}`;
+  }
 
   if (isSameDate(date, today)) return "Today";
   if (isSameDate(date, tomorrow)) return "Tomorrow";
@@ -4267,7 +4283,8 @@ function TaskDetailsPanel({
   const dueDate = getTaskDateKey(task) ?? "";
   const hasTag = (task.tags ?? []).includes("tagged");
   const reminderLabel = formatReminderDisplay(task.reminderAt);
-  const dueDateLabel = formatDueDateDisplay(dueDate);
+  const overdue = isTaskOverdue(task);
+  const dueDateLabel = formatDueDateDisplay(dueDate, { overdue });
   const weekdayLabel = React.useCallback(
     (date: Date) =>
       date.toLocaleDateString(undefined, {
@@ -4551,7 +4568,7 @@ function TaskDetailsPanel({
             <div className="lo-task-details-due-wrap" ref={dueMenuRef}>
               <button
                 type="button"
-                className={`lo-task-details-action lo-task-details-action--date ${dueDateLabel ? "is-set" : ""}`}
+                className={`lo-task-details-action lo-task-details-action--date ${dueDateLabel ? "is-set" : ""} ${overdue ? "is-overdue" : ""}`}
                 onClick={() => setDueMenuOpen((open) => !open)}
                 aria-expanded={dueMenuOpen}
                 aria-haspopup="menu"
@@ -5072,7 +5089,10 @@ function TaskSection({
           const isNew = task.id === justAddedId;
           const listLabel = labelForTaskList(task);
           const reminderLabel = formatReminderDisplay(task.reminderAt);
-          const dueDateLabel = formatDueDateDisplay(getTaskDateKey(task));
+          const overdue = isTaskOverdue(task);
+          const dueDateLabel = formatDueDateDisplay(getTaskDateKey(task), {
+            overdue,
+          });
           const priorityLabel =
             task.priority === 1 ? "High" : task.priority === 2 ? "Med" : "Low";
           const priClass =
@@ -5132,7 +5152,7 @@ function TaskSection({
                         <span className="lo-task-meta-subtitle__dot" aria-hidden="true" />
                       ) : null}
                       {dueDateLabel ? (
-                        <span className="lo-task-due-subtitle">
+                        <span className={`lo-task-due-subtitle ${overdue ? "is-overdue" : ""}`}>
                           <img src={PLAN_SIDEBAR_ICONS.planned} alt="" />
                           <span>{dueDateLabel}</span>
                         </span>
