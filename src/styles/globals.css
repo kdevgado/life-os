@@ -682,7 +682,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 .lo-tasks .lo-task-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   min-width: 0;
   padding: 12px 14px;
 }
@@ -747,7 +747,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   flex: 1 1 auto;
   min-width: 0;
   font-weight: 650;
-  line-height: 1.25;
+  line-height: 1.3;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1246,6 +1246,13 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
     opacity 150ms ease,
     max-height 260ms cubic-bezier(0.22, 1, 0.36, 1),
     transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.lo-plan-tasks-new-list-button img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  flex: 0 0 auto;
 }
 
 .lo-plan-sort-status {
@@ -2048,6 +2055,13 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   opacity: 0.72;
 }
 
+.lo-suggestion-row__add img {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  opacity: 0.86;
+}
+
 .lo-suggestion-row__title {
   min-width: 0;
   overflow: hidden;
@@ -2055,12 +2069,6 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   white-space: nowrap;
   font-size: 13px;
   font-weight: 650;
-}
-
-.lo-suggestion-row__add {
-  font-size: 20px;
-  line-height: 1;
-  font-weight: 700;
 }
 
 .lo-task-details-shell {
@@ -2850,8 +2858,8 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 .lo-my-day-composer__top {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
+  gap: 10px;
+  padding: 12px 14px;
 }
 
 .lo-my-day-composer__tick {
@@ -2861,12 +2869,13 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 .lo-my-day-composer__input {
   min-width: 0;
   width: 100%;
+  min-height: 18px;
   border: 0;
   outline: 0;
   background: transparent;
   color: inherit;
   font: inherit;
-  line-height: 1.35;
+  line-height: 1.3;
   cursor: text;
   white-space: pre-wrap;
   word-break: break-word;
@@ -2949,6 +2958,20 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   width: 17px;
   height: 17px;
   object-fit: contain;
+}
+
+.lo-add-task-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+.lo-add-task-button img {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  flex: 0 0 auto;
 }
 
 .lo-my-day-composer__tools > .lo-my-day-composer__tool-wrap > button.is-active > img {
@@ -3104,12 +3127,16 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 :root[data-theme="duna"] .lo-plan-tasks-heading img,
 :root[data-theme="duna"] .lo-custom-list-icon,
 :root[data-theme="duna"] .lo-custom-icon-picker-grid img,
+:root[data-theme="duna"] .lo-plan-tasks-new-list-button img,
+:root[data-theme="duna"] .lo-add-task-button img,
 :root[data-theme="duna"] .lo-plan-tasks-search img,
 :root[data-theme="duna"] .lo-plan-tasks-toolbar-action img,
 :root[data-theme="duna"] .lo-plan-sort-menu__item img,
 :root[data-theme="duna"] .lo-suggestions-panel__title img,
 :root[data-theme="duna"] .lo-suggestion-row__complete img,
+:root[data-theme="duna"] .lo-suggestion-row__add img,
 :root[data-theme="duna"] .lo-task-check img,
+:root[data-theme="duna"] .lo-focus-add-trigger img,
 :root[data-theme="duna"] .lo-my-day-composer__tick img,
 :root[data-theme="duna"] .lo-my-day-composer__tools img {
   filter: brightness(0) saturate(100%) invert(13%) sepia(15%) saturate(822%) hue-rotate(182deg) brightness(94%) contrast(88%);
@@ -3143,12 +3170,16 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 :root[data-theme="nebula"] .lo-plan-tasks-sidebar__toggle img,
 :root[data-theme="nebula"] .lo-plan-tasks-sidebar__icon,
 :root[data-theme="nebula"] .lo-plan-tasks-heading img,
+:root[data-theme="nebula"] .lo-plan-tasks-new-list-button img,
+:root[data-theme="nebula"] .lo-add-task-button img,
 :root[data-theme="nebula"] .lo-plan-tasks-search img,
 :root[data-theme="nebula"] .lo-plan-tasks-toolbar-action img,
 :root[data-theme="nebula"] .lo-plan-sort-menu__item img,
 :root[data-theme="nebula"] .lo-suggestions-panel__title img,
 :root[data-theme="nebula"] .lo-suggestion-row__complete img,
+:root[data-theme="nebula"] .lo-suggestion-row__add img,
 :root[data-theme="nebula"] .lo-task-check img,
+:root[data-theme="nebula"] .lo-focus-add-trigger img,
 :root[data-theme="nebula"] .lo-my-day-composer__tick img,
 :root[data-theme="nebula"] .lo-my-day-composer__tools img {
   filter: none;
@@ -3336,7 +3367,18 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   font: inherit;
   font-weight: 600;
   opacity: 0.72;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  line-height: 1.3;
   transition: opacity 0.14s ease, background 0.14s ease, transform 0.14s ease;
+}
+
+.lo-focus-add-trigger img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  flex: 0 0 auto;
 }
 
 .lo-focus-add-trigger:hover {
@@ -6839,14 +6881,21 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 .lo-plan .lo-toolbar,
 .lo-plan .lo-addbar,
 .lo-plan .lo-focusbar,
-.lo-plan .lo-task-row,
-.lo-plan .lo-my-day-composer__top,
 .lo-plan .lo-my-day-composer__bottom,
 .lo-plan .lo-day-board__composer {
   gap: 8px;
 }
 
+.lo-plan .lo-task-row,
+.lo-plan .lo-my-day-composer__top {
+  gap: 10px;
+}
+
 .lo-plan .lo-task-row {
+  padding: 9px 10px;
+}
+
+.lo-plan .lo-my-day-composer__top {
   padding: 9px 10px;
 }
 
@@ -8286,7 +8335,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
 .lo-account-menu__panel {
   position: absolute;
-  top: calc(100% + 0.6rem);
+  top: calc(100% + 0.4rem);
   right: 0;
   width: 250px;
   max-height: min(80vh, 720px);
@@ -8313,6 +8362,10 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   border-top: 1px solid rgba(15, 23, 42, 0.08);
 }
 
+.lo-account-menu__item + .lo-account-menu__section {
+  margin-top: 1.2rem;
+}
+
 :root[data-theme="nebula"] .lo-account-menu__section + .lo-account-menu__section {
   border-top-color: rgba(255, 255, 255, 0.08);
 }
@@ -8334,8 +8387,24 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   border-radius: 14px;
   background: transparent;
   color: inherit;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
   text-align: left;
   cursor: pointer;
+}
+
+.lo-account-menu__item img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.lo-account-menu__item span {
+  min-width: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
 }
 
 .lo-account-menu__item:hover {
@@ -8348,6 +8417,16 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
 .lo-account-menu__item.is-danger {
   color: #c0392b;
+}
+
+.lo-account-menu__divider {
+  height: 1px;
+  margin: 0.6rem 0;
+  background: rgba(15, 23, 42, 0.08);
+}
+
+:root[data-theme="nebula"] .lo-account-menu__divider {
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .lo-account-menu__field {
@@ -8558,15 +8637,31 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   z-index: 5001 !important;
 }
 
+.lo-window--appearance-settings {
+  z-index: 5002 !important;
+}
+
+.lo-window--appearance-settings .lo-window__body {
+  padding: 10px;
+}
+
 .lo-account-settings {
   display: flex;
   flex-direction: column;
   gap: 18px;
 }
 
+.lo-appearance-settings {
+  padding: 10px
+}
+
 .lo-account-settings__section {
   display: grid;
   gap: 12px;
+}
+
+.lo-appearance-settings .lo-account-settings__section {
+  gap: 10px;
 }
 
 .lo-account-settings__heading {
@@ -8602,6 +8697,91 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
 .lo-account-settings__danger {
   color: #c0392b;
+}
+
+.lo-appearance-settings__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 42px;
+  padding: 9px 10px;
+  border-radius: 14px;
+  background: var(--shell-surface-soft);
+  border: 1px solid var(--shell-border);
+  color: inherit;
+}
+
+.lo-appearance-settings__row > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.lo-appearance-settings__row strong,
+.lo-appearance-settings__slider-label strong {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.lo-appearance-settings__row span,
+.lo-appearance-settings__slider-label span {
+  font-size: 0.84rem;
+  color: var(--shell-muted);
+}
+
+.lo-appearance-settings__icon-btn {
+  width: 34px;
+  height: 34px;
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.86);
+  cursor: pointer;
+}
+
+.lo-appearance-settings__icon-btn:hover {
+  background: rgba(15, 23, 42, 0.72);
+}
+
+:root[data-theme="nebula"] .lo-appearance-settings__icon-btn {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+:root[data-theme="nebula"] .lo-appearance-settings__icon-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.lo-appearance-settings__icon-btn img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+.lo-appearance-settings__row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: currentColor;
+  cursor: pointer;
+}
+
+.lo-appearance-settings__slider {
+  display: grid;
+  gap: 9px;
+  padding: 9px 10px;
+  border-radius: 14px;
+  background: var(--shell-surface-soft);
+  border: 1px solid var(--shell-border);
+}
+
+.lo-appearance-settings__slider-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
 
 /* Task typography: keep task windows readable without heavy bolding. */

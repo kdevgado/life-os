@@ -2206,7 +2206,8 @@ function FocusTasksView({
           className="lo-focus-add-trigger"
           onClick={onCreateDraftTask}
         >
-          + Add task
+          <img src={PLUS_ICON} alt="" />
+          <span>Add task</span>
         </button>
       </div>
 
@@ -2829,6 +2830,7 @@ const MOVE_UP_ICON = "/icons/white/menu-burger.png";
 const PRINT_LIST_ICON = "/icons/white/notes.png";
 const SUGGESTIONS_ICON = "/icons/white/bulb.png";
 const SORT_ICON = "/icons/white/sort-alt.png";
+const PLUS_ICON = "/icons/white/plus.png";
 
 function isAllowedCustomListIcon(icon: string) {
   return (CUSTOM_LIST_ICON_OPTIONS as readonly string[]).includes(icon);
@@ -4234,7 +4236,8 @@ function PlanTasksView({
               className="lo-plan-tasks-new-list-button"
               onClick={startCustomListDraft}
             >
-              <span className="lo-plan-tasks-sidebar__text">+ New List</span>
+              <img className="lo-plan-tasks-sidebar__icon" src={PLUS_ICON} alt="" />
+              <span className="lo-plan-tasks-sidebar__text">New List</span>
             </button>
           )}
         </Card>
@@ -4306,10 +4309,10 @@ function PlanTasksView({
                 <button
                   type="button"
                   className="lo-my-day-composer__tick"
-                  aria-label="Task not completed"
+                  aria-label="Add a task"
                   onClick={openMyDayComposer}
                 >
-                  <img src="/icons/white/circle.png" alt="" />
+                  <img src={PLUS_ICON} alt="" />
                 </button>
                 <div
                   ref={myDayTitleRef}
@@ -4557,8 +4560,13 @@ function PlanTasksView({
                       </div>
                     </div>
 
-                    <Button onClick={submitMyDayTask} disabled={!canAddToSelectedList}>
-                      Add
+                    <Button
+                      className="lo-add-task-button"
+                      onClick={submitMyDayTask}
+                      disabled={!canAddToSelectedList}
+                    >
+                      <img src={PLUS_ICON} alt="" />
+                      <span>Add</span>
                     </Button>
                   </div>
                 </div>
@@ -4631,8 +4639,13 @@ function PlanTasksView({
             </div>
 
             <div className="lo-add-btn">
-              <Button onClick={addCurrentTask} disabled={!canAddToSelectedList}>
-                Add
+              <Button
+                className="lo-add-task-button"
+                onClick={addCurrentTask}
+                disabled={!canAddToSelectedList}
+              >
+                <img src={PLUS_ICON} alt="" />
+                <span>Add</span>
               </Button>
             </div>
           </div>
@@ -5948,7 +5961,7 @@ function SuggestionGroup({
                 aria-label={`Add ${task.title} to My Day`}
                 onClick={() => onAddToMyDay(task)}
               >
-                +
+                <img src={PLUS_ICON} alt="" />
               </button>
             </div>
           ))}

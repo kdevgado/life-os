@@ -15,6 +15,7 @@ type PanelKey =
   | "calendar"
   | "calendar-settings"
   | "account-settings"
+  | "appearance-settings"
   | "timer"
   | "tasks"
   | "notes"
@@ -41,6 +42,8 @@ function titleFor(k: Exclude<PanelKey, null>) {
       return "Calendar Settings";
     case "account-settings":
       return "My Account";
+    case "appearance-settings":
+      return "Appearance Settings";
     case "timer":
       return "Timer";
     case "tasks":
@@ -64,6 +67,8 @@ function defaultSizeFor(key: Exclude<PanelKey, null>) {
       return { w: 500, h: 350 };
     case "account-settings":
       return { w: 500, h: 420 };
+    case "appearance-settings":
+      return { w: 500, h: 390 };
     case "timer":
       return { w: 360, h: 260 };
     case "tasks":
@@ -87,6 +92,8 @@ function minSizeFor(key: Exclude<PanelKey, null>) {
       return { w: 500, h: 350 };
     case "account-settings":
       return { w: 500, h: 420 };
+    case "appearance-settings":
+      return { w: 500, h: 390 };
     case "timer":
       return { w: 300, h: 230 };
     case "tasks":
@@ -109,7 +116,11 @@ function isTopDockPanel(key: Exclude<PanelKey, null>) {
 }
 
 function isModalPanel(key: Exclude<PanelKey, null>) {
-  return key === "calendar-settings" || key === "account-settings";
+  return (
+    key === "calendar-settings" ||
+    key === "account-settings" ||
+    key === "appearance-settings"
+  );
 }
 
 function isFocusModeHidden() {
@@ -1068,6 +1079,84 @@ function AccountSettingsPanel() {
   );
 }
 
+function AppearanceSettingsPanel({
+  theme,
+  focusMode,
+  hideAfterSeconds,
+  onToggleTheme,
+  onToggleFocusMode,
+  onHideAfterChange,
+}: {
+  theme: "duna" | "nebula";
+  focusMode: boolean;
+  hideAfterSeconds: number;
+  onToggleTheme: () => void;
+  onToggleFocusMode: () => void;
+  onHideAfterChange: (value: number) => void;
+}) {
+  const themeIcon =
+    theme === "nebula" ? "/icons/white/moon.png" : "/icons/white/day.png";
+
+  return (
+    <div className="lo-account-settings lo-appearance-settings">
+      <div className="lo-account-settings__section">
+        <div className="lo-account-settings__heading">
+          Appearance Settings
+        </div>
+
+        <div className="lo-appearance-settings__row">
+          <div>
+            <strong>Theme</strong>
+            <span>Nebula/Duna mode</span>
+          </div>
+          <button
+            type="button"
+            className="lo-appearance-settings__icon-btn"
+            onClick={onToggleTheme}
+            aria-label="Toggle Nebula or Duna mode"
+            title="Toggle Nebula or Duna mode"
+          >
+            <img src={themeIcon} alt="" />
+          </button>
+        </div>
+      </div>
+
+      <div className="lo-account-settings__footer" />
+
+      <div className="lo-account-settings__section">
+        <div className="lo-account-settings__heading">Focus Mode</div>
+
+        <label className="lo-appearance-settings__row">
+          <div>
+            <strong>Hide elements</strong>
+          </div>
+          <input
+            type="checkbox"
+            checked={focusMode}
+            onChange={onToggleFocusMode}
+          />
+        </label>
+
+        <label className="lo-appearance-settings__slider">
+          <div className="lo-appearance-settings__slider-label">
+            <strong>Hide After (seconds)</strong>
+            <span>{hideAfterSeconds}s</span>
+          </div>
+          <input
+            className="lo-account-menu__range"
+            type="range"
+            min={3}
+            max={80}
+            step={1}
+            value={hideAfterSeconds}
+            onChange={(e) => onHideAfterChange(Number(e.target.value))}
+          />
+        </label>
+      </div>
+    </div>
+  );
+}
+
 export default function FloatingWorkspace() {
   type Win = {
     key: Exclude<PanelKey, null>;
@@ -1234,6 +1323,16 @@ export default function FloatingWorkspace() {
     const t = document.documentElement.getAttribute("data-theme");
     return t === "nebula" ? "nebula" : "duna";
   });
+  const [focusMode, setFocusMode] = useState(() => {
+    if (typeof localStorage === "undefined") return false;
+    return localStorage.getItem("lifeos_focus_mode") === "true";
+  });
+  const [hideAfterSeconds, setHideAfterSeconds] = useState(() => {
+    if (typeof localStorage === "undefined") return 8;
+    const saved = Number(localStorage.getItem("lifeos_focus_hide_after") || "8");
+    return Number.isFinite(saved) && saved > 0 ? saved : 8;
+  });
+  const hideTimerRef = React.useRef<number | null>(null);
 
   React.useEffect(() => {
     const root = document.documentElement;
@@ -1253,6 +1352,58 @@ export default function FloatingWorkspace() {
 
     return () => observer.disconnect();
   }, []);
+
+  React.useEffect(() => {
+    if (!focusMode) {
+      document.documentElement.classList.remove("is-focus-mode");
+      document.documentElement.classList.remove("is-focus-mode-hidden");
+      if (hideTimerRef.current) window.clearTimeout(hideTimerRef.current);
+      return;
+    }
+
+    document.documentElement.classList.add("is-focus-mode");
+    document.documentElement.classList.remove("is-focus-mode-hidden");
+
+    const resetHideTimer = () => {
+      document.documentElement.classList.remove("is-focus-mode-hidden");
+      if (hideTimerRef.current) window.clearTimeout(hideTimerRef.current);
+
+      hideTimerRef.current = window.setTimeout(() => {
+        document.documentElement.classList.add("is-focus-mode-hidden");
+      }, hideAfterSeconds * 1000);
+    };
+
+    resetHideTimer();
+
+    const events = ["mousemove", "mousedown", "keydown", "touchstart"];
+    events.forEach((name) => window.addEventListener(name, resetHideTimer));
+
+    return () => {
+      if (hideTimerRef.current) window.clearTimeout(hideTimerRef.current);
+      events.forEach((name) =>
+        window.removeEventListener(name, resetHideTimer),
+      );
+    };
+  }, [focusMode, hideAfterSeconds]);
+
+  function toggleTheme() {
+    const next = theme === "nebula" ? "duna" : "nebula";
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem("lifeos_theme", next);
+    setTheme(next);
+  }
+
+  function toggleFocusMode() {
+    const next = !focusMode;
+    setFocusMode(next);
+    localStorage.setItem("lifeos_focus_mode", String(next));
+  }
+
+  function updateHideAfter(value: number) {
+    const next = Math.max(3, Math.min(120, value));
+    setHideAfterSeconds(next);
+    localStorage.setItem("lifeos_focus_hide_after", String(next));
+  }
 
   function focusWindow(key: Win["key"]) {
     setZTop((z) => {
@@ -1331,9 +1482,7 @@ export default function FloatingWorkspace() {
     };
   }, []);
 
-  const hasModalWindowOpen = wins.some(
-    (w) => w.key === "calendar-settings" || w.key === "account-settings",
-  );
+  const hasModalWindowOpen = wins.some((w) => isModalPanel(w.key));
 
   React.useEffect(() => {
     if (!hasModalWindowOpen) return;
@@ -1344,16 +1493,13 @@ export default function FloatingWorkspace() {
       // if clicking inside the modal window, ignore
       if (
         target.closest(".lo-window--calendar-settings") ||
-        target.closest(".lo-window--account-settings")
+        target.closest(".lo-window--account-settings") ||
+        target.closest(".lo-window--appearance-settings")
       )
         return;
 
       // otherwise close it
-      setWins((prev) =>
-        prev.filter(
-          (w) => !["calendar-settings", "account-settings"].includes(w.key),
-        ),
-      );
+      setWins((prev) => prev.filter((w) => !isModalPanel(w.key)));
     }
 
     window.addEventListener("mousedown", handleOutsideClick);
@@ -1523,12 +1669,17 @@ export default function FloatingWorkspace() {
     setWins((prev) =>
       prev
         .filter((w) =>
-          ["spaces", "timer", "tasks", "notes", "calendar-settings"].includes(
-            w.key,
-          ),
+          [
+            "spaces",
+            "timer",
+            "tasks",
+            "notes",
+            "calendar-settings",
+            "appearance-settings",
+          ].includes(w.key),
         )
         .map((w) => {
-          if (w.key === "calendar-settings") return w;
+          if (isModalPanel(w.key)) return w;
 
           const size = mobileSizeFor(w.key);
           const placed = mobileWindowPos(size.w, size.h);
@@ -1602,6 +1753,55 @@ export default function FloatingWorkspace() {
       window.removeEventListener(
         "lifeos:close-account-settings",
         closeAccountSettingsWindow as EventListener,
+      );
+    };
+  }, []);
+
+  React.useEffect(() => {
+    function openAppearanceSettingsWindow() {
+      setWins((prev) => {
+        const size = defaultSizeFor("appearance-settings");
+        const centered = centeredWindowPos(size.w, size.h);
+        const existing = prev.find((w) => w.key === "appearance-settings");
+
+        if (existing) {
+          return prev.map((w) =>
+            w.key === "appearance-settings"
+              ? {
+                  ...w,
+                  x: centered.x,
+                  y: centered.y,
+                  z: 5002,
+                  w: size.w,
+                  h: size.h,
+                }
+              : w,
+          );
+        }
+
+        return [
+          ...prev,
+          {
+            key: "appearance-settings",
+            x: centered.x,
+            y: centered.y,
+            z: 5002,
+            w: size.w,
+            h: size.h,
+          },
+        ];
+      });
+    }
+
+    window.addEventListener(
+      "lifeos:open-appearance-settings",
+      openAppearanceSettingsWindow as EventListener,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "lifeos:open-appearance-settings",
+        openAppearanceSettingsWindow as EventListener,
       );
     };
   }, []);
@@ -1812,6 +2012,16 @@ export default function FloatingWorkspace() {
             )}
             {w.key === "calendar-settings" ? <CalendarSettingsPanel /> : null}
             {w.key === "account-settings" ? <AccountSettingsPanel /> : null}
+            {w.key === "appearance-settings" ? (
+              <AppearanceSettingsPanel
+                theme={theme}
+                focusMode={focusMode}
+                hideAfterSeconds={hideAfterSeconds}
+                onToggleTheme={toggleTheme}
+                onToggleFocusMode={toggleFocusMode}
+                onHideAfterChange={updateHideAfter}
+              />
+            ) : null}
             {w.key === "spaces" && <SpacesPanel />}
             {w.key === "bible" && <DailyBibleVerse />}
           </WindowShell>
