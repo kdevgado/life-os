@@ -5,6 +5,7 @@ import { IMAGE_WALLPAPERS } from "../../data/wallpapers";
 
 const { title = "Life OS" } = Astro.props;
 const startupImageWallpapers = IMAGE_WALLPAPERS.map((item) => item.src);
+const isProductionBuild = import.meta.env.PROD;
 ---
 
 <html lang="en">
@@ -13,6 +14,17 @@ const startupImageWallpapers = IMAGE_WALLPAPERS.map((item) => item.src);
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="theme-color" content="#ffffff" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <script is:inline define:vars={{ isProductionBuild }}>
+      if (isProductionBuild && "serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("/sw.js").catch((error) => {
+            console.warn("[PWA] service worker registration failed", error);
+          });
+        });
+      }
+    </script>
 
     <script is:inline>
       window.__lifeosDeferredPrompt = null;

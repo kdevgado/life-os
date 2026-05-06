@@ -5,6 +5,9 @@ import { VitePWA } from "vite-plugin-pwa";
 export default defineConfig({
   integrations: [react()],
   vite: {
+    esbuild: {
+      jsxDev: false,
+    },
     plugins: [
       VitePWA({
         registerType: "autoUpdate",
@@ -34,10 +37,22 @@ export default defineConfig({
               purpose: "any",
             },
             {
+              src: "/icons/pwa-192-maskable.png",
+              sizes: "192x192",
+              type: "image/png",
+              purpose: "maskable",
+            },
+            {
               src: "/icons/pwa-512.png",
               sizes: "512x512",
               type: "image/png",
               purpose: "any",
+            },
+            {
+              src: "/icons/pwa-512-maskable.png",
+              sizes: "512x512",
+              type: "image/png",
+              purpose: "maskable",
             },
           ],
         },
