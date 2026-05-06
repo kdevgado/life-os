@@ -30,8 +30,12 @@ import WallpaperPicker from "../components/dashboard/WallpaperPicker";
 
         const sel = document.getElementById("themeSelect");
         if (sel) {
-            // init select from storage
-            const t = (localStorage.getItem(KEY) || "duna").toLowerCase();
+            // init select from saved choice, falling back to system preference
+            const systemTheme = window.matchMedia?.("(prefers-color-scheme: dark)")
+              .matches
+              ? "nebula"
+              : "duna";
+            const t = (localStorage.getItem(KEY) || systemTheme).toLowerCase();
             sel.value = t === "nebula" ? "nebula" : "duna";
 
             // apply immediately on change

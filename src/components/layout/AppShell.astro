@@ -45,8 +45,12 @@ const isProductionBuild = import.meta.env.PROD;
 
     <script is:inline>
       try {
-        const raw = localStorage.getItem("lifeos_theme") || "duna";
-        const t = String(raw).trim().toLowerCase();
+        const savedTheme = localStorage.getItem("lifeos_theme");
+        const systemTheme = window.matchMedia?.("(prefers-color-scheme: dark)")
+          .matches
+          ? "nebula"
+          : "duna";
+        const t = String(savedTheme || systemTheme).trim().toLowerCase();
         document.documentElement.setAttribute(
           "data-theme",
           t === "nebula" ? "nebula" : "duna",

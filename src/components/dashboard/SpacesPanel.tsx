@@ -158,8 +158,12 @@ export default function SpacesPanel() {
     setVideoVolume(savedVolume ? Number(savedVolume) : 0.5);
 
     try {
+      const systemTheme = window.matchMedia?.("(prefers-color-scheme: dark)")
+        .matches
+        ? "nebula"
+        : "duna";
       const savedTheme =
-        (localStorage.getItem("lifeos_theme") || "duna").toLowerCase() ===
+        (localStorage.getItem("lifeos_theme") || systemTheme).toLowerCase() ===
         "nebula"
           ? "nebula"
           : "duna";

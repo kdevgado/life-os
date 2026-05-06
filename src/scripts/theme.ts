@@ -3,7 +3,11 @@ const KEY = "lifeos_theme";
 export type Theme = "duna" | "nebula";
 
 export function getTheme(): Theme {
-  const t = (localStorage.getItem(KEY) || "duna") as Theme;
+  const systemTheme =
+    window.matchMedia?.("(prefers-color-scheme: dark)").matches
+      ? "nebula"
+      : "duna";
+  const t = (localStorage.getItem(KEY) || systemTheme) as Theme;
   return t === "nebula" ? "nebula" : "duna";
 }
 
