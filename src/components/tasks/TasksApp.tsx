@@ -168,9 +168,14 @@ type StatusFilter = "all" | "inprogress" | "completed";
 const TASKS_FILTER_DROPDOWN_ID = "tasks-filter";
 const TASK_REMINDER_FIRED_KEY = "lifeos_task_reminders_fired_v1";
 const CUSTOM_LISTS_KEY = "lifeos_task_custom_lists_v1";
+const CUSTOM_LIST_ICONS_KEY = "lifeos_task_custom_list_icons_v1";
 
 function customListsStorageKey(userId?: string | null) {
   return userId ? `${CUSTOM_LISTS_KEY}:${userId}` : CUSTOM_LISTS_KEY;
+}
+
+function customListIconsStorageKey(userId?: string | null) {
+  return userId ? `${CUSTOM_LIST_ICONS_KEY}:${userId}` : CUSTOM_LIST_ICONS_KEY;
 }
 
 function loadStoredCustomLists(userId?: string | null): string[] {
@@ -192,6 +197,40 @@ function saveStoredCustomLists(lists: string[], userId?: string | null) {
   window.localStorage.setItem(
     customListsStorageKey(userId),
     JSON.stringify(Array.from(new Set(lists))),
+  );
+}
+
+function loadStoredCustomListIcons(userId?: string | null): Record<string, string> {
+  if (typeof window === "undefined") return {};
+
+  try {
+    const raw = window.localStorage.getItem(customListIconsStorageKey(userId));
+    const parsed = raw ? JSON.parse(raw) : {};
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return {};
+    }
+
+    return Object.fromEntries(
+      Object.entries(parsed).filter(
+        (entry): entry is [string, string] =>
+          typeof entry[0] === "string" &&
+          typeof entry[1] === "string" &&
+          isAllowedCustomListIcon(entry[1]),
+      ),
+    );
+  } catch {
+    return {};
+  }
+}
+
+function saveStoredCustomListIcons(
+  icons: Record<string, string>,
+  userId?: string | null,
+) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(
+    customListIconsStorageKey(userId),
+    JSON.stringify(icons),
   );
 }
 
@@ -2768,6 +2807,21 @@ const PLAN_SIDEBAR_ICONS: Record<string, string> = {
 };
 
 const CUSTOM_LIST_ICON = "/icons/white/list.png";
+const CUSTOM_LIST_ICON_OPTIONS = [
+  "/icons/misc/alarm-clock.png",
+  "/icons/misc/chat.png",
+  "/icons/misc/checked.png",
+  "/icons/misc/favorites.png",
+  "/icons/misc/file.png",
+  "/icons/misc/home.png",
+  "/icons/misc/idea.png",
+  "/icons/misc/key.png",
+  "/icons/misc/music.png",
+  "/icons/misc/power-button.png",
+  "/icons/misc/shield.png",
+  "/icons/misc/trophy.png",
+  "/icons/misc/user.png",
+] as const;
 const COMPLETE_ICON = "/icons/white/circle.png";
 const DELETE_ICON = "/icons/white/trash-xmark.png";
 const REMOVE_DUE_ICON = "/icons/white/calendar-xmark.png";
@@ -2775,6 +2829,10 @@ const MOVE_UP_ICON = "/icons/white/menu-burger.png";
 const PRINT_LIST_ICON = "/icons/white/notes.png";
 const SUGGESTIONS_ICON = "/icons/white/bulb.png";
 const SORT_ICON = "/icons/white/sort-alt.png";
+
+function isAllowedCustomListIcon(icon: string) {
+  return (CUSTOM_LIST_ICON_OPTIONS as readonly string[]).includes(icon);
+}
 
 type BoardSortMode = "importance" | "due-date" | "alphabetical" | "creation-date";
 
@@ -2897,6 +2955,9 @@ function PlanTasksView({
   const [sessionLists, setSessionLists] = React.useState<string[]>(() =>
     loadStoredCustomLists(currentUserId),
   );
+  const [customListIcons, setCustomListIcons] = React.useState<Record<string, string>>(
+    () => loadStoredCustomListIcons(currentUserId),
+  );
   const [editingListHeading, setEditingListHeading] = React.useState(false);
   const [listHeadingDraft, setListHeadingDraft] = React.useState("");
   const [isCreatingList, setIsCreatingList] = React.useState(false);
@@ -2929,6 +2990,7 @@ function PlanTasksView({
   });
   const [boardTaskMenu, setBoardTaskMenu] = React.useState<BoardTaskMenuState | null>(null);
   const [customListMenu, setCustomListMenu] = React.useState<CustomListMenuState | null>(null);
+  const [iconPickerList, setIconPickerList] = React.useState<string | null>(null);
   const listDraftRef = React.useRef<HTMLInputElement | null>(null);
   const listHeadingInputRef = React.useRef<HTMLInputElement | null>(null);
   const newListWrapRef = React.useRef<HTMLDivElement | null>(null);
@@ -2943,6 +3005,7 @@ function PlanTasksView({
 
   React.useEffect(() => {
     setSessionLists(loadStoredCustomLists(currentUserId));
+    setCustomListIcons(loadStoredCustomListIcons(currentUserId));
   }, [currentUserId]);
 
   function updateSessionLists(
@@ -2952,6 +3015,19 @@ function PlanTasksView({
       const next =
         typeof updater === "function" ? updater(previous) : updater;
       saveStoredCustomLists(next, currentUserId);
+      return next;
+    });
+  }
+
+  function updateCustomListIcons(
+    updater:
+      | Record<string, string>
+      | ((previous: Record<string, string>) => Record<string, string>),
+  ) {
+    setCustomListIcons((previous) => {
+      const next =
+        typeof updater === "function" ? updater(previous) : updater;
+      saveStoredCustomListIcons(next, currentUserId);
       return next;
     });
   }
@@ -3322,25 +3398,34 @@ function PlanTasksView({
     );
     const newestFirst = (items: Task[]) =>
       [...items].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    const takeTopSuggestion = (items: Task[]) => newestFirst(items).slice(0, 1);
+    const assignedSuggestionIds = new Set<string>();
+    const assignSuggestions = (items: Task[]) => {
+      const suggestions = takeTopSuggestion(
+        items.filter((task) => !assignedSuggestionIds.has(task.id)),
+      );
+      suggestions.forEach((task) => assignedSuggestionIds.add(task.id));
+      return suggestions;
+    };
 
     return {
-      yesterday: newestFirst(
+      yesterday: assignSuggestions(
         openTasks.filter((task) => {
           const createdDateKey = getCreatedDateKey(task);
           const dueDateKey = getTaskDateKey(task);
           return createdDateKey === yesterdayISO || dueDateKey === yesterdayISO;
         }),
       ),
-      later: newestFirst(
-        openTasks.filter((task) => {
-          const dueDateKey = getTaskDateKey(task);
-          return (!!dueDateKey && dueDateKey > todayISO) || !task.myDay;
-        }),
-      ),
-      recently: newestFirst(
+      recently: assignSuggestions(
         openTasks.filter((task) => {
           const createdDateKey = getCreatedDateKey(task);
           return !!createdDateKey && createdDateKey >= recentSinceISO;
+        }),
+      ),
+      later: assignSuggestions(
+        openTasks.filter((task) => {
+          const createdDateKey = getCreatedDateKey(task);
+          return !createdDateKey || createdDateKey < recentSinceISO;
         }),
       ),
     };
@@ -3469,6 +3554,12 @@ function PlanTasksView({
           !discoveredCustomLists.includes(list),
       );
     });
+    updateCustomListIcons((prev) => {
+      if (!prev[selectedList]) return prev;
+      const next = { ...prev, [nextList]: prev[selectedList] };
+      delete next[selectedList];
+      return next;
+    });
 
     onRenameTaskList(selectedList, nextList);
     setSelectedList(nextList);
@@ -3519,6 +3610,19 @@ function PlanTasksView({
     setCustomListMenu({ list, x, y });
   }
 
+  function openCustomListIconPicker(event: React.MouseEvent, list: string) {
+    event.preventDefault();
+    event.stopPropagation();
+    setIconPickerList(list);
+    setCustomListMenu(null);
+  }
+
+  function setCustomListIcon(list: string, icon: string) {
+    if (!isAllowedCustomListIcon(icon)) return;
+    updateCustomListIcons((prev) => ({ ...prev, [list]: icon }));
+    setIconPickerList(null);
+  }
+
   function closeBoardTaskMenu() {
     setBoardTaskMenu(null);
   }
@@ -3564,6 +3668,9 @@ function PlanTasksView({
     const nextList = getDuplicateListId(list);
     updateSessionLists((prev) =>
       prev.includes(nextList) ? prev : [...prev, nextList],
+    );
+    updateCustomListIcons((prev) =>
+      prev[list] ? { ...prev, [nextList]: prev[list] } : prev,
     );
     onDuplicateTaskList(list, nextList);
     setSelectedList(nextList);
@@ -3625,6 +3732,12 @@ function PlanTasksView({
     if (!confirmed) return;
 
     updateSessionLists((prev) => prev.filter((item) => item !== list));
+    updateCustomListIcons((prev) => {
+      if (!prev[list]) return prev;
+      const next = { ...prev };
+      delete next[list];
+      return next;
+    });
     onDeleteTaskList(list);
 
     if (selectedList === list) {
@@ -3910,7 +4023,27 @@ function PlanTasksView({
   }
 
   function getListIcon(list: PlanListId) {
-    return PLAN_SIDEBAR_ICONS[list] ?? CUSTOM_LIST_ICON;
+    return PLAN_SIDEBAR_ICONS[list] ?? customListIcons[list] ?? CUSTOM_LIST_ICON;
+  }
+
+  function renderSelectedListIcon() {
+    const iconClassName = `lo-plan-tasks-heading__icon ${isCustomSelectedList ? "lo-custom-list-icon" : ""}`;
+
+    if (!isCustomSelectedList) {
+      return <img className={iconClassName} src={getListIcon(selectedList)} alt="" />;
+    }
+
+    return (
+      <button
+        type="button"
+        className="lo-plan-tasks-heading__icon-button"
+        onClick={(event) => openCustomListIconPicker(event, selectedList)}
+        title={`Change ${labelForList(selectedList)} icon`}
+        aria-label={`Change ${labelForList(selectedList)} icon`}
+      >
+        <img className={iconClassName} src={getListIcon(selectedList)} alt="" />
+      </button>
+    );
   }
 
   function renderSelectedListHeading() {
@@ -4047,24 +4180,36 @@ function PlanTasksView({
 
           <div className="lo-plan-tasks-sidebar__custom-list">
             {customLists.map((list) => (
-              <button
+              <div
                 key={list}
-                type="button"
-                className={selectedList === list ? "is-active" : ""}
-                onClick={() => setSelectedList(list)}
+                className={`lo-plan-tasks-sidebar__custom-row ${selectedList === list ? "is-active" : ""}`}
                 onContextMenu={(event) => openCustomListMenu(event, list)}
-                title={labelForList(list)}
-                aria-label={labelForList(list)}
               >
-                <img
-                  className="lo-plan-tasks-sidebar__icon"
-                  src={CUSTOM_LIST_ICON}
-                  alt=""
-                />
-                <span className="lo-plan-tasks-sidebar__text">
-                  {labelForList(list)}
-                </span>
-              </button>
+                <button
+                  type="button"
+                  className="lo-plan-tasks-sidebar__icon-button"
+                  onClick={() => setSelectedList(list)}
+                  title={labelForList(list)}
+                  aria-label={labelForList(list)}
+                >
+                  <img
+                    className="lo-plan-tasks-sidebar__icon lo-custom-list-icon"
+                    src={getListIcon(list)}
+                    alt=""
+                  />
+                </button>
+                <button
+                  type="button"
+                  className="lo-plan-tasks-sidebar__list-button"
+                  onClick={() => setSelectedList(list)}
+                  title={labelForList(list)}
+                  aria-label={labelForList(list)}
+                >
+                  <span className="lo-plan-tasks-sidebar__text">
+                    {labelForList(list)}
+                  </span>
+                </button>
+              </div>
             ))}
           </div>
 
@@ -4134,7 +4279,7 @@ function PlanTasksView({
             <Card className="toolbar-card">
               <div className="lo-toolbar">
                 <div className="lo-plan-tasks-heading">
-                  <img src={getListIcon(selectedList)} alt="" />
+                  {renderSelectedListIcon()}
                   {renderSelectedListHeading()}
                 </div>
 
@@ -4426,7 +4571,7 @@ function PlanTasksView({
         <Card className="toolbar-card">
           <div className="lo-toolbar">
             <div className="lo-plan-tasks-heading">
-              <img src={getListIcon(selectedList)} alt="" />
+              {renderSelectedListIcon()}
               {renderSelectedListHeading()}
             </div>
 
@@ -4615,6 +4760,18 @@ function PlanTasksView({
             document.body,
           )
         : null}
+      {iconPickerList
+        ? createPortal(
+            <CustomListIconPicker
+              listLabel={labelForList(iconPickerList)}
+              selectedIcon={getListIcon(iconPickerList)}
+              icons={CUSTOM_LIST_ICON_OPTIONS}
+              onSelect={(icon) => setCustomListIcon(iconPickerList, icon)}
+              onClose={() => setIconPickerList(null)}
+            />,
+            document.body,
+          )
+        : null}
       {suggestionsOpen && showSuggestionsButton
         ? createPortal(
             <SuggestionsPanel
@@ -4773,6 +4930,85 @@ const CustomListContextMenu = React.forwardRef<
     </div>
   );
 });
+
+function formatIconLabel(icon: string) {
+  const filename = icon.split("/").pop()?.replace(/\.[^.]+$/, "") ?? "Icon";
+  return filename
+    .split("-")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function CustomListIconPicker({
+  listLabel,
+  selectedIcon,
+  icons,
+  onSelect,
+  onClose,
+}: {
+  listLabel: string;
+  selectedIcon: string;
+  icons: readonly string[];
+  onSelect: (icon: string) => void;
+  onClose: () => void;
+}) {
+  React.useEffect(() => {
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [onClose]);
+
+  return (
+    <div className="lo-custom-icon-picker-shell" role="dialog" aria-label="Choose list icon">
+      <button
+        type="button"
+        className="lo-custom-icon-picker-backdrop"
+        aria-label="Close icon picker"
+        onClick={onClose}
+      />
+
+      <section className="lo-custom-icon-picker-window">
+        <header className="lo-custom-icon-picker-header">
+          <div>
+            <h3>Choose Icon</h3>
+            <p>{listLabel}</p>
+          </div>
+          <button
+            type="button"
+            className="lo-custom-icon-picker-close"
+            aria-label="Close icon picker"
+            onClick={onClose}
+          >
+            x
+          </button>
+        </header>
+
+        <div className="lo-custom-icon-picker-grid">
+          {icons.map((icon) => {
+            const label = formatIconLabel(icon);
+            return (
+              <button
+                key={icon}
+                type="button"
+                className={selectedIcon === icon ? "is-selected" : ""}
+                onClick={() => onSelect(icon)}
+                title={label}
+                aria-label={label}
+                aria-pressed={selectedIcon === icon}
+              >
+                <img src={icon} alt="" />
+              </button>
+            );
+          })}
+        </div>
+      </section>
+    </div>
+  );
+}
 
 function SuggestionsPanel({
   groups,
