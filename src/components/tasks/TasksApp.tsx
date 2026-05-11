@@ -2852,6 +2852,8 @@ const BOARD_SORT_OPTIONS: Array<{
 
 type BoardTaskMenuState = {
   task: Task;
+  tasks?: Task[];
+  groupLabel?: string;
   x: number;
   y: number;
 };
@@ -3588,6 +3590,38 @@ function PlanTasksView({
     setBoardTaskMenu({ task, x, y });
   }
 
+  function openSuggestionGroupMenu(
+    event: React.MouseEvent,
+    groupTasks: Task[],
+    groupLabel: string,
+  ) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const firstTask = groupTasks[0];
+    if (!firstTask) return;
+
+    const menuWidth = 270;
+    const menuHeight = 440;
+    const padding = 8;
+    const x = Math.min(
+      Math.max(padding, event.clientX + 6),
+      window.innerWidth - menuWidth - padding,
+    );
+    const y = Math.min(
+      Math.max(padding, event.clientY + 6),
+      window.innerHeight - menuHeight - padding,
+    );
+
+    setBoardTaskMenu({
+      task: firstTask,
+      tasks: groupTasks,
+      groupLabel,
+      x,
+      y,
+    });
+  }
+
   function openTaskDetails(task: Task) {
     setSelectedTaskId(task.id);
     setBoardTaskMenu(null);
@@ -3758,6 +3792,29 @@ function PlanTasksView({
     onSetTaskSchedule(task, { myDay: todayISO });
   }
 
+  function setTasksMyDay(groupTasks: Task[], inMyDay: boolean) {
+    groupTasks.forEach((task) => {
+      if (inMyDay) {
+        if (!isTaskInMyDay(task, todayISO)) {
+          onSetTaskSchedule(task, { myDay: todayISO });
+        }
+        return;
+      }
+
+      if (isTaskInMyDay(task, todayISO)) {
+        onSetTaskSchedule(task, { myDay: "" });
+      }
+    });
+  }
+
+  function setTasksImportant(groupTasks: Task[], important: boolean) {
+    groupTasks.forEach((task) => onSetImportant(task, important));
+  }
+
+  function setTasksCompleted(groupTasks: Task[], completed: boolean) {
+    groupTasks.forEach((task) => onSetStatus(task, completed ? "done" : "todo"));
+  }
+
   function updateTaskNotes(task: Task, notes: string) {
     onUpdateTask(task, { notes });
   }
@@ -3819,8 +3876,11 @@ function PlanTasksView({
     onUpdateTask(task, { tags: nextTags });
   }
 
-  function createListFromTask(task: Task) {
-    const name = window.prompt("New list name", task.title);
+  function createListFromTasks(groupTasks: Task[], defaultName?: string) {
+    const firstTask = groupTasks[0];
+    if (!firstTask) return;
+
+    const name = window.prompt("New list name", defaultName ?? firstTask.title);
     if (!name) return;
 
     const id = makeCustomListId(name);
@@ -3828,7 +3888,9 @@ function PlanTasksView({
 
     updateSessionLists((prev) => (prev.includes(id) ? prev : [...prev, id]));
     setSelectedList(id);
-    onMoveTaskToList(task, id, getMoveCleanupPatch());
+    groupTasks.forEach((task) =>
+      onMoveTaskToList(task, id, getMoveCleanupPatch()),
+    );
   }
 
   function moveTaskToCustomList(task: Task, list: string) {
@@ -4738,11 +4800,9 @@ function PlanTasksView({
               todayISO={todayISO}
               customLists={customLists}
               onAction={runBoardTaskAction}
-              onToggleMyDay={addOrRemoveMyDay}
-              onToggleImportant={(task) => onSetImportant(task, !task.important)}
-              onToggleCompleted={(task) =>
-                onSetStatus(task, task.status === "done" ? "todo" : "done")
-              }
+              onSetMyDay={setTasksMyDay}
+              onSetImportant={setTasksImportant}
+              onSetCompleted={setTasksCompleted}
               onDueToday={(task) => setBoardTaskDue(task, todayISO)}
               onDueTomorrow={(task) => {
                 const tomorrow = new Date();
@@ -4750,7 +4810,7 @@ function PlanTasksView({
                 setBoardTaskDue(task, isoDate(tomorrow));
               }}
               onRemoveDue={removeBoardTaskDue}
-              onCreateList={createListFromTask}
+              onCreateList={createListFromTasks}
               onMoveToList={moveTaskToCustomList}
               onCopyToList={copyTaskToCustomList}
               onDelete={onRemove}
@@ -4792,6 +4852,7 @@ function PlanTasksView({
               onClose={() => setSuggestionsOpen(false)}
               onAddToMyDay={addTaskToMyDay}
               onComplete={(task) => onSetStatus(task, "done")}
+              onOpenGroupMenu={openSuggestionGroupMenu}
             />,
             document.body,
           )
@@ -5028,6 +5089,7 @@ function SuggestionsPanel({
   onClose,
   onAddToMyDay,
   onComplete,
+  onOpenGroupMenu,
 }: {
   groups: {
     yesterday: Task[];
@@ -5037,6 +5099,11 @@ function SuggestionsPanel({
   onClose: () => void;
   onAddToMyDay: (task: Task) => void;
   onComplete: (task: Task) => void;
+  onOpenGroupMenu: (
+    event: React.MouseEvent,
+    groupTasks: Task[],
+    groupLabel: string,
+  ) => void;
 }) {
   React.useEffect(() => {
     function handleEscape(event: KeyboardEvent) {
@@ -5078,18 +5145,21 @@ function SuggestionsPanel({
             tasks={groups.yesterday}
             onAddToMyDay={onAddToMyDay}
             onComplete={onComplete}
+            onOpenGroupMenu={onOpenGroupMenu}
           />
           <SuggestionGroup
             title="Later"
             tasks={groups.later}
             onAddToMyDay={onAddToMyDay}
             onComplete={onComplete}
+            onOpenGroupMenu={onOpenGroupMenu}
           />
           <SuggestionGroup
             title="Recently added"
             tasks={groups.recently}
             onAddToMyDay={onAddToMyDay}
             onComplete={onComplete}
+            onOpenGroupMenu={onOpenGroupMenu}
           />
         </div>
       </aside>
@@ -5927,11 +5997,17 @@ function SuggestionGroup({
   tasks,
   onAddToMyDay,
   onComplete,
+  onOpenGroupMenu,
 }: {
   title: string;
   tasks: Task[];
   onAddToMyDay: (task: Task) => void;
   onComplete: (task: Task) => void;
+  onOpenGroupMenu: (
+    event: React.MouseEvent,
+    groupTasks: Task[],
+    groupLabel: string,
+  ) => void;
 }) {
   const [showAll, setShowAll] = React.useState(false);
   const hiddenCount = Math.max(0, tasks.length - SUGGESTION_PREVIEW_LIMIT);
@@ -5943,7 +6019,19 @@ function SuggestionGroup({
 
   return (
     <section className="lo-suggestions-group">
-      <h4>{title}</h4>
+      <div className="lo-suggestions-group__heading">
+        <h4>{title}</h4>
+        {tasks.length > 0 ? (
+          <button
+            type="button"
+            className="lo-suggestions-group__menu"
+            aria-label={`${title} task options`}
+            onClick={(event) => onOpenGroupMenu(event, tasks, title)}
+          >
+            ...
+          </button>
+        ) : null}
+      </div>
       {tasks.length === 0 ? (
         <p className="lo-suggestions-group__empty">No tasks</p>
       ) : (
@@ -5996,13 +6084,13 @@ const BoardTaskContextMenu = React.forwardRef<
     todayISO: string;
     customLists: string[];
     onAction: (action: () => void) => void;
-    onToggleMyDay: (task: Task) => void;
-    onToggleImportant: (task: Task) => void;
-    onToggleCompleted: (task: Task) => void;
+    onSetMyDay: (tasks: Task[], inMyDay: boolean) => void;
+    onSetImportant: (tasks: Task[], important: boolean) => void;
+    onSetCompleted: (tasks: Task[], completed: boolean) => void;
     onDueToday: (task: Task) => void;
     onDueTomorrow: (task: Task) => void;
     onRemoveDue: (task: Task) => void;
-    onCreateList: (task: Task) => void;
+    onCreateList: (tasks: Task[], defaultName?: string) => void;
     onMoveToList: (task: Task, list: string) => void;
     onCopyToList: (task: Task, list: string) => void;
     onDelete: (task: Task) => void;
@@ -6013,9 +6101,9 @@ const BoardTaskContextMenu = React.forwardRef<
     todayISO,
     customLists,
     onAction,
-    onToggleMyDay,
-    onToggleImportant,
-    onToggleCompleted,
+    onSetMyDay,
+    onSetImportant,
+    onSetCompleted,
     onDueToday,
     onDueTomorrow,
     onRemoveDue,
@@ -6027,8 +6115,17 @@ const BoardTaskContextMenu = React.forwardRef<
   ref,
 ) {
   const task = menu.task;
-  const isInMyDay = isTaskInMyDay(task, todayISO);
-  const hasDueDate = !!(task.dueDate || task.plannedFor || task.plannedStart || task.plannedEnd);
+  const menuTasks = menu.tasks?.length ? menu.tasks : [task];
+  const isBulk = menuTasks.length > 1;
+  const allInMyDay = menuTasks.every((item) => isTaskInMyDay(item, todayISO));
+  const allImportant = menuTasks.every((item) => !!item.important);
+  const allCompleted = menuTasks.every((item) => item.status === "done");
+  const hasDueDate = menuTasks.some(
+    (item) =>
+      !!(item.dueDate || item.plannedFor || item.plannedStart || item.plannedEnd),
+  );
+  const runForEach = (handler: (task: Task) => void) =>
+    onAction(() => menuTasks.forEach(handler));
 
   return (
     <div
@@ -6045,37 +6142,61 @@ const BoardTaskContextMenu = React.forwardRef<
     >
       <BoardMenuButton
         icon={PLAN_SIDEBAR_ICONS["my-day"]}
-        label={isInMyDay ? "Remove from My Day" : "Add to My Day"}
-        onClick={() => onAction(() => onToggleMyDay(task))}
+        label={
+          allInMyDay
+            ? isBulk
+              ? "Remove all from My Day"
+              : "Remove from My Day"
+            : isBulk
+              ? "Add all to My Day"
+              : "Add to My Day"
+        }
+        onClick={() => onAction(() => onSetMyDay(menuTasks, !allInMyDay))}
       />
       <BoardMenuButton
         icon={PLAN_SIDEBAR_ICONS.important}
-        label={task.important ? "Remove importance" : "Mark as important"}
-        onClick={() => onAction(() => onToggleImportant(task))}
+        label={
+          allImportant
+            ? isBulk
+              ? "Remove importance from all"
+              : "Remove importance"
+            : isBulk
+              ? "Mark all as important"
+              : "Mark as important"
+        }
+        onClick={() => onAction(() => onSetImportant(menuTasks, !allImportant))}
       />
       <BoardMenuButton
         icon={COMPLETE_ICON}
-        label={task.status === "done" ? "Remove completed" : "Mark as completed"}
-        onClick={() => onAction(() => onToggleCompleted(task))}
+        label={
+          allCompleted
+            ? isBulk
+              ? "Remove completed from all"
+              : "Remove completed"
+            : isBulk
+              ? "Mark all as completed"
+              : "Mark as completed"
+        }
+        onClick={() => onAction(() => onSetCompleted(menuTasks, !allCompleted))}
       />
 
       <div className="lo-task-menu__divider" />
 
       <BoardMenuButton
         icon={PLAN_SIDEBAR_ICONS.planned}
-        label="Due today"
-        onClick={() => onAction(() => onDueToday(task))}
+        label={isBulk ? "Due today for all" : "Due today"}
+        onClick={() => runForEach(onDueToday)}
       />
       <BoardMenuButton
         icon={PLAN_SIDEBAR_ICONS.planned}
-        label="Due tomorrow"
-        onClick={() => onAction(() => onDueTomorrow(task))}
+        label={isBulk ? "Due tomorrow for all" : "Due tomorrow"}
+        onClick={() => runForEach(onDueTomorrow)}
       />
       {hasDueDate ? (
         <BoardMenuButton
           icon={REMOVE_DUE_ICON}
-          label="Remove due date"
-          onClick={() => onAction(() => onRemoveDue(task))}
+          label={isBulk ? "Remove due dates from all" : "Remove due date"}
+          onClick={() => runForEach(onRemoveDue)}
         />
       ) : null}
 
@@ -6083,33 +6204,37 @@ const BoardTaskContextMenu = React.forwardRef<
 
       <BoardMenuButton
         icon={CUSTOM_LIST_ICON}
-        label="Create new list from this task"
-        onClick={() => onAction(() => onCreateList(task))}
+        label={
+          isBulk
+            ? "Create new list from these tasks"
+            : "Create new list from this task"
+        }
+        onClick={() => onAction(() => onCreateList(menuTasks, menu.groupLabel))}
       />
 
       <BoardMenuGroup
         icon={CUSTOM_LIST_ICON}
-        label="Move task to..."
+        label={isBulk ? "Move tasks to..." : "Move task to..."}
         emptyLabel="No custom lists yet"
         lists={customLists}
-        onChoose={(list) => onAction(() => onMoveToList(task, list))}
+        onChoose={(list) => runForEach((item) => onMoveToList(item, list))}
       />
 
       <BoardMenuGroup
         icon={CUSTOM_LIST_ICON}
-        label="Copy task to..."
+        label={isBulk ? "Copy tasks to..." : "Copy task to..."}
         emptyLabel="No custom lists yet"
         lists={customLists}
-        onChoose={(list) => onAction(() => onCopyToList(task, list))}
+        onChoose={(list) => runForEach((item) => onCopyToList(item, list))}
       />
 
       <div className="lo-task-menu__divider" />
 
       <BoardMenuButton
         icon={DELETE_ICON}
-        label="Delete task"
+        label={isBulk ? "Delete tasks" : "Delete task"}
         isDanger
-        onClick={() => onAction(() => onDelete(task))}
+        onClick={() => runForEach(onDelete)}
       />
     </div>
   );

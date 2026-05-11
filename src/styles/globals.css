@@ -1970,6 +1970,14 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   animation-delay: 170ms;
 }
 
+.lo-suggestions-group__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
 .lo-suggestions-group h4 {
   margin: 0;
   font-size: 12px;
@@ -1977,6 +1985,39 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   color: var(--shell-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
+}
+
+.lo-suggestions-group__menu {
+  width: 26px;
+  height: 22px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 0 3px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  color: var(--shell-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 17px;
+  font-weight: 850;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  opacity: 0.7;
+  transition:
+    background 150ms ease,
+    color 150ms ease,
+    opacity 150ms ease,
+    transform 150ms ease;
+}
+
+.lo-suggestions-group__menu:hover,
+.lo-suggestions-group__menu:focus-visible {
+  background: var(--shell-btn-hover);
+  color: var(--shell-text);
+  opacity: 1;
+  outline: none;
+  transform: translateY(-1px);
 }
 
 .lo-suggestions-group__empty {
