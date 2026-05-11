@@ -169,6 +169,7 @@ const TASKS_FILTER_DROPDOWN_ID = "tasks-filter";
 const TASK_REMINDER_FIRED_KEY = "lifeos_task_reminders_fired_v1";
 const CUSTOM_LISTS_KEY = "lifeos_task_custom_lists_v1";
 const CUSTOM_LIST_ICONS_KEY = "lifeos_task_custom_list_icons_v1";
+const SUGGESTION_PREVIEW_LIMIT = 4;
 
 function customListsStorageKey(userId?: string | null) {
   return userId ? `${CUSTOM_LISTS_KEY}:${userId}` : CUSTOM_LISTS_KEY;
@@ -3400,10 +3401,9 @@ function PlanTasksView({
     );
     const newestFirst = (items: Task[]) =>
       [...items].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-    const takeTopSuggestion = (items: Task[]) => newestFirst(items).slice(0, 1);
     const assignedSuggestionIds = new Set<string>();
     const assignSuggestions = (items: Task[]) => {
-      const suggestions = takeTopSuggestion(
+      const suggestions = newestFirst(
         items.filter((task) => !assignedSuggestionIds.has(task.id)),
       );
       suggestions.forEach((task) => assignedSuggestionIds.add(task.id));
@@ -5933,6 +5933,14 @@ function SuggestionGroup({
   onAddToMyDay: (task: Task) => void;
   onComplete: (task: Task) => void;
 }) {
+  const [showAll, setShowAll] = React.useState(false);
+  const hiddenCount = Math.max(0, tasks.length - SUGGESTION_PREVIEW_LIMIT);
+  const visibleTasks = showAll ? tasks : tasks.slice(0, SUGGESTION_PREVIEW_LIMIT);
+
+  React.useEffect(() => {
+    if (tasks.length <= SUGGESTION_PREVIEW_LIMIT) setShowAll(false);
+  }, [tasks.length]);
+
   return (
     <section className="lo-suggestions-group">
       <h4>{title}</h4>
@@ -5940,7 +5948,7 @@ function SuggestionGroup({
         <p className="lo-suggestions-group__empty">No tasks</p>
       ) : (
         <div className="lo-suggestions-group__list">
-          {tasks.map((task) => (
+          {visibleTasks.map((task) => (
             <div key={task.id} className="lo-suggestion-row">
               <button
                 type="button"
@@ -5965,6 +5973,16 @@ function SuggestionGroup({
               </button>
             </div>
           ))}
+          {hiddenCount > 0 ? (
+            <button
+              type="button"
+              className="lo-suggestions-group__more"
+              aria-expanded={showAll}
+              onClick={() => setShowAll((value) => !value)}
+            >
+              {showAll ? "Less" : `More (${hiddenCount})`}
+            </button>
+          ) : null}
         </div>
       )}
     </section>

@@ -2027,7 +2027,8 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 }
 
 .lo-suggestion-row__complete,
-.lo-suggestion-row__add {
+.lo-suggestion-row__add,
+.lo-suggestions-group__more {
   width: 28px;
   height: 28px;
   border: 0;
@@ -2040,12 +2041,92 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   cursor: pointer;
 }
 
+.lo-suggestions-group__more {
+  position: relative;
+  width: max-content;
+  height: auto;
+  margin: 2px 0 0 36px;
+  padding: 2px 18px 3px 0;
+  place-items: center start;
+  background: transparent;
+  border: 0;
+  color: var(--accent, var(--shell-text));
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.82;
+  transition:
+    color 150ms ease,
+    opacity 150ms ease,
+    transform 150ms ease;
+}
+
+.lo-suggestions-group__more::after {
+  content: "";
+  position: absolute;
+  right: 1px;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-top: 2px solid currentColor;
+  border-right: 2px solid currentColor;
+  transform: translateY(-58%) rotate(45deg);
+  opacity: 0.72;
+  transition: transform 150ms ease;
+}
+
+.lo-suggestions-group__more[aria-expanded="true"]::after {
+  transform: translateY(-35%) rotate(-45deg);
+}
+
+.lo-suggestions-group__more::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 18px;
+  bottom: 0;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.28;
+  transform: scaleX(0.62);
+  transform-origin: left;
+  transition:
+    opacity 150ms ease,
+    transform 150ms ease;
+}
+
 .lo-suggestion-row__complete:hover,
 .lo-suggestion-row__add:hover,
 .lo-suggestion-row__complete:focus-visible,
 .lo-suggestion-row__add:focus-visible {
   background: var(--shell-btn-hover);
   outline: none;
+}
+
+.lo-suggestions-group__more:hover,
+.lo-suggestions-group__more:focus-visible {
+  color: var(--shell-text);
+  background: transparent;
+  outline: none;
+  opacity: 1;
+  transform: translateX(2px);
+}
+
+.lo-suggestions-group__more:hover::before,
+.lo-suggestions-group__more:focus-visible::before {
+  opacity: 0.52;
+  transform: scaleX(1);
+}
+
+.lo-suggestions-group__more:hover::after,
+.lo-suggestions-group__more:focus-visible::after {
+  transform: translate(2px, -58%) rotate(45deg);
+}
+
+.lo-suggestions-group__more[aria-expanded="true"]:hover::after,
+.lo-suggestions-group__more[aria-expanded="true"]:focus-visible::after {
+  transform: translate(2px, -35%) rotate(-45deg);
 }
 
 .lo-suggestion-row__complete img {
