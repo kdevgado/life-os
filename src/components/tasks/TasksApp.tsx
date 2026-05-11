@@ -2977,6 +2977,8 @@ function PlanTasksView({
   const [composerAutoDueDate, setComposerAutoDueDate] = React.useState("");
   const [myDayCompletedOpen, setMyDayCompletedOpen] = React.useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
+  const [mobileBoardMenuOpen, setMobileBoardMenuOpen] = React.useState(true);
+  const [mobileMenuSearchOpen, setMobileMenuSearchOpen] = React.useState(false);
   const [suggestionsOpen, setSuggestionsOpen] = React.useState(false);
   const [selectedTaskId, setSelectedTaskId] = React.useState<string | null>(null);
   const [sortMenuOpen, setSortMenuOpen] = React.useState(false);
@@ -4065,6 +4067,12 @@ function PlanTasksView({
     }));
   }
 
+  function selectPlanList(list: PlanListId) {
+    setSelectedList(list);
+    setMobileBoardMenuOpen(false);
+    setMobileMenuSearchOpen(false);
+  }
+
   function renderSidebarButton(list: PlanListId) {
     const icon = PLAN_SIDEBAR_ICONS[list];
 
@@ -4072,7 +4080,7 @@ function PlanTasksView({
       <button
         type="button"
         className={selectedList === list ? "is-active" : ""}
-        onClick={() => setSelectedList(list)}
+        onClick={() => selectPlanList(list)}
         title={labelForList(list)}
         aria-label={labelForList(list)}
       >
@@ -4220,10 +4228,32 @@ function PlanTasksView({
 
   return (
     <div
-      className={`lo-plan-tasks-layout ${sidebarCollapsed ? "is-sidebar-collapsed" : ""}`}
+      className={`lo-plan-tasks-layout ${sidebarCollapsed ? "is-sidebar-collapsed" : ""} ${mobileBoardMenuOpen ? "is-mobile-menu-open" : "is-mobile-list-open"}`}
     >
       <div className="lo-plan-tasks-sidebar-wrap">
         <Card className="lo-plan-tasks-sidebar">
+          <div className={`lo-plan-tasks-menu-top ${mobileMenuSearchOpen ? "is-search-open" : ""}`}>
+            <div className="lo-plan-tasks-mobile-search-field">
+              <img src="/icons/white/search.png" alt="" />
+              <input
+                className="lo-input"
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                aria-label="Search tasks"
+              />
+            </div>
+            <button
+              type="button"
+              className="lo-plan-tasks-mobile-search-button"
+              onClick={() => setMobileMenuSearchOpen((value) => !value)}
+              aria-label={mobileMenuSearchOpen ? "Close task search" : "Open task search"}
+              aria-expanded={mobileMenuSearchOpen}
+            >
+              <img src="/icons/white/search.png" alt="" />
+            </button>
+          </div>
+
           <button
             type="button"
             className="lo-plan-tasks-sidebar__toggle"
@@ -4252,7 +4282,7 @@ function PlanTasksView({
                 <button
                   type="button"
                   className="lo-plan-tasks-sidebar__icon-button"
-                  onClick={() => setSelectedList(list)}
+                  onClick={() => selectPlanList(list)}
                   title={labelForList(list)}
                   aria-label={labelForList(list)}
                 >
@@ -4265,7 +4295,7 @@ function PlanTasksView({
                 <button
                   type="button"
                   className="lo-plan-tasks-sidebar__list-button"
-                  onClick={() => setSelectedList(list)}
+                  onClick={() => selectPlanList(list)}
                   title={labelForList(list)}
                   aria-label={labelForList(list)}
                 >
@@ -4344,6 +4374,15 @@ function PlanTasksView({
             <Card className="toolbar-card">
               <div className="lo-toolbar">
                 <div className="lo-plan-tasks-heading">
+                  <button
+                    type="button"
+                    className="lo-plan-tasks-mobile-back"
+                    onClick={() => setMobileBoardMenuOpen(true)}
+                    aria-label="Open task lists"
+                    title="Open lists"
+                  >
+                    <span aria-hidden="true">{"<"}</span>
+                  </button>
                   {renderSelectedListIcon()}
                   {renderSelectedListHeading()}
                 </div>
