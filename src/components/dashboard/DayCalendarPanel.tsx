@@ -24,6 +24,7 @@ export type DayCalendarProps = {
   providerStorageKey?: string;
   className?: string;
   compact?: boolean;
+  view?: "day" | "week";
   showSettings?: boolean;
   showTodayButton?: boolean;
   startHour?: number;
@@ -55,6 +56,29 @@ function normalizeDate(date?: Date) {
   const next = new Date(date ?? new Date());
   next.setHours(0, 0, 0, 0);
   return next;
+}
+
+function startOfWeek(date: Date) {
+  const next = normalizeDate(date);
+  const day = next.getDay();
+  const mondayOffset = day === 0 ? -6 : 1 - day;
+  next.setDate(next.getDate() + mondayOffset);
+  return next;
+}
+
+function addDays(date: Date, days: number) {
+  const next = normalizeDate(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function formatEventTime(event: DayCalendarEvent) {
+  const date = new Date();
+  date.setHours(event.startHour, event.startMinute ?? 0, 0, 0);
+  return date.toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 function readJson<T>(key: string, fallback: T): T {
@@ -122,6 +146,7 @@ export default function DayCalendarPanel({
   providerStorageKey = "lifeos_calendar_provider_v1",
   className = "",
   compact = false,
+  view = "day",
   showSettings = true,
   showTodayButton = true,
   startHour = 6,
@@ -207,6 +232,27 @@ export default function DayCalendarPanel({
   // Memo / derived values states
   const dayKey = React.useMemo(() => getDateKey(selectedDate), [selectedDate]);
   const todayKey = React.useMemo(() => getDateKey(new Date()), []);
+  const isWeekView = view === "week";
+  const weekDays = React.useMemo(() => {
+    const weekStart = startOfWeek(selectedDate);
+    return Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
+  }, [selectedDate]);
+  const weekRangeTitle = React.useMemo(() => {
+    const first = weekDays[0];
+    const last = weekDays[6];
+    const sameMonth = first.getMonth() === last.getMonth();
+    const sameYear = first.getFullYear() === last.getFullYear();
+    const firstLabel = first.toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+    });
+    const lastLabel = last.toLocaleDateString(undefined, {
+      month: sameMonth ? undefined : "short",
+      day: "numeric",
+      year: sameYear ? undefined : "numeric",
+    });
+    return `${firstLabel} - ${lastLabel}${sameYear ? ` ${last.getFullYear()}` : ""}`;
+  }, [weekDays]);
   const localDayEvents = eventsByDay[dayKey] || [];
   const providerDayEvents = providerEventsByDay[dayKey] || [];
   const dayEvents = React.useMemo(() => {
@@ -231,6 +277,7 @@ export default function DayCalendarPanel({
     month: compact ? "short" : "long",
     year: compact ? undefined : "numeric",
   });
+  const calendarTitle = isWeekView ? weekRangeTitle : dateTitle;
   const gearIcon =
     theme === "nebula"
       ? "/icons/white/setting.png"
@@ -803,6 +850,18 @@ export default function DayCalendarPanel({
 
   function goToToday() {
     setSelectedDate(normalizeDate());
+  }
+
+  function getEventsForDate(date: Date) {
+    const dateKey = getDateKey(date);
+    return [
+      ...(eventsByDay[dateKey] || []),
+      ...(providerEventsByDay[dateKey] || []),
+    ].sort((a, b) => {
+      const aValue = a.startHour * 60 + (a.startMinute || 0);
+      const bValue = b.startHour * 60 + (b.startMinute || 0);
+      return aValue - bValue;
+    });
   }
 
   React.useEffect(() => {
@@ -1524,25 +1583,25 @@ export default function DayCalendarPanel({
         <div className="lo-daycal__nav">
           <button
             className="lo-btn"
-            onClick={() => shiftDay(-1)}
+            onClick={() => shiftDay(isWeekView ? -7 : -1)}
             type="button"
-            aria-label="Previous day"
+            aria-label={isWeekView ? "Previous week" : "Previous day"}
           >
             ←
           </button>
 
           <div className="lo-daycal__titlewrap">
-            <div className="lo-daycal__title">{dateTitle}</div>
+            <div className="lo-daycal__title">{calendarTitle}</div>
             <div className="lo-daycal__subtitle">
-              {dayKey === todayKey ? "Today" : "Day view"}
+              {isWeekView ? "Week view" : dayKey === todayKey ? "Today" : "Day view"}
             </div>
           </div>
 
           <button
             className="lo-btn"
-            onClick={() => shiftDay(1)}
+            onClick={() => shiftDay(isWeekView ? 7 : 1)}
             type="button"
-            aria-label="Next day"
+            aria-label={isWeekView ? "Next week" : "Next day"}
           >
             →
           </button>
@@ -1580,6 +1639,50 @@ export default function DayCalendarPanel({
         ) : null}
       </div>
 
+      {isWeekView ? (
+        <div className="lo-daycal__week" aria-label="Weekly calendar">
+          {weekDays.map((date) => {
+            const dateKey = getDateKey(date);
+            const dateEvents = getEventsForDate(date);
+            const isToday = dateKey === todayKey;
+
+            return (
+              <section
+                key={dateKey}
+                className={`lo-daycal__week-day ${isToday ? "is-today" : ""}`}
+                aria-label={date.toLocaleDateString(undefined, {
+                  weekday: "long",
+                  month: "long",
+                  day: "numeric",
+                })}
+              >
+                <header className="lo-daycal__week-head">
+                  <span>
+                    {date.toLocaleDateString(undefined, { weekday: "short" })}
+                  </span>
+                  <strong>{date.getDate()}</strong>
+                </header>
+
+                <div className="lo-daycal__week-events">
+                  {dateEvents.length ? (
+                    dateEvents.map((event) => (
+                      <article
+                        key={event.id}
+                        className={`lo-daycal__week-event ${event.sourceTaskStatus === "done" ? "is-done" : ""}`}
+                      >
+                        <span>{formatEventTime(event)}</span>
+                        <strong>{event.title || "New event"}</strong>
+                      </article>
+                    ))
+                  ) : (
+                    <div className="lo-daycal__week-empty">No events</div>
+                  )}
+                </div>
+              </section>
+            );
+          })}
+        </div>
+      ) : (
       <div className="lo-daycal__body">
         <div className="lo-daycal__grid">
           <div className="lo-daycal__hours">
@@ -1911,6 +2014,7 @@ export default function DayCalendarPanel({
           </div>
         </div>
       </div>
+      )}
       {contextMenu && (
         <div
           className="lo-daycal__context"

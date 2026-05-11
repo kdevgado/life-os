@@ -113,6 +113,8 @@ export default function PlanWorkspace() {
             aria-hidden={tab !== "calendar"}
           >
             <DayCalendarPanel
+              view="week"
+              showSettings={false}
               startHour={6}
               endHour={24}
               storageKey="lifeos_calendar_day_events_v1"
