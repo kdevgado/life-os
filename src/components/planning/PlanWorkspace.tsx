@@ -108,11 +108,12 @@ export default function PlanWorkspace() {
           </div>
 
           <div
-            className="lo-plan__placeholder"
+            className="lo-plan__placeholder lo-plan__placeholder--calendar"
             hidden={tab !== "calendar"}
             aria-hidden={tab !== "calendar"}
           >
             <DayCalendarPanel
+              className="lo-plan-calendar"
               view="week"
               showSettings={false}
               startHour={6}

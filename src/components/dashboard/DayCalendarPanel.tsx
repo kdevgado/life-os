@@ -1641,46 +1641,57 @@ export default function DayCalendarPanel({
 
       {isWeekView ? (
         <div className="lo-daycal__week" aria-label="Weekly calendar">
-          {weekDays.map((date) => {
-            const dateKey = getDateKey(date);
-            const dateEvents = getEventsForDate(date);
-            const isToday = dateKey === todayKey;
+          <div className="lo-daycal__week-grid">
+            <div className="lo-daycal__week-corner" aria-hidden="true" />
+            {weekDays.map((date) => {
+              const dateKey = getDateKey(date);
+              const isToday = dateKey === todayKey;
 
-            return (
-              <section
-                key={dateKey}
-                className={`lo-daycal__week-day ${isToday ? "is-today" : ""}`}
-                aria-label={date.toLocaleDateString(undefined, {
-                  weekday: "long",
-                  month: "long",
-                  day: "numeric",
-                })}
-              >
-                <header className="lo-daycal__week-head">
+              return (
+                <div
+                  key={dateKey}
+                  className={`lo-daycal__week-head ${isToday ? "is-today" : ""}`}
+                >
                   <span>
                     {date.toLocaleDateString(undefined, { weekday: "short" })}
                   </span>
                   <strong>{date.getDate()}</strong>
-                </header>
-
-                <div className="lo-daycal__week-events">
-                  {dateEvents.length ? (
-                    dateEvents.map((event) => (
-                      <article
-                        key={event.id}
-                        className={`lo-daycal__week-event ${event.sourceTaskStatus === "done" ? "is-done" : ""}`}
-                      >
-                        <span>{formatEventTime(event)}</span>
-                        <strong>{event.title || "New event"}</strong>
-                      </article>
-                    ))
-                  ) : (
-                    <div className="lo-daycal__week-empty">No events</div>
-                  )}
                 </div>
-              </section>
-            );
-          })}
+              );
+            })}
+
+            {visibleHours.map((hour) => (
+              <React.Fragment key={hour}>
+                <div className="lo-daycal__week-hour">
+                  {formatTime(hour, 0)}
+                </div>
+
+                {weekDays.map((date) => {
+                  const dateKey = getDateKey(date);
+                  const hourEvents = getEventsForDate(date).filter(
+                    (event) => getRenderedHourForEvent(event) === hour,
+                  );
+
+                  return (
+                    <div
+                      key={`${dateKey}-${hour}`}
+                      className={`lo-daycal__week-cell ${dateKey === todayKey ? "is-today" : ""}`}
+                    >
+                      {hourEvents.map((event) => (
+                        <article
+                          key={event.id}
+                          className={`lo-daycal__week-event ${event.sourceTaskStatus === "done" ? "is-done" : ""}`}
+                        >
+                          <span>{formatEventTime(event)}</span>
+                          <strong>{event.title || "New event"}</strong>
+                        </article>
+                      ))}
+                    </div>
+                  );
+                })}
+              </React.Fragment>
+            ))}
+          </div>
         </div>
       ) : (
       <div className="lo-daycal__body">

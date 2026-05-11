@@ -5872,34 +5872,41 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
 .lo-daycal__week {
   min-height: 0;
+  flex: 1 1 auto;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.lo-daycal__week-grid {
+  min-width: 880px;
+  min-height: 100%;
   display: grid;
-  grid-template-columns: repeat(7, minmax(150px, 1fr));
-  gap: 10px;
-  overflow-x: auto;
-  padding: 2px 4px 6px 0;
+  grid-template-columns: 58px repeat(7, minmax(112px, 1fr));
+  grid-auto-rows: minmax(72px, 1fr);
+  align-items: stretch;
+  border-top: 1px solid var(--shell-border, var(--border));
+  border-left: 1px solid var(--shell-border, var(--border));
+  background: transparent;
 }
 
-.lo-daycal__week-day {
-  min-height: 420px;
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  gap: 10px;
-  padding: 12px;
-  border-radius: 14px;
-  border: 1px solid var(--shell-border, var(--border));
-  background: var(--shell-surface-soft, var(--panel-2));
-}
-
-.lo-daycal__week-day.is-today {
-  border-color: var(--shell-border-strong, var(--accent));
-  box-shadow: inset 0 0 0 1px var(--shell-border-strong, var(--accent));
-}
-
+.lo-daycal__week-corner,
 .lo-daycal__week-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: 8px;
+  min-height: 54px;
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  border-right: 1px solid var(--shell-border, var(--border));
+  border-bottom: 1px solid var(--shell-border, var(--border));
+  background: var(--shell-surface, var(--panel));
+}
+
+.lo-daycal__week-corner {
+  left: 0;
+  z-index: 4;
 }
 
 .lo-daycal__week-head span {
@@ -5910,29 +5917,56 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 }
 
 .lo-daycal__week-head strong {
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   border-radius: 999px;
   display: inline-grid;
   place-items: center;
   background: var(--shell-btn-hover, rgba(127, 127, 127, 0.12));
 }
 
-.lo-daycal__week-events {
-  min-height: 0;
+.lo-daycal__week-head.is-today strong {
+  background: var(--shell-border-strong, var(--accent));
+  color: var(--shell-on-accent, #fff);
+}
+
+.lo-daycal__week-hour {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  padding: 7px 8px 0 0;
+  border-right: 1px solid var(--shell-border, var(--border));
+  border-bottom: 1px solid var(--shell-border, var(--border));
+  background: var(--shell-surface, var(--panel));
+  color: var(--shell-muted, var(--muted));
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.lo-daycal__week-cell {
+  min-width: 0;
   display: grid;
   align-content: start;
-  gap: 8px;
+  gap: 6px;
+  padding: 6px;
+  border-right: 1px solid var(--shell-border, var(--border));
+  border-bottom: 1px solid var(--shell-border, var(--border));
+  background: transparent;
+}
+
+.lo-daycal__week-cell.is-today {
+  background: rgba(127, 127, 127, 0.06);
 }
 
 .lo-daycal__week-event {
   display: grid;
-  gap: 4px;
-  padding: 9px 10px;
-  border-radius: 10px;
-  background: var(--shell-surface-strong, var(--panel));
+  gap: 2px;
+  padding: 6px 7px;
+  border-radius: 8px;
+  background: var(--shell-surface-soft, var(--panel-2));
   border: 1px solid var(--shell-border, var(--border));
-  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.08);
 }
 
 .lo-daycal__week-event span {
@@ -5950,14 +5984,6 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 .lo-daycal__week-event.is-done strong {
   text-decoration: line-through;
   opacity: 0.65;
-}
-
-.lo-daycal__week-empty {
-  padding: 12px 10px;
-  border-radius: 10px;
-  color: var(--shell-muted, var(--muted));
-  background: rgba(127, 127, 127, 0.08);
-  font-size: 0.82rem;
 }
 
 .lo-daycal__grid {
@@ -7123,6 +7149,22 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 :root[data-theme="nebula"] .lo-plan__placeholder{
   background: rgba(255,255,255,.04);
   border-color: rgba(255,255,255,.10);
+}
+
+.lo-plan__placeholder--calendar {
+  min-height: min(780px, calc(100vh - 210px));
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+:root[data-theme="nebula"] .lo-plan__placeholder--calendar {
+  border: 0;
+  background: transparent;
+}
+
+.lo-plan__placeholder--calendar .lo-daycal {
+  height: 100%;
 }
 
 /* Planning tab: keep most surfaces and controls on a consistent 10px radius. */
