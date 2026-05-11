@@ -1591,9 +1591,6 @@ export default function FloatingWorkspace() {
         const placed = mobileWindowPos(size.w, size.h);
 
         return [
-          ...prev.filter(
-            (w) => !["notes", "bible", "sounds", "calendar"].includes(w.key),
-          ),
           {
             key,
             x: placed.x,

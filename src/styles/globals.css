@@ -4721,6 +4721,14 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
     -webkit-overflow-scrolling: touch;
   }
 
+  .lo-plan__mobile-nav {
+    position: fixed;
+    top: var(--shell-top-gap);
+    right: var(--shell-edge-gap);
+    z-index: 3001;
+    display: block;
+  }
+
   .lo-plan__shell {
     min-height: calc(100vh - 86px);
     border-radius: 18px;
@@ -4728,9 +4736,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   }
 
   .lo-plan__header {
-    align-items: flex-start;
-    gap: 12px;
-    margin-bottom: 14px;
+    display: none;
   }
 
   .lo-plan__title {
@@ -6841,6 +6847,113 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   flex-wrap: wrap;
 }
 
+.lo-plan__mobile-nav{
+  display: none;
+}
+
+.lo-plan__mobile-trigger{
+  width: 46px;
+  height: 46px;
+  border: 1px solid rgba(15, 23, 42, .1);
+  border-radius: 14px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  gap: 4px;
+  background: rgba(255,255,255,.76);
+  color: inherit;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, .12);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  cursor: pointer;
+}
+
+.lo-plan__mobile-trigger img{
+  width: 19px;
+  height: 19px;
+  object-fit: contain;
+  display: block;
+  filter: brightness(0) saturate(100%);
+  opacity: .82;
+}
+
+.lo-plan__mobile-trigger[aria-expanded="true"]{
+  background: rgba(15, 23, 42, .92);
+  color: white;
+}
+
+.lo-plan__mobile-trigger[aria-expanded="true"] img,
+:root[data-theme="nebula"] .lo-plan__mobile-trigger img{
+  filter: none;
+}
+
+.lo-plan__mobile-menu{
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 168px;
+  padding: 7px;
+  border-radius: 16px;
+  border: 1px solid rgba(15, 23, 42, .1);
+  background: rgba(255,255,255,.9);
+  box-shadow: 0 18px 44px rgba(15, 23, 42, .18);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.lo-plan__mobile-menu button{
+  width: 100%;
+  min-height: 38px;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 750;
+  text-align: left;
+  padding: 0 12px;
+  cursor: pointer;
+}
+
+.lo-plan__mobile-menu button:hover,
+.lo-plan__mobile-menu button:focus-visible{
+  background: rgba(15, 23, 42, .07);
+  outline: none;
+}
+
+.lo-plan__mobile-menu button.is-active{
+  background: rgba(15, 23, 42, .92);
+  color: white;
+}
+
+:root[data-theme="nebula"] .lo-plan__mobile-trigger{
+  background: rgba(10,14,24,.72);
+  border-color: rgba(255,255,255,.1);
+  box-shadow: 0 18px 44px rgba(0,0,0,.35);
+}
+
+:root[data-theme="nebula"] .lo-plan__mobile-trigger[aria-expanded="true"]{
+  background: rgba(255,255,255,.92);
+  color: #0f172a;
+}
+
+:root[data-theme="nebula"] .lo-plan__mobile-menu{
+  background: rgba(10,14,24,.9);
+  border-color: rgba(255,255,255,.12);
+  box-shadow: 0 22px 50px rgba(0,0,0,.42);
+}
+
+:root[data-theme="nebula"] .lo-plan__mobile-menu button:hover,
+:root[data-theme="nebula"] .lo-plan__mobile-menu button:focus-visible{
+  background: rgba(255,255,255,.08);
+}
+
+:root[data-theme="nebula"] .lo-plan__mobile-menu button.is-active{
+  background: rgba(255,255,255,.92);
+  color: #0f172a;
+}
+
 .lo-plan__eyebrow{
   margin: 0 0 4px;
   font-size: 12px;
@@ -7097,6 +7210,25 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 .lo-plan .lo-chip label,
 .lo-plan .lo-day-board__header p {
   font-size: 11px;
+}
+
+@media (max-width: 720px) {
+  .lo-plan {
+    padding-top: 76px;
+  }
+
+  .lo-plan__mobile-nav {
+    position: fixed;
+    top: var(--shell-top-gap);
+    right: var(--shell-edge-gap);
+    z-index: 3001;
+    display: block;
+  }
+
+  .lo-plan__header,
+  .lo-plan__tabs {
+    display: none !important;
+  }
 }
 
 /* Transparent Bible verse window */
@@ -7761,6 +7893,26 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 .lo-plan-tasks-main::-webkit-scrollbar-thumb:hover,
 .lo-plan-tasks-sidebar::-webkit-scrollbar-thumb:hover {
   background-color: rgba(120, 120, 120, 0.8);
+}
+
+@media (max-width: 720px) {
+  .lo-window--tasks .lo-focus-scroller,
+  .lo-window--tasks .lo-tasklist,
+  .lo-window--tasks .lo-window__body,
+  .lo-window--notes .lo-window__body,
+  .lo-window--notes .lo-notes__editor,
+  .lo-window--notes .lo-notes__tablist {
+    scrollbar-width: none;
+  }
+
+  .lo-window--tasks .lo-focus-scroller::-webkit-scrollbar,
+  .lo-window--tasks .lo-tasklist::-webkit-scrollbar,
+  .lo-window--tasks .lo-window__body::-webkit-scrollbar,
+  .lo-window--notes .lo-window__body::-webkit-scrollbar,
+  .lo-window--notes .lo-notes__editor::-webkit-scrollbar,
+  .lo-window--notes .lo-notes__tablist::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* Spaces page: a dashboard for different workspaces, with a focus on visual content and quick switching */

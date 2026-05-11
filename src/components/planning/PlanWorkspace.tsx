@@ -5,11 +5,72 @@ import DayCalendarPanel from "../dashboard/DayCalendarPanel";
 
 type PlanTab = "board" | "calendar" | "planner";
 
+const PLAN_TABS: Array<{ value: PlanTab; label: string }> = [
+  { value: "board", label: "Board" },
+  { value: "calendar", label: "Calendar" },
+  { value: "planner", label: "Planner" },
+];
+
 export default function PlanWorkspace() {
   const [tab, setTab] = React.useState<PlanTab>("board");
+  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!mobileMenuOpen) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target as HTMLElement;
+      if (target.closest(".lo-plan__mobile-nav")) return;
+      setMobileMenuOpen(false);
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setMobileMenuOpen(false);
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown, true);
+    window.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown, true);
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [mobileMenuOpen]);
+
+  function chooseTab(nextTab: PlanTab) {
+    setTab(nextTab);
+    setMobileMenuOpen(false);
+  }
 
   return (
     <section className="lo-plan" aria-label="Planning workspace">
+      <div className="lo-plan__mobile-nav" aria-label="Planning views">
+        <button
+          type="button"
+          className="lo-plan__mobile-trigger"
+          aria-label="Open planning views"
+          aria-expanded={mobileMenuOpen}
+          onClick={() => setMobileMenuOpen((value) => !value)}
+        >
+          <img src="/icons/white/menu-burger.png" alt="" aria-hidden="true" />
+        </button>
+
+        {mobileMenuOpen ? (
+          <div className="lo-plan__mobile-menu" role="menu">
+            {PLAN_TABS.map((item) => (
+              <button
+                key={item.value}
+                type="button"
+                role="menuitem"
+                className={tab === item.value ? "is-active" : ""}
+                onClick={() => chooseTab(item.value)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
+
       <div className="lo-plan__shell">
         <header className="lo-plan__header">
           <div>
@@ -22,27 +83,18 @@ export default function PlanWorkspace() {
             role="tablist"
             aria-label="Planning views"
           >
-            <button
-              type="button"
-              className={tab === "board" ? "is-active" : ""}
-              onClick={() => setTab("board")}
-            >
-              Board
-            </button>
-            <button
-              type="button"
-              className={tab === "calendar" ? "is-active" : ""}
-              onClick={() => setTab("calendar")}
-            >
-              Calendar
-            </button>
-            <button
-              type="button"
-              className={tab === "planner" ? "is-active" : ""}
-              onClick={() => setTab("planner")}
-            >
-              Planner
-            </button>
+            {PLAN_TABS.map((item) => (
+              <button
+                key={item.value}
+                type="button"
+                role="tab"
+                aria-selected={tab === item.value}
+                className={tab === item.value ? "is-active" : ""}
+                onClick={() => setTab(item.value)}
+              >
+                {item.label}
+              </button>
+            ))}
           </div>
         </header>
 
