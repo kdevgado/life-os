@@ -29,6 +29,21 @@ export default defineConfig({
           display: "standalone",
           background_color: "#ffffff",
           theme_color: "#ffffff",
+          shortcuts: [
+            {
+              name: "Quick Access",
+              short_name: "Quick",
+              description: "Open today's tasks and quick notes",
+              url: "/quick",
+              icons: [
+                {
+                  src: "/icons/pwa-192.png",
+                  sizes: "192x192",
+                  type: "image/png",
+                },
+              ],
+            },
+          ],
           icons: [
             {
               src: "/icons/pwa-192.png",

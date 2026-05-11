@@ -1,8 +1,18 @@
 ---
-import AppShell from "../components/layout/AppShell.astro";
-import QuickAccess from "../components/quick/QuickAccess";
+const target = "/quick";
 ---
 
-<AppShell title="Widget - LifeOS" pageOnly>
-  <QuickAccess client:load />
-</AppShell>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="refresh" content={`0;url=${target}`} />
+    <link rel="canonical" href={target} />
+    <title>Opening Quick Access</title>
+  </head>
+  <body>
+    <a href={target}>Open Quick Access</a>
+    <script is:inline define:vars={{ target }}>
+      window.location.replace(target);
+    </script>
+  </body>
+</html>

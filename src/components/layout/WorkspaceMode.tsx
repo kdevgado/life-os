@@ -6,24 +6,17 @@ type WorkspaceMode = "focus" | "plan";
 
 export default function WorkspaceMode() {
   const [mode, setMode] = React.useState<WorkspaceMode>("focus");
-  const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
     const saved = localStorage.getItem("lifeos_workspace_mode");
     if (saved === "plan" || saved === "focus") {
       setMode(saved);
     }
-    setMounted(true);
   }, []);
 
   React.useEffect(() => {
-    if (!mounted) return;
     localStorage.setItem("lifeos_workspace_mode", mode);
-  }, [mode, mounted]);
-
-  if (!mounted) {
-    return null;
-  }
+  }, [mode]);
 
   return (
     <>

@@ -101,6 +101,9 @@ export function taskStorageKey(userId?: string | null) {
   return userId ? `${KEY}:${userId}` : KEY;
 }
 
+type NewTaskInput = Pick<Task, "title"> &
+  Partial<Omit<Task, "id" | "createdAt" | "updatedAt">>;
+
 export function taskBackupKey(userId?: string | null) {
   return userId ? `${BACKUP_KEY}:${userId}` : BACKUP_KEY;
 }
@@ -124,13 +127,10 @@ export function saveTasks(tasks: Task[], key = KEY, backupKey = BACKUP_KEY) {
   saveTaskBackup(tasks, backupKey);
 }
 
-export function createTask(
-  partial: Pick<Task, "title"> & Partial<Omit<Task, "id" | "createdAt" | "updatedAt">>
-): Task {
+export function createTaskObject(partial: NewTaskInput, existing: Task[] = loadTasks()): Task {
   const parsed = parseTaskInput(partial.title);
-  const existing = loadTasks();
 
-  const task: Task = {
+  return {
     id: uid(),
     title: parsed.title || partial.title.trim(),
     notes: partial.notes ?? "",
@@ -155,7 +155,11 @@ export function createTask(
     createdAt: nowISO(),
     updatedAt: nowISO(),
   };
+}
 
+export function createTask(partial: NewTaskInput): Task {
+  const existing = loadTasks();
+  const task = createTaskObject(partial, existing);
   existing.unshift(task);
   saveTasks(existing);
   return task;

@@ -4215,272 +4215,12 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   min-height: 100vh;
 }
 
+.iw-app--page-only {
+  overflow: auto;
+}
+
 .iw-app--page-only .iw-shell {
   min-height: 100vh;
-}
-
-.lo-quick {
-  width: min(100%, 520px);
-  min-height: 100vh;
-  margin: 0 auto;
-  padding: max(18px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  color: var(--shell-text);
-}
-
-.lo-quick__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding-top: 4px;
-}
-
-.lo-quick__eyebrow {
-  margin: 0 0 4px;
-  color: var(--shell-muted);
-  font-size: 0.86rem;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-.lo-quick h1,
-.lo-quick h2,
-.lo-quick p {
-  margin: 0;
-}
-
-.lo-quick h1 {
-  font-size: clamp(2rem, 10vw, 3rem);
-  line-height: 0.96;
-  letter-spacing: 0;
-}
-
-.lo-quick h2 {
-  font-size: 1rem;
-}
-
-.lo-quick__home,
-.lo-quick__input-row button {
-  width: 48px;
-  height: 48px;
-  border: 0;
-  border-radius: 14px;
-  display: inline-grid;
-  place-items: center;
-  flex: 0 0 auto;
-  background: rgba(15, 23, 42, 0.88);
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16);
-}
-
-.lo-quick__home img,
-.lo-quick__input-row button img {
-  width: 20px;
-  height: 20px;
-  object-fit: contain;
-}
-
-.lo-quick__summary {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.lo-quick__summary > div,
-.lo-quick__composer,
-.lo-quick__section {
-  border: 1px solid var(--shell-border);
-  border-radius: 8px;
-  background: var(--shell-surface-strong);
-  box-shadow: var(--shell-shadow);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-}
-
-.lo-quick__summary > div {
-  min-height: 82px;
-  padding: 14px;
-  display: grid;
-  align-content: center;
-  gap: 2px;
-}
-
-.lo-quick__summary strong {
-  font-size: 2rem;
-  line-height: 1;
-}
-
-.lo-quick__summary span,
-.lo-quick label,
-.lo-quick__empty,
-.lo-quick__note p {
-  color: var(--shell-muted);
-}
-
-.lo-quick__composer,
-.lo-quick__section {
-  padding: 14px;
-}
-
-.lo-quick__composer {
-  display: grid;
-  gap: 10px;
-}
-
-.lo-quick label {
-  margin: 0;
-  font-size: 0.88rem;
-  font-weight: 700;
-}
-
-.lo-quick__input-row {
-  display: flex;
-  gap: 10px;
-}
-
-.lo-quick input,
-.lo-quick textarea {
-  width: 100%;
-  min-width: 0;
-  box-sizing: border-box;
-  border: 1px solid var(--shell-border);
-  border-radius: 8px;
-  background: var(--field-bg);
-  color: var(--shell-text);
-  font: inherit;
-  font-size: 1rem;
-  outline: none;
-}
-
-.lo-quick input {
-  min-height: 48px;
-  padding: 0 14px;
-}
-
-.lo-quick textarea {
-  resize: vertical;
-  min-height: 92px;
-  padding: 12px 14px;
-}
-
-.lo-quick input:focus,
-.lo-quick textarea:focus {
-  border-color: rgba(6, 182, 212, 0.6);
-  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.16);
-}
-
-.lo-quick__wide-action {
-  min-height: 48px;
-  border: 0;
-  border-radius: 8px;
-  background: rgba(15, 23, 42, 0.9);
-  color: white;
-  font: inherit;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.lo-quick__section {
-  display: grid;
-  gap: 12px;
-}
-
-.lo-quick__section-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.lo-quick__section-head a {
-  color: var(--shell-text);
-  font-size: 0.9rem;
-  font-weight: 700;
-  text-decoration: none;
-}
-
-.lo-quick__list,
-.lo-quick__notes {
-  display: grid;
-  gap: 8px;
-}
-
-.lo-quick__task {
-  min-height: 52px;
-  width: 100%;
-  border: 1px solid var(--shell-border);
-  border-radius: 8px;
-  background: var(--shell-surface-soft);
-  color: var(--shell-text);
-  display: grid;
-  grid-template-columns: 22px 1fr;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  text-align: left;
-  font: inherit;
-  cursor: pointer;
-}
-
-.lo-quick__task span {
-  width: 20px;
-  height: 20px;
-  border-radius: 999px;
-  border: 2px solid currentColor;
-  opacity: 0.5;
-  box-sizing: border-box;
-}
-
-.lo-quick__task strong {
-  min-width: 0;
-  overflow-wrap: anywhere;
-  font-weight: 650;
-}
-
-.lo-quick__note {
-  display: grid;
-  gap: 4px;
-  padding: 11px 12px;
-  border-radius: 8px;
-  border: 1px solid var(--shell-border);
-  background: var(--shell-surface-soft);
-}
-
-.lo-quick__note strong,
-.lo-quick__note p {
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-}
-
-.lo-quick__note strong {
-  -webkit-line-clamp: 1;
-}
-
-.lo-quick__note p {
-  -webkit-line-clamp: 2;
-  line-height: 1.35;
-}
-
-.lo-quick__empty {
-  padding: 12px 2px 2px;
-  font-size: 0.94rem;
-}
-
-:root[data-theme="nebula"] .lo-quick__home,
-:root[data-theme="nebula"] .lo-quick__input-row button,
-:root[data-theme="nebula"] .lo-quick__wide-action {
-  background: rgba(255, 255, 255, 0.14);
-}
-
-@media (min-width: 720px) {
-  .lo-quick {
-    padding-top: 42px;
-    padding-bottom: 42px;
-  }
 }
 
 .lo-docks{
@@ -6692,6 +6432,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   background: var(--shell-btn-hover);
 }
 
+.lo-notes__content,
 .lo-notes__content .tiptap {
   min-height: 100%;
   height: 100%;
@@ -6770,6 +6511,8 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
 .lo-notes__meta{
   display: flex;
+  align-items: center;
+  gap: 8px;
   flex: 0 0 auto;
   overflow: visible;
   max-height: none;
@@ -6811,6 +6554,9 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
 .lo-notes__content{
   min-height: 100%;
+  height: 100%;
+  outline: none;
+  color: var(--shell-text);
 }
 
 .lo-notes__content .tiptap{
@@ -6856,10 +6602,14 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   pointer-events: none;
 }
 
+.lo-notes__content p,
 .lo-notes__content .tiptap p{
   margin: 0 0 12px;
 }
 
+.lo-notes__content h1,
+.lo-notes__content h2,
+.lo-notes__content h3,
 .lo-notes__content .tiptap h1,
 .lo-notes__content .tiptap h2,
 .lo-notes__content .tiptap h3{
@@ -6867,6 +6617,8 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   margin: 0 0 12px;
 }
 
+.lo-notes__content ul,
+.lo-notes__content ol,
 .lo-notes__content .tiptap ul{
   padding-left: 20px;
   margin: 0 0 12px;
@@ -7331,10 +7083,10 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 }
 
 .lo-bible-text-only__ref{
-  margin-top: 18px;
+  margin-top: 10px;
   font-size: 13px;
   font-weight: 600;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.10em;
   text-transform: uppercase;
   color: var(--shell-muted);
 }

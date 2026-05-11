@@ -1,21 +1,19 @@
 import React from "react";
 import { getCurrentUserId } from "../../lib/identity";
 import {
+  createQuickNote,
+  readLocalNotes,
+  writeLocalNotes,
+  type NoteTab,
+} from "../../lib/notesStore";
+import {
+  createTaskObject,
   loadTasks,
   saveTasks,
   taskBackupKey,
   taskStorageKey,
 } from "../../lib/tasksStore";
 import type { Task } from "../../types/task";
-
-type NoteTab = {
-  id: string;
-  title: string;
-  content: string;
-};
-
-const NOTES_KEY = "lifeos_notes_v1";
-const ACTIVE_NOTE_KEY = "lifeos_notes_active_v1";
 
 function todayDateKey() {
   const today = new Date();
@@ -27,35 +25,6 @@ function todayDateKey() {
 
 function nowISO() {
   return new Date().toISOString();
-}
-
-function makeId(prefix: string) {
-  return typeof crypto !== "undefined" && "randomUUID" in crypto
-    ? `${prefix}_${crypto.randomUUID()}`
-    : `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-}
-
-function readNotes(): NoteTab[] {
-  try {
-    const raw = localStorage.getItem(NOTES_KEY);
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed)
-      ? parsed.filter(
-          (note): note is NoteTab =>
-            note &&
-            typeof note.id === "string" &&
-            typeof note.title === "string" &&
-            typeof note.content === "string",
-        )
-      : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeNotes(notes: NoteTab[], activeId?: string) {
-  localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
-  if (activeId) localStorage.setItem(ACTIVE_NOTE_KEY, activeId);
 }
 
 function stripHtml(value: string) {
@@ -73,28 +42,15 @@ function taskMatchesToday(task: Task, today: string) {
   );
 }
 
-function createQuickTask(title: string): Task {
+function createQuickTask(title: string, existing: Task[]): Task {
   const today = todayDateKey();
-  const timestamp = nowISO();
 
-  return {
-    id: makeId("t"),
-    title: title.trim(),
-    notes: "",
-    status: "todo",
-    priority: 2,
+  return createTaskObject({
+    title,
     dueDate: today,
-    projectId: null,
-    list: "inbox",
-    tags: ["today"],
-    important: false,
-    focus: false,
     myDay: today,
     plannedFor: today,
-    sortOrder: Date.now(),
-    createdAt: timestamp,
-    updatedAt: timestamp,
-  };
+  }, existing);
 }
 
 export default function QuickAccess() {
@@ -116,7 +72,7 @@ export default function QuickAccess() {
 
     setStorageKeys({ taskKey, backupKey });
     setTasks(loadTasks(taskKey, backupKey));
-    setNotes(readNotes());
+    setNotes(readLocalNotes().notes);
   }, []);
 
   React.useEffect(() => {
@@ -154,7 +110,7 @@ export default function QuickAccess() {
     const title = taskInput.trim();
     if (!title) return;
 
-    persistTasks([createQuickTask(title), ...tasks]);
+    persistTasks([createQuickTask(title, tasks), ...tasks]);
     setTaskInput("");
   }
 
@@ -173,19 +129,11 @@ export default function QuickAccess() {
     const body = noteInput.trim();
     if (!body) return;
 
-    const title = body.split(/\s+/).slice(0, 5).join(" ");
-    const nextNote: NoteTab = {
-      id: makeId("note"),
-      title: title || "Quick note",
-      content: `<p>${body
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")}</p>`,
-    };
+    const nextNote = createQuickNote(body);
     const nextNotes = [...notes, nextNote];
 
     setNotes(nextNotes);
-    writeNotes(nextNotes, nextNote.id);
+    writeLocalNotes({ notes: nextNotes, activeId: nextNote.id });
     setNoteInput("");
   }
 
