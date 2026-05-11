@@ -8690,6 +8690,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   height: 50px;
   padding: 0 0.4rem;
   border-radius: 10px;
+  border: 1px solid transparent;
   box-sizing: border-box;
 }
 
@@ -8702,6 +8703,14 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   border-color: rgba(255, 255, 255, 0.1);
 }
 
+:root[data-theme="duna"] .lo-top-dock {
+  background: rgba(255, 251, 244, 0.82);
+  border-color: rgba(120, 89, 58, 0.18);
+  box-shadow: 0 12px 30px rgba(120, 89, 58, 0.14);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
 .lo-top-dock__divider {
   width: 1px;
   height: 24px;
@@ -8712,6 +8721,10 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
 :root[data-theme="nebula"] .lo-top-dock__divider {
   background: rgba(255, 255, 255, 0.14);
+}
+
+:root[data-theme="duna"] .lo-top-dock__divider {
+  background: rgba(120, 89, 58, 0.18);
 }
 
 .lo-account-menu__range-wrap {
