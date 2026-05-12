@@ -6804,6 +6804,14 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
     opacity .16s ease;
 }
 
+.lo-notes__save-status{
+  flex: 0 0 auto;
+  color: var(--shell-muted);
+  font-size: 12px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
 .lo-notes__editor{
   flex: 1 1 auto;
   min-height: 0;

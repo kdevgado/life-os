@@ -228,8 +228,28 @@ function NotesMenu({
 export default function NotesPanel() {
   const [notes, setNotes] = React.useState<NoteTab[]>([]);
   const [activeId, setActiveId] = React.useState("");
+  const [saveStatus, setSaveStatus] = React.useState("");
   const editorRef = React.useRef<HTMLDivElement | null>(null);
+  const notesRef = React.useRef<NoteTab[]>([]);
+  const activeIdRef = React.useRef("");
   const hydratedRef = React.useRef(false);
+  const saveStatusTimerRef = React.useRef<number | null>(null);
+
+  React.useEffect(() => {
+    notesRef.current = notes;
+  }, [notes]);
+
+  React.useEffect(() => {
+    activeIdRef.current = activeId;
+  }, [activeId]);
+
+  React.useEffect(() => {
+    return () => {
+      if (saveStatusTimerRef.current) {
+        window.clearTimeout(saveStatusTimerRef.current);
+      }
+    };
+  }, []);
 
   React.useEffect(() => {
     const local = readLocalNotes();
@@ -254,6 +274,43 @@ export default function NotesPanel() {
     if (!hydratedRef.current || !notes.length || !activeId) return;
     writeLocalNotes({ notes, activeId });
   }, [notes, activeId]);
+
+  const saveCurrentNote = React.useCallback(() => {
+    const currentActiveId = activeIdRef.current;
+    if (!currentActiveId) return;
+
+    const editorHtml = editorRef.current?.innerHTML || "<p></p>";
+    const nextNotes = notesRef.current.map((note) =>
+      note.id === currentActiveId ? { ...note, content: editorHtml } : note,
+    );
+
+    notesRef.current = nextNotes;
+    setNotes(nextNotes);
+    writeLocalNotes({ notes: nextNotes, activeId: currentActiveId });
+    setSaveStatus("Saved");
+
+    if (saveStatusTimerRef.current) {
+      window.clearTimeout(saveStatusTimerRef.current);
+    }
+
+    saveStatusTimerRef.current = window.setTimeout(() => {
+      setSaveStatus("");
+      saveStatusTimerRef.current = null;
+    }, 1600);
+  }, []);
+
+  React.useEffect(() => {
+    function handleSaveShortcut(event: KeyboardEvent) {
+      if (!(event.ctrlKey || event.metaKey)) return;
+      if (event.key.toLowerCase() !== "s") return;
+
+      event.preventDefault();
+      saveCurrentNote();
+    }
+
+    window.addEventListener("keydown", handleSaveShortcut);
+    return () => window.removeEventListener("keydown", handleSaveShortcut);
+  }, [saveCurrentNote]);
 
   function addNote() {
     const next = createNote(notes.length + 1);
@@ -378,6 +435,11 @@ export default function NotesPanel() {
           title="Note title"
           aria-label="Note title"
         />
+        {saveStatus ? (
+          <span className="lo-notes__save-status" role="status">
+            {saveStatus}
+          </span>
+        ) : null}
       </div>
 
       <div className="lo-notes__editor">
