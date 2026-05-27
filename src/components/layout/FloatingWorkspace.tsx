@@ -1386,6 +1386,23 @@ export default function FloatingWorkspace() {
     };
   }, [focusMode, hideAfterSeconds]);
 
+  React.useEffect(() => {
+    if (typeof document === "undefined") return;
+
+    const root = document.documentElement;
+    const isBreathing = showBreathe && focusMode;
+
+    if (isBreathing) {
+      root.classList.add("is-breathing");
+    } else {
+      root.classList.remove("is-breathing");
+    }
+
+    return () => {
+      root.classList.remove("is-breathing");
+    };
+  }, [showBreathe, focusMode]);
+
   function toggleTheme() {
     const next = theme === "nebula" ? "duna" : "nebula";
     document.documentElement.setAttribute("data-theme", next);

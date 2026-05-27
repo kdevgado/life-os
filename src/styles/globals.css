@@ -9219,6 +9219,15 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   transform: translateY(-8px);
 }
 
+.is-focus-mode.is-breathing .lo-window,
+.is-focus-mode.is-breathing .lo-docks,
+.is-focus-mode.is-breathing .lo-auth,
+.is-focus-mode.is-breathing .lo-mode-switcher {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-8px);
+}
+
 /* normal mode */
 .lo-window--spaces,
 .lo-window--sounds,
