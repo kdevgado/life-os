@@ -89,7 +89,7 @@ function minSizeFor(key: Exclude<PanelKey, null>) {
     case "calendar":
       return { w: 400, h: 1150 };
     case "calendar-settings":
-      return { w: 500, h: 350 };
+      return { w: 600, h: 350 };
     case "account-settings":
       return { w: 500, h: 420 };
     case "appearance-settings":
@@ -172,6 +172,7 @@ function fixedHeightFor(key: Exclude<PanelKey, null>) {
 }
 
 const MOBILE_BREAKPOINT = 720;
+const BIBLE_FOCUS_EDGE_GAP = 24;
 
 function getIsMobileViewport() {
   if (typeof window === "undefined") return false;
@@ -1385,6 +1386,49 @@ export default function FloatingWorkspace() {
       );
     };
   }, [focusMode, hideAfterSeconds]);
+
+  React.useEffect(() => {
+    if (!focusMode || typeof window === "undefined") return;
+
+    const frame = window.requestAnimationFrame(() => {
+      const bibleWindow = document.querySelector<HTMLElement>(".lo-window--bible");
+      if (!bibleWindow) return;
+
+      const rect = bibleWindow.getBoundingClientRect();
+      let dx = 0;
+      let dy = 0;
+
+      if (rect.left < BIBLE_FOCUS_EDGE_GAP) {
+        dx = BIBLE_FOCUS_EDGE_GAP - rect.left;
+      } else if (rect.right > window.innerWidth - BIBLE_FOCUS_EDGE_GAP) {
+        dx = window.innerWidth - BIBLE_FOCUS_EDGE_GAP - rect.right;
+      }
+
+      if (rect.top < BIBLE_FOCUS_EDGE_GAP) {
+        dy = BIBLE_FOCUS_EDGE_GAP - rect.top;
+      } else if (rect.bottom > window.innerHeight - BIBLE_FOCUS_EDGE_GAP) {
+        dy = window.innerHeight - BIBLE_FOCUS_EDGE_GAP - rect.bottom;
+      }
+
+      const nextDx = Math.round(dx);
+      const nextDy = Math.round(dy);
+      if (nextDx === 0 && nextDy === 0) return;
+
+      setWins((prev) =>
+        prev.map((w) =>
+          w.key === "bible"
+            ? {
+                ...w,
+                x: Math.round(w.x + nextDx),
+                y: Math.round(w.y + nextDy),
+              }
+            : w,
+        ),
+      );
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [focusMode, wins]);
 
   React.useEffect(() => {
     if (typeof document === "undefined") return;
