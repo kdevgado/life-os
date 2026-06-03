@@ -311,6 +311,11 @@ function detectDueDateFromTaskText(value: string) {
   return isoDate(targetDate);
 }
 
+function reminderAtForDateKey(dateKey: string) {
+  const date = new Date(`${dateKey}T09:00:00`);
+  return Number.isNaN(date.getTime()) ? "" : date.toISOString();
+}
+
 function reminderAlertKey(task: Task) {
   return `${task.id}:${task.reminderAt ?? ""}`;
 }
@@ -3988,16 +3993,50 @@ function PlanTasksView({
     setTitle(value);
     openMyDayComposer();
 
+    const previousAutoReminder = composerAutoDueDate
+      ? reminderAtForDateKey(composerAutoDueDate)
+      : "";
     const detectedDueDate = detectDueDateFromTaskText(value);
     if (detectedDueDate) {
       setDueDate(detectedDueDate);
       setComposerAutoDueDate(detectedDueDate);
+      if (!composerReminderAt || composerReminderAt === previousAutoReminder) {
+        setComposerReminderAt(reminderAtForDateKey(detectedDueDate));
+      }
       return;
     }
 
     if (composerAutoDueDate && dueDate === composerAutoDueDate) {
       setDueDate("");
       setComposerAutoDueDate("");
+      if (composerReminderAt === previousAutoReminder) {
+        setComposerReminderAt("");
+      }
+    }
+  }
+
+  function updateAddbarTitle(value: string) {
+    setTitle(value);
+
+    const previousAutoReminder = composerAutoDueDate
+      ? reminderAtForDateKey(composerAutoDueDate)
+      : "";
+    const detectedDueDate = detectDueDateFromTaskText(value);
+    if (detectedDueDate) {
+      setDueDate(detectedDueDate);
+      setComposerAutoDueDate(detectedDueDate);
+      if (!composerReminderAt || composerReminderAt === previousAutoReminder) {
+        setComposerReminderAt(reminderAtForDateKey(detectedDueDate));
+      }
+      return;
+    }
+
+    if (composerAutoDueDate && dueDate === composerAutoDueDate) {
+      setDueDate("");
+      setComposerAutoDueDate("");
+      if (composerReminderAt === previousAutoReminder) {
+        setComposerReminderAt("");
+      }
     }
   }
 
@@ -4737,7 +4776,7 @@ function PlanTasksView({
               className="lo-input"
               type="text"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => updateAddbarTitle(e.target.value)}
               placeholder={`Add a task in ${labelForList(selectedList)}…`}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && canAddToSelectedList) {

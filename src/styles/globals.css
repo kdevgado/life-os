@@ -7827,6 +7827,19 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   color: rgba(255,255,255,0.82);
 }
 
+:root[data-theme="duna"] .lo-window--bible .lo-bible-window-title{
+  color: rgba(255,255,255,0.92);
+}
+
+:root[data-theme="duna"] .lo-window--bible .lo-bible-window-title__divider,
+:root[data-theme="duna"] .lo-window--bible .lo-bible-window-title__date{
+  color: rgba(255,255,255,0.72);
+}
+
+:root[data-theme="duna"] .lo-window--bible .lo-bible-window-title__icon{
+  filter: none;
+}
+
 /* Breathing exercise overlay: full-screen, centered content, with a soft blurred background */
 .lo-breathe {
   --breathe-overlay: 0.58;
