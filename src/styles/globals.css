@@ -5609,9 +5609,9 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
 .lo-daycal__top {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
   position: relative;
   flex-wrap: nowrap;
   padding-bottom: 10px;
@@ -5646,9 +5646,9 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 }
 
 .lo-daycal__nav {
-  grid-column: 2;
-  justify-self: center;
-  flex: 0 1 auto;
+  grid-column: 1;
+  justify-self: stretch;
+  flex: 1 1 auto;
   min-width: 0;
 }
 
@@ -5679,7 +5679,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 }
 
 .lo-daycal__tools {
-  grid-column: 3;
+  grid-column: 2;
   flex: 0 0 auto;
   justify-self: end;
 }
@@ -5688,7 +5688,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   display: flex;
   flex-direction: column;
   min-width: 0;
-  flex: 0 1 auto;
+  flex: 1 1 auto;
 }
 
 .lo-daycal__title {
