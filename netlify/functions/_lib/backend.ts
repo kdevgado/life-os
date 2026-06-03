@@ -134,7 +134,17 @@ export async function readResource<T>(args: {
   normalize: (raw: unknown) => T;
 }): Promise<ResourceEnvelope<T>> {
   const store = getLifeOsStore();
-  const raw = await store.get(args.key, { type: "json" }).catch(() => null);
+  const raw = await store.get(args.key, { type: "json" }).catch(async (error) => {
+    if (process.env.NETLIFY_SITE_ID && process.env.NETLIFY_AUTH_TOKEN) {
+      console.error(
+        "[LifeOS] @netlify/blobs get failed with explicit credentials, retrying implicit store:",
+        error,
+      );
+      return await getStore("lifeos").get(args.key, { type: "json" }).catch(() => null);
+    }
+
+    return null;
+  });
 
   if (isEnvelope(raw)) {
     return {
@@ -178,7 +188,21 @@ export async function writeResource<T>(args: {
   };
 
   const store = getLifeOsStore();
-  await store.setJSON(args.key, next);
+
+  try {
+    await store.setJSON(args.key, next);
+  } catch (error) {
+    if (process.env.NETLIFY_SITE_ID && process.env.NETLIFY_AUTH_TOKEN) {
+      console.error(
+        "[LifeOS] @netlify/blobs setJSON failed with explicit credentials, retrying implicit store:",
+        error,
+      );
+      await getStore("lifeos").setJSON(args.key, next);
+    } else {
+      throw error;
+    }
+  }
+
   return next;
 }
 
@@ -187,11 +211,18 @@ function getLifeOsStore() {
   const token = process.env.NETLIFY_AUTH_TOKEN;
 
   if (siteID && token) {
-    return getStore({
-      name: "lifeos",
-      siteID,
-      token,
-    });
+    try {
+      return getStore({
+        name: "lifeos",
+        siteID,
+        token,
+      });
+    } catch (error) {
+      console.error(
+        "[LifeOS] @netlify/blobs failed to initialize with NETLIFY_SITE_ID/NETLIFY_AUTH_TOKEN:",
+        error,
+      );
+    }
   }
 
   return getStore("lifeos");
