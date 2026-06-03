@@ -2636,6 +2636,11 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   outline: none;
 }
 
+:root[data-theme="nebula"] .lo-task-details-due-menu__date::-webkit-calendar-picker-indicator,
+:root[data-theme="nebula"] .lo-task-details-reminder-picker__date::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.35);
+}
+
 .lo-task-details-reminder-picker__times {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -3120,7 +3125,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   width: 250px;
   padding: 8px;
   border-radius: 10px;
-  background: #070a14;
+  background: var(--shell-surface-strong);
   color: var(--shell-text);
   border: 1px solid var(--shell-border);
   box-shadow: 0 20px 48px rgba(15, 23, 42, 0.3);
@@ -3132,6 +3137,31 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 .lo-composer-menu .lo-task-details-due-menu__item img {
   width: 16px;
   height: 16px;
+}
+
+:root[data-theme="nebula"] .lo-composer-menu {
+  background: #070a14;
+}
+
+:root[data-theme="duna"] .lo-task-details-due-menu,
+:root[data-theme="duna"] .lo-task-details-reminder-menu,
+:root[data-theme="duna"] .lo-task-details-repeat-menu,
+:root[data-theme="duna"] .lo-composer-menu {
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--shell-text);
+}
+
+:root[data-theme="duna"] .lo-task-details-due-menu__title,
+:root[data-theme="duna"] .lo-task-details-due-menu__item {
+  color: var(--shell-title);
+}
+
+:root[data-theme="duna"] .lo-task-details-due-menu__item span:last-child:not(:first-child) {
+  color: var(--shell-muted);
+}
+
+:root[data-theme="duna"] .lo-task-details-due-menu__item img {
+  filter: brightness(0) saturate(100%) invert(9%) sepia(8%) saturate(958%) hue-rotate(216deg) brightness(98%) contrast(93%);
 }
 
 @keyframes loMyDayComposerPanelIn {

@@ -162,6 +162,21 @@ function isTaskInMyDay(task: Task, todayISO: string) {
   return getMyDayDateKey(task) === todayISO;
 }
 
+function isNativeDatePickerInteraction(
+  event: PointerEvent | MouseEvent,
+  input: HTMLInputElement | null,
+) {
+  if (!input) return false;
+
+  const target = event.target;
+  return (
+    target === document ||
+    target === document.documentElement ||
+    target === document.body ||
+    target === window
+  );
+}
+
 type TasksMode = "focus" | "plan";
 type FocusFilter = "all" | "today" | "overdue";
 type StatusFilter = "all" | "inprogress" | "completed";
@@ -3003,6 +3018,7 @@ function PlanTasksView({
   const newListWrapRef = React.useRef<HTMLDivElement | null>(null);
   const myDayComposerRef = React.useRef<HTMLDivElement | null>(null);
   const composerToolsRef = React.useRef<HTMLDivElement | null>(null);
+  const composerDateInputRef = React.useRef<HTMLInputElement | null>(null);
   const myDayTitleRef = React.useRef<HTMLDivElement | null>(null);
   const boardTaskMenuRef = React.useRef<HTMLDivElement | null>(null);
   const customListMenuRef = React.useRef<HTMLDivElement | null>(null);
@@ -3135,6 +3151,11 @@ function PlanTasksView({
     function handlePointerDown(event: PointerEvent) {
       const target = event.target as Node;
       if (composerToolsRef.current?.contains(target)) return;
+      if (
+        composerDatePickerOpen &&
+        isNativeDatePickerInteraction(event, composerDateInputRef.current)
+      )
+        return;
       setComposerMenu(null);
       setComposerDatePickerOpen(false);
     }
@@ -3142,7 +3163,7 @@ function PlanTasksView({
     document.addEventListener("pointerdown", handlePointerDown, true);
     return () =>
       document.removeEventListener("pointerdown", handlePointerDown, true);
-  }, [composerMenu]);
+  }, [composerDatePickerOpen, composerMenu]);
 
   React.useEffect(() => {
     if (!myDayComposerOpen) return;
@@ -3150,13 +3171,18 @@ function PlanTasksView({
     function handlePointerDown(event: MouseEvent) {
       const target = event.target as Node;
       if (myDayComposerRef.current?.contains(target)) return;
+      if (
+        composerDatePickerOpen &&
+        isNativeDatePickerInteraction(event, composerDateInputRef.current)
+      )
+        return;
       resetMyDayComposerPlaceholder();
       closeMyDayComposer();
     }
 
     document.addEventListener("mousedown", handlePointerDown);
     return () => document.removeEventListener("mousedown", handlePointerDown);
-  }, [myDayComposerOpen]);
+  }, [composerDatePickerOpen, myDayComposerOpen]);
 
   React.useEffect(() => {
     return () => {
@@ -3982,6 +4008,11 @@ function PlanTasksView({
     setComposerDatePickerOpen(false);
   }
 
+  function updateComposerDueDateFromPicker(date: string) {
+    setDueDate(date);
+    setComposerAutoDueDate("");
+  }
+
   function removeComposerDueDate() {
     setDueDate("");
     setComposerAutoDueDate("");
@@ -4502,11 +4533,12 @@ function PlanTasksView({
                             </button>
                             {composerDatePickerOpen ? (
                               <input
+                                ref={composerDateInputRef}
                                 className="lo-task-details-due-menu__date"
                                 type="date"
                                 value={dueDate}
                                 onChange={(event) =>
-                                  chooseComposerDueDate(event.target.value)
+                                  updateComposerDueDateFromPicker(event.target.value)
                                 }
                                 aria-label="Pick a due date"
                                 autoFocus
@@ -5352,6 +5384,7 @@ function TaskDetailsPanel({
   );
   const titleTextareaRef = React.useRef<HTMLTextAreaElement | null>(null);
   const dueMenuRef = React.useRef<HTMLDivElement | null>(null);
+  const dueDateInputRef = React.useRef<HTMLInputElement | null>(null);
   const reminderMenuRef = React.useRef<HTMLDivElement | null>(null);
   const reminderPickerRef = React.useRef<HTMLDivElement | null>(null);
   const repeatMenuRef = React.useRef<HTMLDivElement | null>(null);
@@ -5414,6 +5447,11 @@ function TaskDetailsPanel({
     function handlePointerDown(event: PointerEvent) {
       const target = event.target as Node;
       if (dueMenuRef.current?.contains(target)) return;
+      if (
+        showDatePicker &&
+        isNativeDatePickerInteraction(event, dueDateInputRef.current)
+      )
+        return;
       setDueMenuOpen(false);
       setShowDatePicker(false);
     }
@@ -5421,7 +5459,7 @@ function TaskDetailsPanel({
     document.addEventListener("pointerdown", handlePointerDown, true);
     return () =>
       document.removeEventListener("pointerdown", handlePointerDown, true);
-  }, [dueMenuOpen]);
+  }, [dueMenuOpen, showDatePicker]);
 
   React.useEffect(() => {
     if (!reminderMenuOpen && !reminderPickerOpen) return;
@@ -5493,6 +5531,10 @@ function TaskDetailsPanel({
     onUpdateDueDate(task, date);
     setDueMenuOpen(false);
     setShowDatePicker(false);
+  }
+
+  function updateDueDateFromPicker(date: string) {
+    onUpdateDueDate(task, date);
   }
 
   function chooseReminder(date: Date) {
@@ -5810,10 +5852,11 @@ function TaskDetailsPanel({
                   </button>
                   {showDatePicker ? (
                     <input
+                      ref={dueDateInputRef}
                       className="lo-task-details-due-menu__date"
                       type="date"
                       value={dueDate}
-                      onChange={(event) => chooseDueDate(event.target.value)}
+                      onChange={(event) => updateDueDateFromPicker(event.target.value)}
                       aria-label="Pick a due date"
                       autoFocus
                     />
