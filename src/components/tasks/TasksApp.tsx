@@ -162,6 +162,24 @@ function isTaskInMyDay(task: Task, todayISO: string) {
   return getMyDayDateKey(task) === todayISO;
 }
 
+function getSchedulePatchDateKey(patch: Partial<Task>) {
+  const raw =
+    patch.dueDate ?? patch.plannedFor ?? patch.plannedStart ?? patch.plannedEnd;
+  if (!raw) return null;
+  return String(raw).slice(0, 10);
+}
+
+function withMyDayForTodaySchedule<T extends Partial<Task>>(
+  patch: T,
+  todayISO = isoDate(new Date()),
+): T {
+  if ("myDay" in patch) return patch;
+
+  return getSchedulePatchDateKey(patch) === todayISO
+    ? { ...patch, myDay: todayISO }
+    : patch;
+}
+
 function isNativeDatePickerInteraction(
   event: PointerEvent | MouseEvent,
   input: HTMLInputElement | null,
@@ -314,6 +332,41 @@ function detectDueDateFromTaskText(value: string) {
 function reminderAtForDateKey(dateKey: string) {
   const date = new Date(`${dateKey}T09:00:00`);
   return Number.isNaN(date.getTime()) ? "" : date.toISOString();
+}
+
+function TaskTitleText({
+  title,
+  onTokenClick,
+}: {
+  title: string;
+  onTokenClick?: (token: string) => void;
+}) {
+  const parts = title.split(/([@#][\p{L}\p{N}_-]+)/gu);
+
+  return (
+    <>
+      {parts.map((part, index) => {
+        const isToken = /^[@#][\p{L}\p{N}_-]+$/u.test(part);
+        if (!isToken) return <React.Fragment key={index}>{part}</React.Fragment>;
+
+        const kind = part.startsWith("@") ? "mention" : "tag";
+        return (
+          <button
+            key={`${part}-${index}`}
+            type="button"
+            className={`lo-task-title-token lo-task-title-token--${kind}`}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onTokenClick?.(part);
+            }}
+          >
+            {part}
+          </button>
+        );
+      })}
+    </>
+  );
 }
 
 function reminderAlertKey(task: Task) {
@@ -720,12 +773,13 @@ export default function TasksApp({
       if (!taskId || !patch) return;
 
       const nextUpdatedAt = new Date().toISOString();
+      const nextPatch = withMyDayForTodaySchedule(patch);
 
       if (authed) {
         setTasks((prev) =>
           prev.map((task) =>
             task.id === taskId
-              ? { ...task, ...patch, updatedAt: nextUpdatedAt }
+              ? { ...task, ...nextPatch, updatedAt: nextUpdatedAt }
               : task,
           ),
         );
@@ -733,7 +787,7 @@ export default function TasksApp({
       }
 
       const updated = updateTask(taskId, {
-        ...patch,
+        ...nextPatch,
         updatedAt: nextUpdatedAt,
       });
 
@@ -1325,9 +1379,10 @@ export default function TasksApp({
         ? patch.updatedAt
         : new Date().toISOString();
 
+    const nextPatch = withMyDayForTodaySchedule(patch);
     const nextTask = {
       ...task,
-      ...patch,
+      ...nextPatch,
       updatedAt: nextUpdatedAt,
     };
 
@@ -1335,7 +1390,7 @@ export default function TasksApp({
       setTasks((prev) => prev.map((t) => (t.id === task.id ? nextTask : t)));
     } else {
       const updated = updateTask(task.id, {
-        ...patch,
+        ...nextPatch,
         updatedAt: nextUpdatedAt,
       });
       if (!updated) return null;
@@ -1498,14 +1553,18 @@ export default function TasksApp({
             ).toISOString();
           }
 
-          const nextTask = {
-            ...task,
+          const nextPatch = withMyDayForTodaySchedule({
             dueDate: date,
             plannedFor: nextPlannedStart ?? date,
             plannedStart: nextPlannedStart,
             plannedEnd: nextPlannedEnd,
             list: "planner",
             status: "doing" as const,
+          });
+
+          const nextTask = {
+            ...task,
+            ...nextPatch,
             updatedAt: new Date().toISOString(),
           };
 
@@ -1515,6 +1574,7 @@ export default function TasksApp({
               plannedFor: nextTask.plannedFor,
               plannedStart: nextTask.plannedStart,
               plannedEnd: nextTask.plannedEnd,
+              myDay: nextTask.myDay,
               list: nextTask.list,
               status: nextTask.status,
             });
@@ -2034,6 +2094,7 @@ export default function TasksApp({
                 onMoveTaskToColumnEnd={moveFocusTaskToEnd}
                 onOpenTaskMenu={openTaskMenu}
                 startEditingTask={startEditingTask}
+                onTokenClick={setQuery}
               />
             </>
           )}
@@ -2158,6 +2219,7 @@ function FocusTasksView({
   onMoveTaskToColumnEnd,
   onOpenTaskMenu,
   startEditingTask,
+  onTokenClick,
 }: {
   onCreateDraftTask: () => void;
   onSaveDraftTask: (id: string, title: string) => void;
@@ -2177,6 +2239,7 @@ function FocusTasksView({
   ) => void;
   onOpenTaskMenu: (e: React.MouseEvent, task: Task) => void;
   startEditingTask: (task: Task) => void;
+  onTokenClick: (token: string) => void;
 }) {
   const [draggingTaskId, setDraggingTaskId] = React.useState<string | null>(
     null,
@@ -2363,7 +2426,7 @@ function FocusTasksView({
                       }}
                       title="Edit task title"
                     >
-                      {task.title}
+                      <TaskTitleText title={task.title} onTokenClick={onTokenClick} />
                     </div>
                   )}
                 </div>
@@ -2520,7 +2583,7 @@ function FocusTasksView({
                       }}
                       title="Edit task title"
                     >
-                      {task.title}
+                      <TaskTitleText title={task.title} onTokenClick={onTokenClick} />
                     </div>
                   )}
                 </div>
@@ -2584,7 +2647,9 @@ function FocusTasksView({
                 aria-label="Mark done"
               />
               <div className="lo-task-main">
-                <div className="lo-task-title is-done">{task.title}</div>
+                <div className="lo-task-title is-done">
+                  <TaskTitleText title={task.title} onTokenClick={onTokenClick} />
+                </div>
               </div>
               <button
                 type="button"
@@ -3658,6 +3723,10 @@ function PlanTasksView({
   function openTaskDetails(task: Task) {
     setSelectedTaskId(task.id);
     setBoardTaskMenu(null);
+  }
+
+  function openTitleToken(token: string) {
+    setQuery(token);
   }
 
   function openCustomListMenu(event: React.MouseEvent, list: string) {
@@ -4845,6 +4914,7 @@ function PlanTasksView({
                   onSetImportant={onSetImportant}
                   onOpenTaskMenu={openBoardTaskMenu}
                   onOpenTaskDetails={openTaskDetails}
+                  onTokenClick={openTitleToken}
                 />
               </React.Fragment>
             ))}
@@ -4861,6 +4931,7 @@ function PlanTasksView({
             onSetImportant={onSetImportant}
             onOpenTaskMenu={openBoardTaskMenu}
             onOpenTaskDetails={openTaskDetails}
+            onTokenClick={openTitleToken}
           />
         )}
 
@@ -4897,6 +4968,7 @@ function PlanTasksView({
                 onSetImportant={onSetImportant}
                 onOpenTaskMenu={openBoardTaskMenu}
                 onOpenTaskDetails={openTaskDetails}
+                onTokenClick={openTitleToken}
               />
             )}
           </section>
@@ -4963,6 +5035,7 @@ function PlanTasksView({
               onAddToMyDay={addTaskToMyDay}
               onComplete={(task) => onSetStatus(task, "done")}
               onOpenGroupMenu={openSuggestionGroupMenu}
+              onTokenClick={openTitleToken}
             />,
             document.body,
           )
@@ -5200,6 +5273,7 @@ function SuggestionsPanel({
   onAddToMyDay,
   onComplete,
   onOpenGroupMenu,
+  onTokenClick,
 }: {
   groups: {
     yesterday: Task[];
@@ -5214,6 +5288,7 @@ function SuggestionsPanel({
     groupTasks: Task[],
     groupLabel: string,
   ) => void;
+  onTokenClick: (token: string) => void;
 }) {
   React.useEffect(() => {
     function handleEscape(event: KeyboardEvent) {
@@ -5256,6 +5331,7 @@ function SuggestionsPanel({
             onAddToMyDay={onAddToMyDay}
             onComplete={onComplete}
             onOpenGroupMenu={onOpenGroupMenu}
+            onTokenClick={onTokenClick}
           />
           <SuggestionGroup
             title="Later"
@@ -5263,6 +5339,7 @@ function SuggestionsPanel({
             onAddToMyDay={onAddToMyDay}
             onComplete={onComplete}
             onOpenGroupMenu={onOpenGroupMenu}
+            onTokenClick={onTokenClick}
           />
           <SuggestionGroup
             title="Recently added"
@@ -5270,6 +5347,7 @@ function SuggestionsPanel({
             onAddToMyDay={onAddToMyDay}
             onComplete={onComplete}
             onOpenGroupMenu={onOpenGroupMenu}
+            onTokenClick={onTokenClick}
           />
         </div>
       </aside>
@@ -6119,6 +6197,7 @@ function SuggestionGroup({
   onAddToMyDay,
   onComplete,
   onOpenGroupMenu,
+  onTokenClick,
 }: {
   title: string;
   tasks: Task[];
@@ -6129,6 +6208,7 @@ function SuggestionGroup({
     groupTasks: Task[],
     groupLabel: string,
   ) => void;
+  onTokenClick: (token: string) => void;
 }) {
   const [showAll, setShowAll] = React.useState(false);
   const hiddenCount = Math.max(0, tasks.length - SUGGESTION_PREVIEW_LIMIT);
@@ -6169,7 +6249,7 @@ function SuggestionGroup({
               </button>
 
               <span className="lo-suggestion-row__title" title={task.title}>
-                {task.title}
+                <TaskTitleText title={task.title} onTokenClick={onTokenClick} />
               </span>
 
               <button
@@ -6445,6 +6525,7 @@ function PlannedTaskGroup({
   onSetImportant,
   onOpenTaskMenu,
   onOpenTaskDetails,
+  onTokenClick,
 }: {
   title: string;
   tasks: Task[];
@@ -6458,6 +6539,7 @@ function PlannedTaskGroup({
   onSetImportant: (task: Task, important: boolean) => void;
   onOpenTaskMenu: (e: React.MouseEvent, task: Task) => void;
   onOpenTaskDetails: (task: Task) => void;
+  onTokenClick: (token: string) => void;
 }) {
   return (
     <section className="lo-planned-group lo-stack">
@@ -6488,6 +6570,7 @@ function PlannedTaskGroup({
           onSetImportant={onSetImportant}
           onOpenTaskMenu={onOpenTaskMenu}
           onOpenTaskDetails={onOpenTaskDetails}
+          onTokenClick={onTokenClick}
         />
       ) : null}
     </section>
@@ -6506,6 +6589,7 @@ function TaskSection({
   onSetImportant,
   onOpenTaskMenu,
   onOpenTaskDetails,
+  onTokenClick,
 }: {
   title: string;
   showTitle?: boolean;
@@ -6518,6 +6602,7 @@ function TaskSection({
   onSetImportant: (task: Task, important: boolean) => void;
   onOpenTaskMenu: (e: React.MouseEvent, task: Task) => void;
   onOpenTaskDetails: (task: Task) => void;
+  onTokenClick: (token: string) => void;
 }) {
 
   return (
@@ -6578,7 +6663,7 @@ function TaskSection({
                     className={`lo-task-title ${task.status === "done" ? "is-done" : ""}`}
                     title={task.title}
                   >
-                    {task.title}
+                    <TaskTitleText title={task.title} onTokenClick={onTokenClick} />
                   </div>
                   {listLabel || dueDateLabel || reminderLabel || repeatRuleLabel ? (
                     <div className="lo-task-meta-subtitle">

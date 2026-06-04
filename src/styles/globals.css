@@ -471,6 +471,38 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   background: rgba(128, 128, 128, 0.14);
 }
 
+.lo-task-title-token {
+  display: inline;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  color: #2563eb;
+  font: inherit;
+  font-weight: 760;
+  line-height: inherit;
+  text-align: inherit;
+  cursor: pointer;
+}
+
+.lo-task-title-token--tag {
+  color: #0891b2;
+}
+
+.lo-task-title-token:hover,
+.lo-task-title-token:focus-visible {
+  text-decoration: underline;
+  outline: none;
+}
+
+:root[data-theme="nebula"] .lo-task-title-token {
+  color: #93c5fd;
+}
+
+:root[data-theme="nebula"] .lo-task-title-token--tag {
+  color: #67e8f9;
+}
+
 .lo-task:focus-within .lo-task-title-editable {
   background: rgba(128, 128, 128, 0.14);
 }
