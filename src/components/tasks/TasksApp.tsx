@@ -5387,6 +5387,14 @@ function formatReminderTime(date: Date) {
   }).replace(":00", "")}`;
 }
 
+function formatReminderDate(date: Date) {
+  return date.toLocaleDateString(undefined, {
+    weekday: "short",
+    month: "long",
+    day: "numeric",
+  });
+}
+
 function formatReminderHour(date: Date) {
   return date
     .toLocaleTimeString(undefined, {
@@ -5407,6 +5415,14 @@ function formatReminderDisplay(iso?: string) {
   if (!iso) return "";
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "";
+
+  const farFutureThreshold = startOfToday();
+  farFutureThreshold.setDate(farFutureThreshold.getDate() + 7);
+  const reminderDay = new Date(date);
+  reminderDay.setHours(0, 0, 0, 0);
+  if (reminderDay > farFutureThreshold) {
+    return `Due ${formatReminderDate(date)}`;
+  }
 
   return isSameDate(date, new Date())
     ? formatReminderHour(date)
