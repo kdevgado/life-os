@@ -3393,66 +3393,6 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   filter: brightness(0) saturate(100%) invert(13%) sepia(15%) saturate(822%) hue-rotate(182deg) brightness(94%) contrast(88%);
 }
 
-/* Mobile */
-@media (max-width: 900px) {
-  .lo-plan-tasks-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .lo-plan-tasks-layout.is-sidebar-collapsed {
-    grid-template-columns: 1fr;
-  }
-
-  .lo-plan-tasks-sidebar {
-    grid-auto-flow: column;
-    grid-auto-columns: max-content;
-    overflow-x: auto;
-    padding-bottom: 4px;
-    position: static;
-  }
-
-  .lo-plan-tasks-sidebar button {
-    white-space: nowrap;
-  }
-
-  .lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-sidebar__text {
-    max-width: 160px;
-    opacity: 1;
-    transform: none;
-  }
-
-  .lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-sidebar__custom-list,
-  .lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-add-list,
-  .lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-new-list-button {
-    max-height: 320px;
-    opacity: 1;
-    pointer-events: auto;
-    transform: none;
-  }
-
-  .lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-new-list {
-    max-height: 42px;
-    opacity: 1;
-    pointer-events: auto;
-    transform: none;
-  }
-
-  .lo-plan-tasks-sidebar__divider,
-  .lo-plan-tasks-sidebar__label {
-    display: none;
-  }
-
-  .lo-plan-tasks-add-list {
-    grid-auto-flow: column;
-    grid-auto-columns: max-content;
-    margin-top: 0;
-  }
-
-  .lo-plan-tasks-add-list input {
-    width: 140px;
-  }
-}
-
 @media (max-width: 640px) {
   .lo-page.lo-tasks {
     padding: 0 1rem 1rem;
