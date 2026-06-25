@@ -5883,7 +5883,8 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   min-width: 880px;
   min-height: 100%;
   display: grid;
-  grid-template-columns: 58px repeat(7, minmax(112px, 1fr));
+  grid-template-columns: 74px repeat(7, minmax(112px, 1fr));
+  grid-template-rows: 42px;
   grid-auto-rows: minmax(72px, 1fr);
   align-items: stretch;
   border-top: 1px solid var(--shell-border, var(--border));
@@ -5897,7 +5898,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 54px;
+  min-height: 42px;
   position: sticky;
   top: 0;
   z-index: 3;
@@ -5936,13 +5937,13 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   position: sticky;
   left: 0;
   z-index: 2;
-  padding: 7px 8px 0 0;
-  border-right: 1px solid var(--shell-border, var(--border));
+  padding: 7px 12px 0 0;
+  border-right: 0;
   border-bottom: 1px solid var(--shell-border, var(--border));
   background: var(--shell-surface, var(--panel));
   color: var(--shell-muted, var(--muted));
   font-size: 0.7rem;
-  font-weight: 800;
+  font-weight: 400;
   text-align: right;
   white-space: nowrap;
 }
@@ -5955,11 +5956,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   padding: 6px;
   border-right: 1px solid var(--shell-border, var(--border));
   border-bottom: 1px solid var(--shell-border, var(--border));
-  background: transparent;
-}
-
-.lo-daycal__week-cell.is-today {
-  background: rgba(127, 127, 127, 0.06);
+  background: var(--shell-surface, var(--panel));
 }
 
 .lo-daycal__week-event {
