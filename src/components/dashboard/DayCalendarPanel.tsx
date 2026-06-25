@@ -73,12 +73,22 @@ function addDays(date: Date, days: number) {
 }
 
 function formatEventTime(event: DayCalendarEvent) {
-  const date = new Date();
-  date.setHours(event.startHour, event.startMinute ?? 0, 0, 0);
-  return date.toLocaleTimeString([], {
+  const start = new Date();
+  start.setHours(event.startHour, event.startMinute ?? 0, 0, 0);
+
+  const durationMinutes = Math.max(
+    15,
+    Math.round((event.durationHours ?? 0.5) * 60),
+  );
+  const end = new Date(start);
+  end.setMinutes(start.getMinutes() + durationMinutes);
+
+  const timeOptions: Intl.DateTimeFormatOptions = {
     hour: "numeric",
     minute: "2-digit",
-  });
+  };
+
+  return `${start.toLocaleTimeString([], timeOptions)} - ${end.toLocaleTimeString([], timeOptions)}`;
 }
 
 function readJson<T>(key: string, fallback: T): T {
@@ -1677,15 +1687,26 @@ export default function DayCalendarPanel({
                       key={`${dateKey}-${hour}`}
                       className={`lo-daycal__week-cell ${dateKey === todayKey ? "is-today" : ""}`}
                     >
-                      {hourEvents.map((event) => (
-                        <article
-                          key={event.id}
-                          className={`lo-daycal__week-event ${event.sourceTaskStatus === "done" ? "is-done" : ""}`}
-                        >
-                          <span>{formatEventTime(event)}</span>
-                          <strong>{event.title || "New event"}</strong>
-                        </article>
-                      ))}
+                      {hourEvents.map((event) => {
+                        const renderedMinute = getRenderedMinuteForEvent(event);
+                        const renderedDuration = getRenderedDurationForEvent(event);
+
+                        return (
+                          <article
+                            key={event.id}
+                            className={`lo-daycal__week-event ${event.sourceTaskStatus === "done" ? "is-done" : ""}`}
+                            style={
+                              {
+                                height: `max(34px, calc(${renderedDuration * 100}% - 8px))`,
+                                marginTop: `${(renderedMinute / 60) * 100}%`,
+                              } as React.CSSProperties
+                            }
+                          >
+                            <span>{formatEventTime(event)}</span>
+                            <strong>{event.title || "New event"}</strong>
+                          </article>
+                        );
+                      })}
                     </div>
                   );
                 })}
