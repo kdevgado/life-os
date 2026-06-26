@@ -16,6 +16,7 @@ type PanelKey =
   | "calendar-settings"
   | "account-settings"
   | "appearance-settings"
+  | "tips"
   | "timer"
   | "tasks"
   | "notes"
@@ -44,6 +45,8 @@ function titleFor(k: Exclude<PanelKey, null>) {
       return "My Account";
     case "appearance-settings":
       return "Appearance Settings";
+    case "tips":
+      return "Tips & Tricks";
     case "timer":
       return "Timer";
     case "tasks":
@@ -69,6 +72,8 @@ function defaultSizeFor(key: Exclude<PanelKey, null>) {
       return { w: 500, h: 420 };
     case "appearance-settings":
       return { w: 500, h: 390 };
+    case "tips":
+      return { w: 560, h: 520 };
     case "timer":
       return { w: 360, h: 260 };
     case "tasks":
@@ -94,6 +99,8 @@ function minSizeFor(key: Exclude<PanelKey, null>) {
       return { w: 500, h: 420 };
     case "appearance-settings":
       return { w: 500, h: 390 };
+    case "tips":
+      return { w: 420, h: 420 };
     case "timer":
       return { w: 300, h: 230 };
     case "tasks":
@@ -119,7 +126,8 @@ function isModalPanel(key: Exclude<PanelKey, null>) {
   return (
     key === "calendar-settings" ||
     key === "account-settings" ||
-    key === "appearance-settings"
+    key === "appearance-settings" ||
+    key === "tips"
   );
 }
 
@@ -1157,6 +1165,67 @@ function AppearanceSettingsPanel({
   );
 }
 
+function TipsTricksPanel() {
+  return (
+    <div className="lo-tips">
+      <section className="lo-tips__hero" aria-label="Featured tip">
+        <div className="lo-tips__kicker">Focus workflow</div>
+        <h3 className="lo-tips__title">Drag tasks straight into your day.</h3>
+        <p className="lo-tips__copy">
+          In the Focus tab, open Tasks and Calendar together. Grab a task card,
+          drop it onto an hour, and Life OS turns it into a planned calendar
+          block.
+        </p>
+
+        <div className="lo-tips__demo" aria-hidden="true">
+          <div className="lo-tips__tasks">
+            <div className="lo-tips__mini-heading">Tasks</div>
+            <div className="lo-tips__mini-task">Draft project outline</div>
+            <div className="lo-tips__mini-task lo-tips__mini-task--ghost">
+              Clear inbox
+            </div>
+          </div>
+
+          <div className="lo-tips__flight">
+            <div className="lo-tips__flying-task">Draft project outline</div>
+          </div>
+
+          <div className="lo-tips__calendar">
+            <div className="lo-tips__mini-heading">Calendar</div>
+            <div className="lo-tips__hour">
+              <span>9 AM</span>
+              <strong />
+            </div>
+            <div className="lo-tips__hour lo-tips__hour--target">
+              <span>10 AM</span>
+              <strong />
+            </div>
+            <div className="lo-tips__hour">
+              <span>11 AM</span>
+              <strong />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="lo-tips__steps" aria-label="How to use this tip">
+        <div className="lo-tips__step">
+          <span>1</span>
+          <p>Open the Focus workspace and bring up Tasks plus Calendar.</p>
+        </div>
+        <div className="lo-tips__step">
+          <span>2</span>
+          <p>Drag any task card over the calendar timeline.</p>
+        </div>
+        <div className="lo-tips__step">
+          <span>3</span>
+          <p>Drop it on the hour you want. The task becomes scheduled.</p>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 export default function FloatingWorkspace() {
   type Win = {
     key: Exclude<PanelKey, null>;
@@ -1511,7 +1580,8 @@ export default function FloatingWorkspace() {
       if (
         target.closest(".lo-window--calendar-settings") ||
         target.closest(".lo-window--account-settings") ||
-        target.closest(".lo-window--appearance-settings")
+        target.closest(".lo-window--appearance-settings") ||
+        target.closest(".lo-window--tips")
       )
         return;
 
@@ -1588,6 +1658,7 @@ export default function FloatingWorkspace() {
     0,
     ...wins.filter((win) => isTopDockPanel(win.key)).map((win) => win.z),
   );
+  const hasTipsWindowOpen = wins.some((w) => w.key === "tips");
 
   function toggleWindowFromDock(
     key: Exclude<PanelKey, null>,
@@ -1688,6 +1759,7 @@ export default function FloatingWorkspace() {
             "timer",
             "tasks",
             "notes",
+            "tips",
             "calendar-settings",
             "appearance-settings",
           ].includes(w.key),
@@ -1819,6 +1891,55 @@ export default function FloatingWorkspace() {
       );
     };
   }, []);
+
+  React.useEffect(() => {
+    function openTipsWindow() {
+      setWins((prev) => {
+        const size = defaultSizeFor("tips");
+        const currentSize = isMobile ? mobileSizeFor("tips") : size;
+        const placed = isMobile
+          ? mobileWindowPos(currentSize.w, currentSize.h)
+          : centeredWindowPos(currentSize.w, currentSize.h);
+        const existing = prev.find((w) => w.key === "tips");
+
+        if (existing) {
+          return prev.map((w) =>
+            w.key === "tips"
+              ? {
+                  ...w,
+                  x: placed.x,
+                  y: placed.y,
+                  z: 5003,
+                  w: currentSize.w,
+                  h: currentSize.h,
+                }
+              : w,
+          );
+        }
+
+        return [
+          ...prev,
+          {
+            key: "tips",
+            x: placed.x,
+            y: placed.y,
+            z: 5003,
+            w: currentSize.w,
+            h: currentSize.h,
+          },
+        ];
+      });
+    }
+
+    window.addEventListener("lifeos:open-tips", openTipsWindow as EventListener);
+
+    return () => {
+      window.removeEventListener(
+        "lifeos:open-tips",
+        openTipsWindow as EventListener,
+      );
+    };
+  }, [isMobile]);
 
   React.useEffect(() => {
     if (!showLayoutMenu) return;
@@ -1962,7 +2083,10 @@ export default function FloatingWorkspace() {
       </div>
 
       {hasModalWindowOpen ? (
-        <div className="lo-modal-backdrop" aria-hidden="true" />
+        <div
+          className={`lo-modal-backdrop ${hasTipsWindowOpen ? "is-tips" : ""}`.trim()}
+          aria-hidden="true"
+        />
       ) : null}
 
       {wins.map((w) => {
@@ -1990,7 +2114,9 @@ export default function FloatingWorkspace() {
             key={w.key}
             title={windowTitle}
             ariaLabel={titleFor(w.key)}
-            actionLabel={w.key === "bible" ? "Minimize" : undefined}
+            actionLabel={
+              w.key === "bible" || w.key === "tips" ? "Minimize" : undefined
+            }
             panelKey={w.key}
             x={w.x}
             y={w.y}
@@ -2026,6 +2152,7 @@ export default function FloatingWorkspace() {
             )}
             {w.key === "calendar-settings" ? <CalendarSettingsPanel /> : null}
             {w.key === "account-settings" ? <AccountSettingsPanel /> : null}
+            {w.key === "tips" ? <TipsTricksPanel /> : null}
             {w.key === "appearance-settings" ? (
               <AppearanceSettingsPanel
                 theme={theme}

@@ -7,6 +7,8 @@ type BeforeInstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
 };
 
+const APP_INSTALLED_KEY = "lifeos_app_installed";
+
 declare global {
   interface Window {
     __lifeosDeferredPrompt: BeforeInstallPromptEvent | null;
@@ -97,8 +99,10 @@ export default function AccountMenu() {
 
   useEffect(() => {
     const standalone = window.matchMedia("(display-mode: standalone)").matches;
+    const savedInstalled =
+      window.localStorage.getItem(APP_INSTALLED_KEY) === "true";
 
-    setInstalled(standalone);
+    setInstalled(standalone || savedInstalled);
 
     if (window.__lifeosDeferredPrompt) {
       console.log("[PWA] found saved deferred prompt");
@@ -114,6 +118,7 @@ export default function AccountMenu() {
 
     const onInstalled = () => {
       console.log("[PWA] installed event received");
+      window.localStorage.setItem(APP_INSTALLED_KEY, "true");
       setInstalled(true);
       setDeferredPrompt(null);
     };
@@ -243,6 +248,18 @@ export default function AccountMenu() {
             <span>Appearance</span>
           </button>
 
+          <button
+            type="button"
+            className="lo-account-menu__item"
+            onClick={() => {
+              window.dispatchEvent(new CustomEvent("lifeos:open-tips"));
+              setOpen(false);
+            }}
+          >
+            <img src={`${menuIconBase}/calendar.png`} alt="" />
+            <span>Tips & Tricks</span>
+          </button>
+
           <section className="lo-account-menu__section">
             <div className="lo-account-menu__heading">App</div>
 
@@ -260,9 +277,11 @@ export default function AccountMenu() {
               className="lo-account-menu__item"
               onClick={handleInstall}
               disabled={installed || !deferredPrompt}
+              aria-label={installed ? "App already installed" : "Install app"}
+              title={installed ? "App already installed" : "Install app"}
             >
               <img src={`${menuIconBase}/app.png`} alt="" />
-              <span>Install</span>
+              <span>{installed ? "Installed" : "Install"}</span>
             </button>
           </section>
         </div>

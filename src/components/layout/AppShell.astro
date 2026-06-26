@@ -39,6 +39,9 @@ const isProductionBuild = import.meta.env.PROD;
       window.addEventListener("appinstalled", () => {
         console.log("[PWA] appinstalled fired");
         window.__lifeosDeferredPrompt = null;
+        try {
+          localStorage.setItem("lifeos_app_installed", "true");
+        } catch {}
         window.dispatchEvent(new CustomEvent("lifeos:installed"));
       });
     </script>
