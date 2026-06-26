@@ -1698,7 +1698,7 @@ export default function DayCalendarPanel({
                             style={
                               {
                                 height: `max(34px, calc(${renderedDuration * 100}% - 8px))`,
-                                marginTop: `${(renderedMinute / 60) * 100}%`,
+                                top: `${(renderedMinute / 60) * 100}%`,
                               } as React.CSSProperties
                             }
                           >
