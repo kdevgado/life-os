@@ -1107,15 +1107,24 @@ function AppearanceSettingsPanel({
 
   return (
     <div className="lo-account-settings lo-appearance-settings">
-      <div className="lo-account-settings__section">
-        <div className="lo-account-settings__heading">
-          Appearance Settings
+      <header className="lo-appearance-settings__hero">
+        <span className="lo-appearance-settings__hero-orbit" aria-hidden="true">
+          <img src={themeIcon} alt="" />
+        </span>
+        <div>
+          <span className="lo-appearance-settings__eyebrow">Your atmosphere</span>
+          <strong>Shape your space</strong>
+          <small>{theme === "nebula" ? "Nebula is active" : "Duna is active"}</small>
         </div>
+      </header>
 
-        <div className="lo-appearance-settings__row">
+      <div className="lo-account-settings__section">
+        <div className="lo-account-settings__heading">Theme</div>
+
+        <div className="lo-appearance-settings__row lo-appearance-settings__row--theme">
           <div>
-            <strong>Theme</strong>
-            <span>Nebula/Duna mode</span>
+            <strong>{theme === "nebula" ? "Nebula" : "Duna"}</strong>
+            <span>Switch to {theme === "nebula" ? "warm daylight" : "deep space"}</span>
           </div>
           <button
             type="button"
@@ -1132,11 +1141,12 @@ function AppearanceSettingsPanel({
       <div className="lo-account-settings__footer" />
 
       <div className="lo-account-settings__section">
-        <div className="lo-account-settings__heading">Focus Mode</div>
+        <div className="lo-account-settings__heading">Focus mode</div>
 
         <label className="lo-appearance-settings__row">
           <div>
             <strong>Hide elements</strong>
+            <span>Let the interface fade when you settle in</span>
           </div>
           <input
             type="checkbox"
