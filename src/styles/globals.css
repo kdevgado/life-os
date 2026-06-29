@@ -9216,6 +9216,13 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   font-weight: 750;
   background: linear-gradient(135deg, var(--grad1), var(--grad3));
   box-shadow: 0 7px 18px color-mix(in srgb, var(--grad1) 25%, transparent);
+  overflow: hidden;
+}
+
+.lo-account-menu__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .lo-account-menu__profile-copy {
@@ -9718,6 +9725,74 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   background: linear-gradient(145deg, var(--grad1), var(--grad3));
   box-shadow: 0 10px 24px color-mix(in srgb, var(--grad1) 28%, transparent);
   animation: loProfileAvatarFloat 3.8s ease-in-out infinite;
+  overflow: hidden;
+}
+
+.lo-profile-settings__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lo-profile-settings__photo-picker {
+  position: relative;
+  flex: 0 0 auto;
+  cursor: pointer;
+}
+
+.lo-profile-settings__photo-picker input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.lo-profile-settings__photo-badge {
+  position: absolute;
+  right: -5px;
+  bottom: -4px;
+  min-width: 25px;
+  padding: 3px 5px;
+  border: 2px solid var(--shell-surface);
+  border-radius: 999px;
+  color: #fff;
+  background: var(--grad1);
+  font-size: 0.53rem;
+  font-weight: 750;
+  line-height: 1;
+  text-align: center;
+  transition: transform 160ms ease;
+}
+
+.lo-profile-settings__photo-picker:hover .lo-profile-settings__photo-badge,
+.lo-profile-settings__photo-picker:focus-within .lo-profile-settings__photo-badge {
+  transform: translateY(-2px) scale(1.06);
+}
+
+.lo-profile-settings__photo-picker:focus-within .lo-profile-settings__avatar {
+  outline: 3px solid color-mix(in srgb, var(--grad1) 30%, transparent);
+  outline-offset: 3px;
+}
+
+.lo-profile-settings__remove-photo {
+  margin-left: auto;
+  padding: 5px 8px;
+  border: 1px solid var(--shell-border);
+  border-radius: 9px;
+  color: var(--shell-muted);
+  background: var(--shell-surface-soft);
+  font-size: 0.65rem;
+  cursor: pointer;
+  transition: color 150ms ease, background 150ms ease, transform 150ms ease;
+}
+
+.lo-profile-settings__remove-photo:hover {
+  color: #c0392b;
+  background: color-mix(in srgb, #ef4444 10%, var(--shell-surface-soft));
+  transform: translateY(-1px);
 }
 
 @keyframes loProfileAvatarFloat {

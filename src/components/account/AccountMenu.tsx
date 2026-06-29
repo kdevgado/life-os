@@ -11,6 +11,7 @@ type BeforeInstallPromptEvent = Event & {
 };
 
 const APP_INSTALLED_KEY = "lifeos_app_installed";
+const PROFILE_PHOTO_KEY = "lifeos_profile_photo_v1";
 
 declare global {
   interface Window {
@@ -31,6 +32,11 @@ export default function AccountMenu() {
 
   const [profileName, setProfileName] = useState("");
   const [favouriteVerse, setFavouriteVerse] = useState("");
+  const [profilePhoto, setProfilePhoto] = useState(() =>
+    typeof window === "undefined"
+      ? ""
+      : window.localStorage.getItem(PROFILE_PHOTO_KEY) || "",
+  );
 
   const menuRef = useRef<HTMLDivElement | null>(null);
 
@@ -109,11 +115,15 @@ export default function AccountMenu() {
       const detail = (event as CustomEvent<{
         name?: string;
         favouriteVerse?: string;
+        profilePhoto?: string;
       }>).detail;
 
       if (detail?.name !== undefined) setProfileName(detail.name);
       if (detail?.favouriteVerse !== undefined) {
         setFavouriteVerse(detail.favouriteVerse);
+      }
+      if (detail?.profilePhoto !== undefined) {
+        setProfilePhoto(detail.profilePhoto);
       }
     };
 
@@ -239,7 +249,11 @@ export default function AccountMenu() {
         <div className="lo-account-menu__panel" role="menu">
           <div className="lo-account-menu__profile">
             <span className="lo-account-menu__avatar" aria-hidden="true">
-              {displayName.charAt(0).toUpperCase()}
+              {profilePhoto ? (
+                <img src={profilePhoto} alt="" />
+              ) : (
+                displayName.charAt(0).toUpperCase()
+              )}
             </span>
             <span className="lo-account-menu__profile-copy">
               <strong>{displayName}</strong>

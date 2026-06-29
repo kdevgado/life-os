@@ -23,6 +23,54 @@ type PanelKey =
   | "bible"
   | null;
 
+const PROFILE_PHOTO_KEY = "lifeos_profile_photo_v1";
+
+function resizeProfilePhoto(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    image.onload = () => {
+      const size = 256;
+      const canvas = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = size;
+
+      const context = canvas.getContext("2d");
+      if (!context) {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error("Could not prepare profile photo"));
+        return;
+      }
+
+      const sourceSize = Math.min(image.naturalWidth, image.naturalHeight);
+      const sourceX = (image.naturalWidth - sourceSize) / 2;
+      const sourceY = (image.naturalHeight - sourceSize) / 2;
+      context.drawImage(
+        image,
+        sourceX,
+        sourceY,
+        sourceSize,
+        sourceSize,
+        0,
+        0,
+        size,
+        size,
+      );
+
+      URL.revokeObjectURL(objectUrl);
+      resolve(canvas.toDataURL("image/jpeg", 0.82));
+    };
+
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error("Could not load profile photo"));
+    };
+
+    image.src = objectUrl;
+  });
+}
+
 function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
 }
@@ -929,6 +977,11 @@ function AccountSettingsPanel() {
   const [profileName, setProfileName] = React.useState("");
   const [profileEmail, setProfileEmail] = React.useState("");
   const [favouriteVerse, setFavouriteVerse] = React.useState("");
+  const [profilePhoto, setProfilePhoto] = React.useState(() =>
+    typeof window === "undefined"
+      ? ""
+      : window.localStorage.getItem(PROFILE_PHOTO_KEY) || "",
+  );
 
   React.useEffect(() => {
     let mounted = true;
@@ -1005,6 +1058,41 @@ function AccountSettingsPanel() {
     }
   };
 
+  const broadcastProfilePhoto = (nextPhoto: string) => {
+    window.dispatchEvent(
+      new CustomEvent("lifeos:profile-updated", {
+        detail: {
+          name: profileName,
+          favouriteVerse,
+          profilePhoto: nextPhoto,
+        },
+      }),
+    );
+  };
+
+  const handleProfilePhotoChange = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    try {
+      const nextPhoto = await resizeProfilePhoto(file);
+      window.localStorage.setItem(PROFILE_PHOTO_KEY, nextPhoto);
+      setProfilePhoto(nextPhoto);
+      broadcastProfilePhoto(nextPhoto);
+    } catch (error) {
+      console.error("Profile photo update failed:", error);
+    }
+  };
+
+  const handleRemoveProfilePhoto = () => {
+    window.localStorage.removeItem(PROFILE_PHOTO_KEY);
+    setProfilePhoto("");
+    broadcastProfilePhoto("");
+  };
+
   const handleSignOut = async () => {
     try {
       await identity?.logout?.();
@@ -1051,14 +1139,38 @@ function AccountSettingsPanel() {
   return (
     <div className="lo-account-settings lo-profile-settings">
       <header className="lo-profile-settings__hero">
-        <span className="lo-profile-settings__avatar" aria-hidden="true">
-          {(profileName || user.email || "P").charAt(0).toUpperCase()}
-        </span>
+        <label className="lo-profile-settings__photo-picker">
+          <span className="lo-profile-settings__avatar" aria-hidden="true">
+            {profilePhoto ? (
+              <img src={profilePhoto} alt="" />
+            ) : (
+              (profileName || user.email || "P").charAt(0).toUpperCase()
+            )}
+          </span>
+          <span className="lo-profile-settings__photo-badge" aria-hidden="true">
+            Edit
+          </span>
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            onChange={handleProfilePhotoChange}
+            aria-label="Change profile picture"
+          />
+        </label>
         <span className="lo-profile-settings__identity">
           <small>Personal profile</small>
           <strong>{profileName || "Make it yours"}</strong>
           <span>{favouriteVerse || "Add a verse that keeps you grounded"}</span>
         </span>
+        {profilePhoto ? (
+          <button
+            type="button"
+            className="lo-profile-settings__remove-photo"
+            onClick={handleRemoveProfilePhoto}
+          >
+            Remove
+          </button>
+        ) : null}
       </header>
 
       <div className="lo-account-settings__section">
