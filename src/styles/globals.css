@@ -9583,6 +9583,40 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 }
 .lo-window--account-settings {
   z-index: 5001 !important;
+  overflow: hidden;
+}
+
+.lo-window--account-settings .lo-window__bar {
+  position: relative;
+  flex: 0 0 48px;
+  min-height: 48px;
+  padding: 0 12px 0 18px;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--shell-border);
+  background: color-mix(in srgb, var(--shell-surface) 88%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.lo-window--account-settings .lo-window__title {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+}
+
+.lo-window--account-settings .lo-window__close {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+}
+
+.lo-window--account-settings .lo-window__body {
+  flex: 1 1 auto;
+  height: auto;
+  padding: 0;
+  overflow: hidden;
 }
 
 .lo-window--appearance-settings {
@@ -9627,6 +9661,178 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   display: flex;
   flex-direction: column;
   gap: 18px;
+}
+
+.lo-profile-settings {
+  position: relative;
+  height: 100%;
+  box-sizing: border-box;
+  gap: 12px;
+  padding: 16px;
+  overflow: hidden;
+  animation: loProfileSettingsIn 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.lo-profile-settings::before {
+  content: "";
+  position: absolute;
+  top: -100px;
+  right: -65px;
+  width: 230px;
+  height: 230px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--grad3) 12%, transparent);
+  filter: blur(10px);
+  pointer-events: none;
+}
+
+@keyframes loProfileSettingsIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.lo-profile-settings__hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 13px 14px;
+  border: 1px solid color-mix(in srgb, var(--grad3) 20%, var(--shell-border));
+  border-radius: 20px;
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--grad3) 8%, var(--shell-surface-soft)),
+    color-mix(in srgb, var(--grad1) 8%, var(--shell-surface-soft)));
+  overflow: hidden;
+}
+
+.lo-profile-settings__avatar {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 17px;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 800;
+  background: linear-gradient(145deg, var(--grad1), var(--grad3));
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--grad1) 28%, transparent);
+  animation: loProfileAvatarFloat 3.8s ease-in-out infinite;
+}
+
+@keyframes loProfileAvatarFloat {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(-3px) rotate(2deg); }
+}
+
+.lo-profile-settings__identity {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.lo-profile-settings__identity small {
+  color: var(--shell-muted);
+  font-size: 0.65rem;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.lo-profile-settings__identity strong,
+.lo-profile-settings__identity span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lo-profile-settings__identity strong { font-size: 0.98rem; }
+.lo-profile-settings__identity span { color: var(--shell-muted); font-size: 0.74rem; }
+
+.lo-profile-settings .lo-account-settings__section {
+  position: relative;
+  gap: 8px;
+  animation: loProfileSectionIn 330ms 70ms ease both;
+}
+
+@keyframes loProfileSectionIn {
+  from { opacity: 0; transform: translateX(8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.lo-profile-settings .lo-account-menu__field {
+  gap: 5px;
+  margin-top: 0;
+}
+
+.lo-profile-settings .lo-account-menu__field span {
+  padding-left: 3px;
+  font-size: 0.7rem;
+  font-weight: 650;
+}
+
+.lo-profile-settings .lo-account-menu__field input {
+  width: 100%;
+  box-sizing: border-box;
+  border-color: var(--shell-border);
+  background: var(--shell-surface-soft);
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.lo-profile-settings .lo-account-menu__field input:hover {
+  border-color: color-mix(in srgb, var(--grad1) 25%, var(--shell-border));
+}
+
+.lo-profile-settings .lo-account-menu__field input:focus {
+  outline: none;
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--grad1) 58%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--grad1) 13%, transparent);
+}
+
+.lo-profile-settings .lo-account-settings__meta {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 9px 11px;
+}
+
+.lo-profile-settings .lo-account-settings__meta span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+  font-size: 0.78rem;
+}
+
+.lo-profile-settings .lo-account-settings__footer {
+  margin-top: auto;
+  padding-top: 12px;
+  animation: loProfileSectionIn 330ms 120ms ease both;
+}
+
+.lo-profile-settings .lo-btn {
+  min-height: 38px;
+  border-radius: 12px;
+  transition: transform 150ms ease, box-shadow 150ms ease, background 150ms ease;
+}
+
+.lo-profile-settings .lo-btn:hover { transform: translateY(-2px); }
+
+.lo-profile-settings__save {
+  color: #fff;
+  border-color: transparent !important;
+  background: linear-gradient(110deg, var(--grad1), var(--grad3)) !important;
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--grad1) 22%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lo-profile-settings,
+  .lo-profile-settings__avatar,
+  .lo-profile-settings .lo-account-settings__section,
+  .lo-profile-settings .lo-account-settings__footer { animation: none; }
+  .lo-profile-settings .lo-btn,
+  .lo-profile-settings .lo-account-menu__field input { transition: none; }
 }
 
 .lo-appearance-settings {

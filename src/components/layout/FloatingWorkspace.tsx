@@ -69,7 +69,7 @@ function defaultSizeFor(key: Exclude<PanelKey, null>) {
     case "calendar-settings":
       return { w: 500, h: 350 };
     case "account-settings":
-      return { w: 500, h: 480 };
+      return { w: 500, h: 540 };
     case "appearance-settings":
       return { w: 500, h: 470 };
     case "tips":
@@ -96,7 +96,7 @@ function minSizeFor(key: Exclude<PanelKey, null>) {
     case "calendar-settings":
       return { w: 500, h: 350 };
     case "account-settings":
-      return { w: 500, h: 480 };
+      return { w: 500, h: 540 };
     case "appearance-settings":
       return { w: 500, h: 470 };
     case "tips":
@@ -1049,7 +1049,18 @@ function AccountSettingsPanel() {
   }
 
   return (
-    <div className="lo-account-settings">
+    <div className="lo-account-settings lo-profile-settings">
+      <header className="lo-profile-settings__hero">
+        <span className="lo-profile-settings__avatar" aria-hidden="true">
+          {(profileName || user.email || "P").charAt(0).toUpperCase()}
+        </span>
+        <span className="lo-profile-settings__identity">
+          <small>Personal profile</small>
+          <strong>{profileName || "Make it yours"}</strong>
+          <span>{favouriteVerse || "Add a verse that keeps you grounded"}</span>
+        </span>
+      </header>
+
       <div className="lo-account-settings__section">
         <div className="lo-account-settings__heading">Profile</div>
 
@@ -1087,7 +1098,11 @@ function AccountSettingsPanel() {
       </div>
 
       <div className="lo-account-settings__footer">
-        <button type="button" className="lo-btn" onClick={handleSaveProfile}>
+        <button
+          type="button"
+          className="lo-btn lo-profile-settings__save"
+          onClick={handleSaveProfile}
+        >
           Save changes
         </button>
 
