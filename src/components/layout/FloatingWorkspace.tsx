@@ -1053,6 +1053,8 @@ function AccountSettingsPanel() {
           detail: { name: profileName, favouriteVerse },
         }),
       );
+      window.dispatchEvent(new CustomEvent("lifeos:profile-saved"));
+      window.dispatchEvent(new CustomEvent("lifeos:close-account-settings"));
     } catch (error) {
       console.error("Profile update failed:", error);
     }
@@ -1465,6 +1467,23 @@ export default function FloatingWorkspace() {
 
   const [showBreathe, setShowBreathe] = useState(false);
   const [showLayoutMenu, setShowLayoutMenu] = useState(false);
+  const [profileSavedToast, setProfileSavedToast] = useState<number | null>(null);
+
+  React.useEffect(() => {
+    let hideTimer: number | undefined;
+
+    const handleProfileSaved = () => {
+      if (hideTimer) window.clearTimeout(hideTimer);
+      setProfileSavedToast(Date.now());
+      hideTimer = window.setTimeout(() => setProfileSavedToast(null), 3000);
+    };
+
+    window.addEventListener("lifeos:profile-saved", handleProfileSaved);
+    return () => {
+      window.removeEventListener("lifeos:profile-saved", handleProfileSaved);
+      if (hideTimer) window.clearTimeout(hideTimer);
+    };
+  }, []);
 
   const topGroup = useMemo(
     () => [
@@ -2325,6 +2344,22 @@ export default function FloatingWorkspace() {
           </WindowShell>
         );
       })}
+      {profileSavedToast !== null ? (
+        <div
+          key={profileSavedToast}
+          className="lo-profile-saved-toast"
+          role="status"
+          aria-live="polite"
+        >
+          <span className="lo-profile-saved-toast__check" aria-hidden="true">
+            ✓
+          </span>
+          <span>
+            <strong>Profile saved</strong>
+            <small>Your changes are up to date.</small>
+          </span>
+        </div>
+      ) : null}
       {showBreathe && <BreatheOverlay onClose={() => setShowBreathe(false)} />}
     </>
   );
