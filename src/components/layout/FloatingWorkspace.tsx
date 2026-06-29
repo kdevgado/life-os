@@ -69,7 +69,7 @@ function defaultSizeFor(key: Exclude<PanelKey, null>) {
     case "calendar-settings":
       return { w: 500, h: 350 };
     case "account-settings":
-      return { w: 500, h: 420 };
+      return { w: 500, h: 480 };
     case "appearance-settings":
       return { w: 500, h: 470 };
     case "tips":
@@ -96,7 +96,7 @@ function minSizeFor(key: Exclude<PanelKey, null>) {
     case "calendar-settings":
       return { w: 500, h: 350 };
     case "account-settings":
-      return { w: 500, h: 420 };
+      return { w: 500, h: 480 };
     case "appearance-settings":
       return { w: 500, h: 470 };
     case "tips":
@@ -916,6 +916,7 @@ type IdentityUser = {
   email?: string;
   user_metadata?: {
     full_name?: string;
+    favourite_verse?: string;
   };
   update?: (data: any) => Promise<any>;
   delete?: () => Promise<any>;
@@ -927,6 +928,7 @@ function AccountSettingsPanel() {
 
   const [profileName, setProfileName] = React.useState("");
   const [profileEmail, setProfileEmail] = React.useState("");
+  const [favouriteVerse, setFavouriteVerse] = React.useState("");
 
   React.useEffect(() => {
     let mounted = true;
@@ -949,18 +951,21 @@ function AccountSettingsPanel() {
       setUser(current || null);
       setProfileEmail(current?.email || "");
       setProfileName(current?.user_metadata?.full_name || "");
+      setFavouriteVerse(current?.user_metadata?.favourite_verse || "");
 
       netlifyIdentity.on("login", (nextUser: unknown) => {
         const typedUser = (nextUser as IdentityUser) || null;
         setUser(typedUser);
         setProfileEmail(typedUser?.email || "");
         setProfileName(typedUser?.user_metadata?.full_name || "");
+        setFavouriteVerse(typedUser?.user_metadata?.favourite_verse || "");
       });
 
       netlifyIdentity.on("logout", () => {
         setUser(null);
         setProfileEmail("");
         setProfileName("");
+        setFavouriteVerse("");
       });
     })();
 
@@ -978,6 +983,7 @@ function AccountSettingsPanel() {
       await currentUser.update({
         data: {
           full_name: profileName,
+          favourite_verse: favouriteVerse,
         },
       });
 
@@ -989,6 +995,11 @@ function AccountSettingsPanel() {
 
       const refreshed = identity.currentUser();
       setUser(refreshed || null);
+      window.dispatchEvent(
+        new CustomEvent("lifeos:profile-updated", {
+          detail: { name: profileName, favouriteVerse },
+        }),
+      );
     } catch (error) {
       console.error("Profile update failed:", error);
     }
@@ -1057,6 +1068,15 @@ function AccountSettingsPanel() {
             value={profileEmail}
             onChange={(e) => setProfileEmail(e.target.value)}
             placeholder="you@example.com"
+          />
+        </label>
+
+        <label className="lo-account-menu__field">
+          <span>Favourite verse</span>
+          <input
+            value={favouriteVerse}
+            onChange={(e) => setFavouriteVerse(e.target.value)}
+            placeholder="e.g. Philippians 4:13"
           />
         </label>
 

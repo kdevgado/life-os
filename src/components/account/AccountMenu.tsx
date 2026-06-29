@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
-type User = { email?: string; user_metadata?: { full_name?: string } } | null;
+type User = {
+  email?: string;
+  user_metadata?: { full_name?: string; favourite_verse?: string };
+} | null;
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -27,6 +30,7 @@ export default function AccountMenu() {
     useState<BeforeInstallPromptEvent | null>(null);
 
   const [profileName, setProfileName] = useState("");
+  const [favouriteVerse, setFavouriteVerse] = useState("");
 
   const menuRef = useRef<HTMLDivElement | null>(null);
 
@@ -78,22 +82,44 @@ export default function AccountMenu() {
         setIdentity(netlifyIdentity);
         setUser(current ? current : null);
         setProfileName(current?.user_metadata?.full_name || "");
+        setFavouriteVerse(current?.user_metadata?.favourite_verse || "");
       }
 
       netlifyIdentity.on("login", (u: any) => {
         setUser(u || null);
         setProfileName(u?.user_metadata?.full_name || "");
+        setFavouriteVerse(u?.user_metadata?.favourite_verse || "");
         netlifyIdentity.close();
       });
 
       netlifyIdentity.on("logout", () => {
         setUser(null);
         setProfileName("");
+        setFavouriteVerse("");
       });
     })();
 
     return () => {
       mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleProfileUpdate = (event: Event) => {
+      const detail = (event as CustomEvent<{
+        name?: string;
+        favouriteVerse?: string;
+      }>).detail;
+
+      if (detail?.name !== undefined) setProfileName(detail.name);
+      if (detail?.favouriteVerse !== undefined) {
+        setFavouriteVerse(detail.favouriteVerse);
+      }
+    };
+
+    window.addEventListener("lifeos:profile-updated", handleProfileUpdate);
+    return () => {
+      window.removeEventListener("lifeos:profile-updated", handleProfileUpdate);
     };
   }, []);
 
@@ -217,7 +243,7 @@ export default function AccountMenu() {
             </span>
             <span className="lo-account-menu__profile-copy">
               <strong>{displayName}</strong>
-              <small>{user?.email || "Your personal workspace"}</small>
+              <small>{favouriteVerse || "Add your favourite verse"}</small>
             </span>
           </div>
 
