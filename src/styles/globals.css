@@ -9199,7 +9199,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   display: flex;
   align-items: center;
   gap: 0.7rem;
-  padding: 0.55rem 0.55rem 0.75rem;
+  padding: 0.55rem 0.55rem 0.23rem;
   margin-bottom: 0.35rem;
   border-bottom: 1px solid rgba(15, 23, 42, 0.08);
 }
@@ -9587,11 +9587,40 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
 .lo-window--appearance-settings {
   z-index: 5002 !important;
+  overflow: hidden;
+}
+
+.lo-window--appearance-settings .lo-window__bar {
+  position: relative;
+  flex: 0 0 48px;
+  min-height: 48px;
+  padding: 0 12px 0 18px;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--shell-border);
+  background: color-mix(in srgb, var(--shell-surface) 88%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.lo-window--appearance-settings .lo-window__title {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+}
+
+.lo-window--appearance-settings .lo-window__close {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
 }
 
 .lo-window--appearance-settings .lo-window__body {
+  flex: 1 1 auto;
+  height: auto;
   padding: 0;
-  overflow: auto;
+  overflow: hidden;
 }
 
 .lo-account-settings {
@@ -9603,7 +9632,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 .lo-appearance-settings {
   position: relative;
   padding: 16px;
-  gap: 14px;
+  gap: 9px;
   overflow: hidden;
   animation: loAppearanceIn 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
@@ -9693,7 +9722,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 }
 
 .lo-appearance-settings .lo-account-settings__section {
-  gap: 10px;
+  gap: 7px;
   position: relative;
   animation: loAppearanceSectionIn 340ms ease both;
 }

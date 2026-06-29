@@ -71,7 +71,7 @@ function defaultSizeFor(key: Exclude<PanelKey, null>) {
     case "account-settings":
       return { w: 500, h: 420 };
     case "appearance-settings":
-      return { w: 500, h: 390 };
+      return { w: 500, h: 470 };
     case "tips":
       return { w: 560, h: 520 };
     case "timer":
@@ -98,7 +98,7 @@ function minSizeFor(key: Exclude<PanelKey, null>) {
     case "account-settings":
       return { w: 500, h: 420 };
     case "appearance-settings":
-      return { w: 500, h: 390 };
+      return { w: 500, h: 470 };
     case "tips":
       return { w: 420, h: 420 };
     case "timer":
