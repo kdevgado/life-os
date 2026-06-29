@@ -187,6 +187,12 @@ export default function AccountMenu() {
     }
   };
 
+  const displayName =
+    profileName ||
+    user?.user_metadata?.full_name ||
+    user?.email?.split("@")[0] ||
+    (user ? "Welcome back" : "Guest");
+
   return (
     <div className="lo-account-menu" ref={menuRef}>
       <button
@@ -198,22 +204,23 @@ export default function AccountMenu() {
       >
         <img src={iconSrc} alt="" className="lo-account-menu__icon" />
         <span className="lo-account-menu__label">
-          {user
-            ? `Hello, ${
-                profileName ||
-                user.user_metadata?.full_name ||
-                user.email?.split("@")[0] ||
-                "there"
-              }`
-            : "Sign in"}
+          {user ? `Hello, ${displayName}` : "Sign in"}
         </span>
-        <span className="lo-account-menu__caret" aria-hidden="true">
-          {open ? "▴" : "▾"}
-        </span>
+        <span className="lo-account-menu__caret" aria-hidden="true" />
       </button>
 
       {open && (
         <div className="lo-account-menu__panel" role="menu">
+          <div className="lo-account-menu__profile">
+            <span className="lo-account-menu__avatar" aria-hidden="true">
+              {displayName.charAt(0).toUpperCase()}
+            </span>
+            <span className="lo-account-menu__profile-copy">
+              <strong>{displayName}</strong>
+              <small>{user?.email || "Your personal workspace"}</small>
+            </span>
+          </div>
+
           <button
             type="button"
             className="lo-account-menu__item"
