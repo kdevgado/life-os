@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { applyIdentityWidgetStyles } from "../../lib/identity";
 
 type User = { email?: string } | null;
 
@@ -22,6 +23,7 @@ export default function AuthButton({ className = "duna-auth" }: AuthButtonProps)
         `${window.location.origin}/.netlify/identity`;
 
       netlifyIdentity.init({ APIUrl });
+      applyIdentityWidgetStyles();
 
       const current = netlifyIdentity.currentUser();
       if (mounted) {

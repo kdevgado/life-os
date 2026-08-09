@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { applyIdentityWidgetStyles } from "../../lib/identity";
 import TasksApp from "../tasks/TasksApp";
 import AccountMenu from "../account/AccountMenu";
 import NotesPanel from "../dashboard/NotesPanel";
@@ -995,6 +996,7 @@ function AccountSettingsPanel() {
         `${window.location.origin}/.netlify/identity`;
 
       netlifyIdentity.init({ APIUrl });
+      applyIdentityWidgetStyles();
 
       const current = netlifyIdentity.currentUser() as IdentityUser;
 

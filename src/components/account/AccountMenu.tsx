@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { applyIdentityWidgetStyles } from "../../lib/identity";
 
 type User = {
   email?: string;
@@ -81,6 +82,7 @@ export default function AccountMenu() {
         `${window.location.origin}/.netlify/identity`;
 
       netlifyIdentity.init({ APIUrl });
+      applyIdentityWidgetStyles();
 
       const current = netlifyIdentity.currentUser() as User;
 
