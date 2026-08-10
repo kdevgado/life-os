@@ -321,6 +321,21 @@ type ReminderAlert = {
   listLabel: string;
 };
 
+type TaskTokenPrefix = "@" | "#";
+
+type TaskTokenQuery = {
+  prefix: TaskTokenPrefix;
+  query: string;
+  start: number;
+  end: number;
+};
+
+type TaskTokenHistoryItem = {
+  value: string;
+  count: number;
+  lastUsedAt: string;
+};
+
 const REPEAT_RULE_LABELS: Record<TaskRepeatRule, string> = {
   daily: "Daily",
   weekdays: "Weekdays",
@@ -411,6 +426,166 @@ function TaskTitleText({
         );
       })}
     </>
+  );
+}
+
+function findTaskTokenQuery(value: string, caretOffset = value.length) {
+  const textBeforeCaret = value.slice(0, caretOffset);
+  const match = textBeforeCaret.match(/([@#])([\p{L}\p{N}_-]*)$/u);
+  if (!match) return null;
+
+  const start = caretOffset - match[0].length;
+  const previousCharacter = value.slice(0, start).slice(-1);
+  if (previousCharacter && /[\p{L}\p{N}_-]/u.test(previousCharacter)) {
+    return null;
+  }
+
+  return {
+    prefix: match[1] as TaskTokenPrefix,
+    query: match[2],
+    start,
+    end: caretOffset,
+  } satisfies TaskTokenQuery;
+}
+
+function collectTaskTokenHistory(tasks: Task[]) {
+  const history = new Map<string, TaskTokenHistoryItem>();
+
+  tasks.forEach((task) => {
+    const taskTokens = new Set(
+      task.title.match(/[@#][\p{L}\p{N}_-]+/gu) ?? [],
+    );
+
+    (task.tags ?? []).forEach((tag) => {
+      const cleanedTag = tag.trim();
+      if (!cleanedTag) return;
+
+      const token = /^[#@]/.test(cleanedTag) ? cleanedTag : `@${cleanedTag}`;
+      if (/^[@#][\p{L}\p{N}_-]+$/u.test(token)) taskTokens.add(token);
+    });
+
+    taskTokens.forEach((value) => {
+      const key = value.toLocaleLowerCase();
+      const current = history.get(key);
+
+      history.set(key, {
+        value:
+          !current || task.updatedAt >= current.lastUsedAt ? value : current.value,
+        count: (current?.count ?? 0) + 1,
+        lastUsedAt:
+          !current || task.updatedAt >= current.lastUsedAt
+            ? task.updatedAt
+            : current.lastUsedAt,
+      });
+    });
+  });
+
+  return [...history.values()];
+}
+
+function getTaskTokenSuggestions(
+  history: TaskTokenHistoryItem[],
+  activeToken: TaskTokenQuery | null,
+) {
+  if (!activeToken) return [];
+
+  const query = activeToken.query.toLocaleLowerCase();
+
+  return history
+    .filter((item) => item.value.startsWith(activeToken.prefix))
+    .map((item) => {
+      const word = item.value.slice(1).toLocaleLowerCase();
+      const matchRank =
+        !query || word.startsWith(query) ? 0 : word.includes(query) ? 1 : 2;
+      return { ...item, matchRank };
+    })
+    .filter((item) => item.matchRank < 2)
+    .sort((a, b) => {
+      if (a.matchRank !== b.matchRank) return a.matchRank - b.matchRank;
+      if (a.count !== b.count) return b.count - a.count;
+      const recentCompare = b.lastUsedAt.localeCompare(a.lastUsedAt);
+      return recentCompare || a.value.localeCompare(b.value);
+    })
+    .slice(0, 6)
+    .map((item) => item.value);
+}
+
+function getContentEditableCaretOffset(element: HTMLElement) {
+  const selection = window.getSelection();
+  if (!selection?.rangeCount) return element.textContent?.length ?? 0;
+
+  const range = selection.getRangeAt(0);
+  if (!element.contains(range.endContainer)) {
+    return element.textContent?.length ?? 0;
+  }
+
+  const beforeCaret = range.cloneRange();
+  beforeCaret.selectNodeContents(element);
+  beforeCaret.setEnd(range.endContainer, range.endOffset);
+  return beforeCaret.toString().length;
+}
+
+function setContentEditableCaret(element: HTMLElement, offset: number) {
+  const textNode = element.firstChild;
+  if (!textNode) return;
+
+  const selection = window.getSelection();
+  const range = document.createRange();
+  range.setStart(textNode, Math.min(offset, textNode.textContent?.length ?? 0));
+  range.collapse(true);
+  selection?.removeAllRanges();
+  selection?.addRange(range);
+}
+
+function TaskTokenSuggestions({
+  id,
+  activeToken,
+  suggestions,
+  activeIndex,
+  onActiveIndexChange,
+  onSelect,
+}: {
+  id: string;
+  activeToken: TaskTokenQuery;
+  suggestions: string[];
+  activeIndex: number;
+  onActiveIndexChange: (index: number) => void;
+  onSelect: (suggestion: string) => void;
+}) {
+  return (
+    <div
+      id={id}
+      className="lo-task-token-suggestions"
+      role="listbox"
+      aria-label={`${
+        activeToken.prefix === "@" ? "Mention" : "Tag"
+      } suggestions`}
+    >
+      <div className="lo-task-token-suggestions__label">Used before</div>
+      {suggestions.map((suggestion, index) => (
+        <button
+          id={`${id}-${index}`}
+          key={suggestion.toLocaleLowerCase()}
+          type="button"
+          role="option"
+          tabIndex={-1}
+          aria-selected={index === activeIndex}
+          className={index === activeIndex ? "is-active" : ""}
+          onPointerEnter={() => onActiveIndexChange(index)}
+          onPointerDown={(event) => {
+            event.preventDefault();
+            onSelect(suggestion);
+          }}
+        >
+          <span
+            className={`lo-task-token-suggestions__token ${suggestion.startsWith("#") ? "is-tag" : "is-mention"}`}
+          >
+            {suggestion}
+          </span>
+          <span>{suggestion.startsWith("#") ? "tag" : "mention"}</span>
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -3115,6 +3290,10 @@ function PlanTasksView({
   const [composerRepeatRule, setComposerRepeatRule] =
     React.useState<TaskRepeatRule | "">("");
   const [composerAutoDueDate, setComposerAutoDueDate] = React.useState("");
+  const [activeTaskToken, setActiveTaskToken] =
+    React.useState<TaskTokenQuery | null>(null);
+  const [taskTokenSuggestionIndex, setTaskTokenSuggestionIndex] =
+    React.useState(0);
   const [myDayCompletedOpen, setMyDayCompletedOpen] = React.useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
   const [mobileBoardMenuOpen, setMobileBoardMenuOpen] = React.useState(true);
@@ -3150,6 +3329,7 @@ function PlanTasksView({
   const sortMenuRef = React.useRef<HTMLDivElement | null>(null);
   const myDayComposerCloseTimerRef = React.useRef<number | null>(null);
   const sortMenuCloseTimerRef = React.useRef<number | null>(null);
+  const taskTokenSuggestionsId = React.useId();
 
   React.useEffect(() => {
     setSessionLists(loadStoredCustomLists(currentUserId));
@@ -3225,6 +3405,17 @@ function PlanTasksView({
     ],
     [discoveredCustomLists, sessionLists],
   );
+  const taskTokenHistory = React.useMemo(
+    () => collectTaskTokenHistory(tasks),
+    [tasks],
+  );
+  const taskTokenSuggestions = React.useMemo(
+    () => getTaskTokenSuggestions(taskTokenHistory, activeTaskToken),
+    [activeTaskToken, taskTokenHistory],
+  );
+  const visibleTaskTokenSuggestionIndex = taskTokenSuggestions.length
+    ? Math.min(taskTokenSuggestionIndex, taskTokenSuggestions.length - 1)
+    : 0;
   const isCustomSelectedList = customLists.includes(selectedList);
   const usesCompactComposer = true;
   const showSuggestionsButton = selectedList === "my-day";
@@ -3233,6 +3424,14 @@ function PlanTasksView({
     selectedList === "important" ||
     selectedList === "tasks" ||
     isCustomSelectedList;
+
+  React.useEffect(() => {
+    setTaskTokenSuggestionIndex(0);
+  }, [
+    activeTaskToken?.prefix,
+    activeTaskToken?.query,
+    taskTokenSuggestions.length,
+  ]);
 
   React.useEffect(() => {
     if (!editingListHeading) return;
@@ -4091,6 +4290,7 @@ function PlanTasksView({
     if (myDayTitleRef.current) {
       myDayTitleRef.current.textContent = "";
     }
+    setActiveTaskToken(null);
     closeMyDayComposer();
   }
 
@@ -4112,8 +4312,9 @@ function PlanTasksView({
     setComposerMenu((current) => (current === menu ? null : menu));
   }
 
-  function updateComposerTitle(value: string) {
+  function updateComposerTitle(value: string, caretOffset = value.length) {
     setTitle(value);
+    setActiveTaskToken(findTaskTokenQuery(value, caretOffset));
     openMyDayComposer();
 
     const previousAutoReminder = composerAutoDueDate
@@ -4136,6 +4337,26 @@ function PlanTasksView({
         setComposerReminderAt("");
       }
     }
+  }
+
+  function chooseTaskTokenSuggestion(suggestion: string) {
+    if (!activeTaskToken) return;
+
+    const suffix = title.slice(activeTaskToken.end);
+    const separator = suffix && /^\s/u.test(suffix) ? "" : " ";
+    const nextTitle = `${title.slice(0, activeTaskToken.start)}${suggestion}${separator}${suffix}`;
+    const nextCaretOffset =
+      activeTaskToken.start + suggestion.length + separator.length;
+
+    updateComposerTitle(nextTitle, nextCaretOffset);
+    setActiveTaskToken(null);
+
+    const editor = myDayTitleRef.current;
+    if (!editor) return;
+
+    editor.textContent = nextTitle;
+    editor.focus();
+    setContentEditableCaret(editor, nextCaretOffset);
   }
 
   function updateAddbarTitle(value: string) {
@@ -4617,12 +4838,56 @@ function PlanTasksView({
                   tabIndex={0}
                   aria-label="Add a task"
                   data-placeholder="Add a task"
+                  aria-autocomplete="list"
+                  aria-expanded={taskTokenSuggestions.length > 0}
+                  aria-controls={
+                    taskTokenSuggestions.length > 0
+                      ? taskTokenSuggestionsId
+                      : undefined
+                  }
+                  aria-activedescendant={
+                    taskTokenSuggestions.length > 0
+                      ? `${taskTokenSuggestionsId}-${visibleTaskTokenSuggestionIndex}`
+                      : undefined
+                  }
                   onFocus={openMyDayComposer}
                   onInput={(e) => {
-                    updateComposerTitle(e.currentTarget.textContent ?? "");
+                    updateComposerTitle(
+                      e.currentTarget.textContent ?? "",
+                      getContentEditableCaretOffset(e.currentTarget),
+                    );
                   }}
-                  onBlur={resetMyDayComposerPlaceholder}
+                  onBlur={() => {
+                    resetMyDayComposerPlaceholder();
+                    setActiveTaskToken(null);
+                  }}
                   onKeyDown={(e) => {
+                    if (activeTaskToken && taskTokenSuggestions.length > 0) {
+                      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+                        e.preventDefault();
+                        const direction = e.key === "ArrowDown" ? 1 : -1;
+                        setTaskTokenSuggestionIndex((current) =>
+                          (current + direction + taskTokenSuggestions.length) %
+                          taskTokenSuggestions.length,
+                        );
+                        return;
+                      }
+
+                      if (e.key === "Enter" || e.key === "Tab") {
+                        e.preventDefault();
+                        chooseTaskTokenSuggestion(
+                          taskTokenSuggestions[visibleTaskTokenSuggestionIndex],
+                        );
+                        return;
+                      }
+                    }
+
+                    if (e.key === "Escape" && activeTaskToken) {
+                      e.preventDefault();
+                      setActiveTaskToken(null);
+                      return;
+                    }
+
                     if (e.key === "Enter") {
                       e.preventDefault();
                       submitMyDayTask();
@@ -4634,6 +4899,17 @@ function PlanTasksView({
                   }}
                 />
               </div>
+
+              {activeTaskToken && taskTokenSuggestions.length > 0 ? (
+                <TaskTokenSuggestions
+                  id={taskTokenSuggestionsId}
+                  activeToken={activeTaskToken}
+                  suggestions={taskTokenSuggestions}
+                  activeIndex={visibleTaskTokenSuggestionIndex}
+                  onActiveIndexChange={setTaskTokenSuggestionIndex}
+                  onSelect={chooseTaskTokenSuggestion}
+                />
+              ) : null}
 
               {(myDayComposerOpen || myDayComposerClosing) && (
                 <div className="lo-my-day-composer__actions">
