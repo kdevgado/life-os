@@ -40,6 +40,49 @@ function startOfToday() {
   d.setHours(0, 0, 0, 0);
   return d;
 }
+
+function useTodayDateKey() {
+  const [todayISO, setTodayISO] = useState(() => isoDate(new Date()));
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    let refreshTimer: number | undefined;
+
+    const refreshToday = () => {
+      if (refreshTimer !== undefined) window.clearTimeout(refreshTimer);
+
+      const now = new Date();
+      const nextDay = new Date(now);
+      nextDay.setHours(24, 0, 0, 0);
+
+      setTodayISO((current) => {
+        const next = isoDate(now);
+        return current === next ? current : next;
+      });
+
+      refreshTimer = window.setTimeout(
+        refreshToday,
+        Math.max(1_000, nextDay.getTime() - now.getTime() + 100),
+      );
+    };
+
+    const refreshWhenVisible = () => {
+      if (!document.hidden) refreshToday();
+    };
+
+    refreshToday();
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+
+    return () => {
+      if (refreshTimer !== undefined) window.clearTimeout(refreshTimer);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
+  }, []);
+
+  return todayISO;
+}
+
 function endOfWeek() {
   const d = startOfToday();
   d.setDate(d.getDate() + 7);
@@ -159,7 +202,9 @@ function getMyDayDateKey(task: Task) {
 }
 
 function isTaskInMyDay(task: Task, todayISO: string) {
-  return getMyDayDateKey(task) === todayISO;
+  if (getMyDayDateKey(task) === todayISO) return true;
+
+  return task.myDay !== "" && getTaskDateKey(task) === todayISO;
 }
 
 function getSchedulePatchDateKey(patch: Partial<Task>) {
@@ -404,6 +449,7 @@ export default function TasksApp({
     if (typeof window === "undefined") return [];
     return loadTasks();
   });
+  const todayISO = useTodayDateKey();
   const [title, setTitle] = useState("");
   const [query, setQuery] = useState("");
 
@@ -812,8 +858,6 @@ export default function TasksApp({
   }, [authed]);
 
   const filtered = useMemo(() => {
-    const today = isoDate(new Date());
-
     const normalizedQuery = query.trim().toLowerCase();
 
     const searched = !normalizedQuery
@@ -839,9 +883,9 @@ export default function TasksApp({
       const dueDateKey = getTaskDateKey(t);
       const createdDateKey = getCreatedDateKey(t);
 
-      const isToday = createdDateKey === today;
+      const isToday = createdDateKey === todayISO;
       const isOverdue =
-        !!dueDateKey && dueDateKey < today && t.status !== "done";
+        !!dueDateKey && dueDateKey < todayISO && t.status !== "done";
 
       const matchesStatus =
         statusFilter === "all"
@@ -861,7 +905,15 @@ export default function TasksApp({
 
       return matchesStatus && matchesFocus && matchesHideCompleted;
     });
-  }, [tasks, query, mode, focusFilter, statusFilter, hideCompleted]);
+  }, [
+    tasks,
+    query,
+    mode,
+    focusFilter,
+    statusFilter,
+    hideCompleted,
+    todayISO,
+  ]);
 
   const canAdd = title.trim().length > 0;
 
@@ -2138,6 +2190,7 @@ export default function TasksApp({
           onDeleteTaskList={onDeleteTaskList}
           onRenameTaskList={onRenameTaskList}
           currentUserId={currentUserId}
+          todayISO={todayISO}
         />
       )}
       {contextMenu && (
@@ -3000,6 +3053,7 @@ function PlanTasksView({
   onDeleteTaskList,
   onRenameTaskList,
   currentUserId,
+  todayISO,
 }: {
   query: string;
   setQuery: (value: string) => void;
@@ -3039,6 +3093,7 @@ function PlanTasksView({
   onDeleteTaskList: (list: string) => void;
   onRenameTaskList: (oldList: string, newList: string) => void;
   currentUserId: string | null;
+  todayISO: string;
 }) {
   const [selectedList, setSelectedList] = React.useState<PlanListId>("my-day");
   const [listDraft, setListDraft] = React.useState("");
@@ -3125,7 +3180,6 @@ function PlanTasksView({
     });
   }
 
-  const todayISO = isoDate(new Date());
   const composerTomorrow = React.useMemo(() => {
     const date = new Date();
     date.setDate(date.getDate() + 1);
