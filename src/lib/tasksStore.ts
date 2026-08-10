@@ -26,10 +26,13 @@ function uid(prefix = "t") {
 }
 
 function parseTaskInput(input: string) {
-  const matches = input.match(/@[\p{L}\p{N}_-]+/gu) ?? [];
+  const matches =
+    input.match(/@[\p{L}\p{N}_-]+(?:\.[\p{L}\p{N}_-]+)*/gu) ?? [];
   const commands = matches.map((m) => m.slice(1).toLowerCase());
 
-  const cleanTitle = input.replace(/@[\p{L}\p{N}_-]+/gu, "").trim();
+  const cleanTitle = input
+    .replace(/@[\p{L}\p{N}_-]+(?:\.[\p{L}\p{N}_-]+)*/gu, "")
+    .trim();
 
   let list = "inbox";
   let plannedFor: string | undefined;

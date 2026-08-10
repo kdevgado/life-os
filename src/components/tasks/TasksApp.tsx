@@ -401,12 +401,16 @@ function TaskTitleText({
   title: string;
   onTokenClick?: (token: string) => void;
 }) {
-  const parts = title.split(/([@#][\p{L}\p{N}_-]+)/gu);
+  const parts = title.split(
+    /([@#][\p{L}\p{N}_-]+(?:\.[\p{L}\p{N}_-]+)*)/gu,
+  );
 
   return (
     <>
       {parts.map((part, index) => {
-        const isToken = /^[@#][\p{L}\p{N}_-]+$/u.test(part);
+        const isToken = /^[@#][\p{L}\p{N}_-]+(?:\.[\p{L}\p{N}_-]+)*$/u.test(
+          part,
+        );
         if (!isToken) return <React.Fragment key={index}>{part}</React.Fragment>;
 
         const kind = part.startsWith("@") ? "mention" : "tag";
@@ -431,7 +435,7 @@ function TaskTitleText({
 
 function findTaskTokenQuery(value: string, caretOffset = value.length) {
   const textBeforeCaret = value.slice(0, caretOffset);
-  const match = textBeforeCaret.match(/([@#])([\p{L}\p{N}_-]*)$/u);
+  const match = textBeforeCaret.match(/([@#])([\p{L}\p{N}_.-]*)$/u);
   if (!match) return null;
 
   const start = caretOffset - match[0].length;
@@ -453,7 +457,7 @@ function collectTaskTokenHistory(tasks: Task[]) {
 
   tasks.forEach((task) => {
     const taskTokens = new Set(
-      task.title.match(/[@#][\p{L}\p{N}_-]+/gu) ?? [],
+      task.title.match(/[@#][\p{L}\p{N}_-]+(?:\.[\p{L}\p{N}_-]+)*/gu) ?? [],
     );
 
     (task.tags ?? []).forEach((tag) => {
@@ -461,7 +465,9 @@ function collectTaskTokenHistory(tasks: Task[]) {
       if (!cleanedTag) return;
 
       const token = /^[#@]/.test(cleanedTag) ? cleanedTag : `@${cleanedTag}`;
-      if (/^[@#][\p{L}\p{N}_-]+$/u.test(token)) taskTokens.add(token);
+      if (/^[@#][\p{L}\p{N}_-]+(?:\.[\p{L}\p{N}_-]+)*$/u.test(token)) {
+        taskTokens.add(token);
+      }
     });
 
     taskTokens.forEach((value) => {
