@@ -5225,6 +5225,8 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   box-shadow: var(--shell-shadow);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
+  max-height: min(520px, calc(100vh - 20px));
+  overflow-y: auto;
 }
 
 .lo-filter-group {
@@ -5273,6 +5275,73 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
 .lo-filter-option--checkbox span {
   color: inherit;
+}
+
+.lo-filter-group--lists {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--shell-border);
+}
+
+.lo-filter-list-options {
+  display: grid;
+  gap: 2px;
+  max-height: 240px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.lo-filter-option--list {
+  position: relative;
+  user-select: none;
+}
+
+.lo-filter-option--list input[type="radio"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.lo-filter-option__icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  object-fit: contain;
+  opacity: .82;
+}
+
+.lo-filter-option__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lo-filter-option__selected {
+  margin-left: auto;
+  opacity: 0;
+  color: var(--grad3);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.lo-filter-option--list:has(input:checked) {
+  background: var(--shell-btn);
+}
+
+.lo-filter-option--list:has(input:focus-visible) {
+  outline: 2px solid color-mix(in srgb, var(--grad3) 72%, transparent);
+  outline-offset: -2px;
+}
+
+.lo-filter-option--list:has(input:checked) .lo-filter-option__selected {
+  opacity: 1;
+}
+
+:root[data-theme="duna"] .lo-filter-option__icon {
+  filter: brightness(0) saturate(100%) invert(18%) sepia(12%) saturate(860%) hue-rotate(182deg) brightness(94%) contrast(88%);
 }
 
 /* Duna */

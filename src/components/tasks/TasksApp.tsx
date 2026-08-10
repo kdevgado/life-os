@@ -207,6 +207,22 @@ function isTaskInMyDay(task: Task, todayISO: string) {
   return task.myDay !== "" && getTaskDateKey(task) === todayISO;
 }
 
+function isTaskInListView(task: Task, list: string, todayISO: string) {
+  if (list === "all") return true;
+  if (list === "my-day") return isTaskInMyDay(task, todayISO);
+  if (list === "important") return !!task.important;
+  if (list === "planned") return !!getTaskDateKey(task);
+  if (list === "assigned") return task.list === "assigned";
+  if (list === "tasks") {
+    return (
+      (task.list ?? "tasks") === "tasks" ||
+      (task.list ?? "inbox") === "inbox"
+    );
+  }
+
+  return task.list === list;
+}
+
 function getSchedulePatchDateKey(patch: Partial<Task>) {
   const raw =
     patch.dueDate ?? patch.plannedFor ?? patch.plannedStart ?? patch.plannedEnd;
@@ -657,8 +673,10 @@ export default function TasksApp({
   // ✅ focus mode filter (hide completed)
   const [focusFilter, setFocusFilter] = useState<FocusFilter>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [focusListFilter, setFocusListFilter] = useState<string>("all");
   const [hideCompleted, setHideCompleted] = useState(false);
   const [showFocusFilter, setShowFocusFilter] = useState(false);
+  const focusListFilterName = React.useId();
 
   // ✅ context menu state
   const [contextMenu, setContextMenu] = useState<{
@@ -1038,6 +1056,49 @@ export default function TasksApp({
     };
   }, [authed]);
 
+  const focusCustomLists = useMemo(() => {
+    const storedLists = loadStoredCustomLists(currentUserId);
+    const discoveredLists = tasks
+      .map((task) => task.list ?? "tasks")
+      .filter(
+        (list) =>
+          !["inbox", "tasks", "focus"].includes(list) &&
+          !["my-day", "important", "planned", "assigned"].includes(list),
+      );
+
+    return Array.from(new Set([...storedLists, ...discoveredLists])).sort(
+      (a, b) => labelForList(a).localeCompare(labelForList(b)),
+    );
+  }, [currentUserId, showFocusFilter, tasks]);
+  const focusCustomListIcons = useMemo(
+    () => loadStoredCustomListIcons(currentUserId),
+    [currentUserId, showFocusFilter],
+  );
+  const focusListOptions = useMemo(
+    () => [
+      { id: "all", label: "All lists", icon: CUSTOM_LIST_ICON },
+      { id: "my-day", label: "My Day", icon: PLAN_SIDEBAR_ICONS["my-day"] },
+      {
+        id: "important",
+        label: "Important",
+        icon: PLAN_SIDEBAR_ICONS.important,
+      },
+      { id: "planned", label: "Planned", icon: PLAN_SIDEBAR_ICONS.planned },
+      {
+        id: "assigned",
+        label: "Assigned to me",
+        icon: PLAN_SIDEBAR_ICONS.assigned,
+      },
+      { id: "tasks", label: "Tasks", icon: PLAN_SIDEBAR_ICONS.tasks },
+      ...focusCustomLists.map((list) => ({
+        id: list,
+        label: labelForList(list),
+        icon: focusCustomListIcons[list] ?? CUSTOM_LIST_ICON,
+      })),
+    ],
+    [focusCustomListIcons, focusCustomLists],
+  );
+
   const filtered = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
@@ -1083,8 +1144,9 @@ export default function TasksApp({
             : isOverdue;
 
       const matchesHideCompleted = hideCompleted ? t.status !== "done" : true;
+      const matchesList = isTaskInListView(t, focusListFilter, todayISO);
 
-      return matchesStatus && matchesFocus && matchesHideCompleted;
+      return matchesStatus && matchesFocus && matchesHideCompleted && matchesList;
     });
   }, [
     tasks,
@@ -1092,6 +1154,7 @@ export default function TasksApp({
     mode,
     focusFilter,
     statusFilter,
+    focusListFilter,
     hideCompleted,
     todayISO,
   ]);
@@ -1891,6 +1954,14 @@ export default function TasksApp({
       setShowFocusFilter(false);
     }
 
+    function handleViewportScroll(event: Event) {
+      const target = event.target as Node;
+
+      if (focusFilterMenuRef.current?.contains(target)) return;
+
+      handleViewportChange();
+    }
+
     function handleDropdownOpened(event: Event) {
       const customEvent = event as CustomEvent<{ id?: string }>;
       if (customEvent.detail?.id === TASKS_FILTER_DROPDOWN_ID) return;
@@ -1901,7 +1972,7 @@ export default function TasksApp({
     document.addEventListener("pointerdown", handleOutsideClick, true);
     window.addEventListener("keydown", handleEscape);
     window.addEventListener("resize", handleViewportChange);
-    window.addEventListener("scroll", handleViewportChange, true);
+    window.addEventListener("scroll", handleViewportScroll, true);
     window.addEventListener(
       "lifeos:dropdown-opened",
       handleDropdownOpened as EventListener,
@@ -1911,7 +1982,7 @@ export default function TasksApp({
       document.removeEventListener("pointerdown", handleOutsideClick, true);
       window.removeEventListener("keydown", handleEscape);
       window.removeEventListener("resize", handleViewportChange);
-      window.removeEventListener("scroll", handleViewportChange, true);
+      window.removeEventListener("scroll", handleViewportScroll, true);
       window.removeEventListener(
         "lifeos:dropdown-opened",
         handleDropdownOpened as EventListener,
@@ -2192,7 +2263,8 @@ export default function TasksApp({
   const activeFocusFilterCount =
     (hideCompleted ? 1 : 0) +
     (focusFilter === "today" ? 1 : 0) +
-    (focusFilter === "overdue" ? 1 : 0);
+    (focusFilter === "overdue" ? 1 : 0) +
+    (focusListFilter === "all" ? 0 : 1);
 
   return (
     <div ref={pageRef} className="lo-tasks">
@@ -2248,9 +2320,16 @@ export default function TasksApp({
                         window.innerWidth - menuWidth - viewportPadding,
                       );
 
-                      const nextTop = Math.min(
-                        rect.bottom + 6,
-                        window.innerHeight - 220,
+                      const maxMenuHeight = Math.min(
+                        520,
+                        window.innerHeight - viewportPadding * 2,
+                      );
+                      const nextTop = Math.max(
+                        viewportPadding,
+                        Math.min(
+                          rect.bottom + 6,
+                          window.innerHeight - maxMenuHeight - viewportPadding,
+                        ),
                       );
 
                       setFilterMenuPos({
@@ -2338,6 +2417,41 @@ export default function TasksApp({
                           />
                           <span>Overdue</span>
                         </label>
+                      </div>
+
+                      <div className="lo-filter-group lo-filter-group--lists">
+                        <div className="lo-filter-label">List:</div>
+                        <div className="lo-filter-list-options">
+                          {focusListOptions.map((option) => (
+                            <label
+                              key={option.id}
+                              className="lo-filter-option lo-filter-option--list"
+                              title={option.label}
+                            >
+                              <input
+                                type="radio"
+                                name={focusListFilterName}
+                                value={option.id}
+                                checked={focusListFilter === option.id}
+                                onChange={() => setFocusListFilter(option.id)}
+                              />
+                              <img
+                                className="lo-filter-option__icon"
+                                src={option.icon}
+                                alt=""
+                              />
+                              <span className="lo-filter-option__label">
+                                {option.label}
+                              </span>
+                              <span
+                                className="lo-filter-option__selected"
+                                aria-hidden="true"
+                              >
+                                {"✓"}
+                              </span>
+                            </label>
+                          ))}
+                        </div>
                       </div>
                     </div>,
                     document.body,
