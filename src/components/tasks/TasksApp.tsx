@@ -207,19 +207,8 @@ function isTaskInMyDay(task: Task, todayISO: string) {
   return task.myDay !== "" && getTaskDateKey(task) === todayISO;
 }
 
-function isTaskInListView(task: Task, list: string, todayISO: string) {
+function isTaskInCustomList(task: Task, list: string) {
   if (list === "all") return true;
-  if (list === "my-day") return isTaskInMyDay(task, todayISO);
-  if (list === "important") return !!task.important;
-  if (list === "planned") return !!getTaskDateKey(task);
-  if (list === "assigned") return task.list === "assigned";
-  if (list === "tasks") {
-    return (
-      (task.list ?? "tasks") === "tasks" ||
-      (task.list ?? "inbox") === "inbox"
-    );
-  }
-
   return task.list === list;
 }
 
@@ -260,6 +249,7 @@ type TasksMode = "focus" | "plan";
 type FocusFilter = "all" | "today" | "overdue";
 type StatusFilter = "all" | "inprogress" | "completed";
 const TASKS_FILTER_DROPDOWN_ID = "tasks-filter";
+const TASKS_LIST_DROPDOWN_ID = "tasks-list-filter";
 const TASK_REMINDER_FIRED_KEY = "lifeos_task_reminders_fired_v1";
 const CUSTOM_LISTS_KEY = "lifeos_task_custom_lists_v1";
 const CUSTOM_LIST_ICONS_KEY = "lifeos_task_custom_list_icons_v1";
@@ -676,6 +666,7 @@ export default function TasksApp({
   const [focusListFilter, setFocusListFilter] = useState<string>("all");
   const [hideCompleted, setHideCompleted] = useState(false);
   const [showFocusFilter, setShowFocusFilter] = useState(false);
+  const [showFocusListFilter, setShowFocusListFilter] = useState(false);
   const focusListFilterName = React.useId();
 
   // ✅ context menu state
@@ -698,6 +689,8 @@ export default function TasksApp({
   const pageRef = useRef<HTMLDivElement | null>(null);
   const focusFilterWrapRef = useRef<HTMLDivElement | null>(null);
   const focusFilterMenuRef = useRef<HTMLDivElement | null>(null);
+  const focusListFilterWrapRef = useRef<HTMLDivElement | null>(null);
+  const focusListFilterMenuRef = useRef<HTMLDivElement | null>(null);
 
   // ✅ helpers for open / close / duplicate / edit save
   const openTaskMenu = useCallback((e: React.MouseEvent, task: Task) => {
@@ -732,6 +725,10 @@ export default function TasksApp({
   }, []);
 
   const [filterMenuPos, setFilterMenuPos] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
+  const [listFilterMenuPos, setListFilterMenuPos] = useState<{
     top: number;
     left: number;
   } | null>(null);
@@ -1066,30 +1063,20 @@ export default function TasksApp({
           !["my-day", "important", "planned", "assigned"].includes(list),
       );
 
-    return Array.from(new Set([...storedLists, ...discoveredLists])).sort(
-      (a, b) => labelForList(a).localeCompare(labelForList(b)),
-    );
-  }, [currentUserId, showFocusFilter, tasks]);
+    return [
+      ...storedLists,
+      ...Array.from(new Set(discoveredLists))
+        .filter((list) => !storedLists.includes(list))
+        .sort((a, b) => labelForList(a).localeCompare(labelForList(b))),
+    ];
+  }, [currentUserId, showFocusListFilter, tasks]);
   const focusCustomListIcons = useMemo(
     () => loadStoredCustomListIcons(currentUserId),
-    [currentUserId, showFocusFilter],
+    [currentUserId, showFocusListFilter],
   );
   const focusListOptions = useMemo(
     () => [
       { id: "all", label: "All lists", icon: CUSTOM_LIST_ICON },
-      { id: "my-day", label: "My Day", icon: PLAN_SIDEBAR_ICONS["my-day"] },
-      {
-        id: "important",
-        label: "Important",
-        icon: PLAN_SIDEBAR_ICONS.important,
-      },
-      { id: "planned", label: "Planned", icon: PLAN_SIDEBAR_ICONS.planned },
-      {
-        id: "assigned",
-        label: "Assigned to me",
-        icon: PLAN_SIDEBAR_ICONS.assigned,
-      },
-      { id: "tasks", label: "Tasks", icon: PLAN_SIDEBAR_ICONS.tasks },
       ...focusCustomLists.map((list) => ({
         id: list,
         label: labelForList(list),
@@ -1098,6 +1085,15 @@ export default function TasksApp({
     ],
     [focusCustomListIcons, focusCustomLists],
   );
+
+  useEffect(() => {
+    if (
+      focusListFilter !== "all" &&
+      !focusCustomLists.includes(focusListFilter)
+    ) {
+      setFocusListFilter("all");
+    }
+  }, [focusCustomLists, focusListFilter]);
 
   const filtered = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -1144,7 +1140,7 @@ export default function TasksApp({
             : isOverdue;
 
       const matchesHideCompleted = hideCompleted ? t.status !== "done" : true;
-      const matchesList = isTaskInListView(t, focusListFilter, todayISO);
+      const matchesList = isTaskInCustomList(t, focusListFilter);
 
       return matchesStatus && matchesFocus && matchesHideCompleted && matchesList;
     });
@@ -1933,40 +1929,61 @@ export default function TasksApp({
   }, [authed]);
 
   useEffect(() => {
-    if (!showFocusFilter) return;
+    if (!showFocusFilter && !showFocusListFilter) return;
 
     function handleOutsideClick(event: PointerEvent) {
       const target = event.target as Node;
 
       if (focusFilterWrapRef.current?.contains(target)) return;
       if (focusFilterMenuRef.current?.contains(target)) return;
+      if (focusListFilterWrapRef.current?.contains(target)) return;
+      if (focusListFilterMenuRef.current?.contains(target)) return;
 
       setShowFocusFilter(false);
+      setShowFocusListFilter(false);
     }
 
     function handleEscape(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setShowFocusFilter(false);
+        setShowFocusListFilter(false);
       }
     }
 
     function handleViewportChange() {
       setShowFocusFilter(false);
+      setShowFocusListFilter(false);
     }
 
     function handleViewportScroll(event: Event) {
       const target = event.target as Node;
 
-      if (focusFilterMenuRef.current?.contains(target)) return;
+      if (
+        focusFilterMenuRef.current?.contains(target) ||
+        focusListFilterMenuRef.current?.contains(target)
+      ) {
+        return;
+      }
 
       handleViewportChange();
     }
 
     function handleDropdownOpened(event: Event) {
       const customEvent = event as CustomEvent<{ id?: string }>;
-      if (customEvent.detail?.id === TASKS_FILTER_DROPDOWN_ID) return;
+      const dropdownId = customEvent.detail?.id;
+
+      if (dropdownId === TASKS_FILTER_DROPDOWN_ID) {
+        setShowFocusListFilter(false);
+        return;
+      }
+
+      if (dropdownId === TASKS_LIST_DROPDOWN_ID) {
+        setShowFocusFilter(false);
+        return;
+      }
 
       setShowFocusFilter(false);
+      setShowFocusListFilter(false);
     }
 
     document.addEventListener("pointerdown", handleOutsideClick, true);
@@ -1988,7 +2005,7 @@ export default function TasksApp({
         handleDropdownOpened as EventListener,
       );
     };
-  }, [showFocusFilter]);
+  }, [showFocusFilter, showFocusListFilter]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -2263,8 +2280,8 @@ export default function TasksApp({
   const activeFocusFilterCount =
     (hideCompleted ? 1 : 0) +
     (focusFilter === "today" ? 1 : 0) +
-    (focusFilter === "overdue" ? 1 : 0) +
-    (focusListFilter === "all" ? 0 : 1);
+    (focusFilter === "overdue" ? 1 : 0);
+  const activeFocusListFilterCount = focusListFilter === "all" ? 0 : 1;
 
   return (
     <div ref={pageRef} className="lo-tasks">
@@ -2321,7 +2338,7 @@ export default function TasksApp({
                       );
 
                       const maxMenuHeight = Math.min(
-                        520,
+                        150,
                         window.innerHeight - viewportPadding * 2,
                       );
                       const nextTop = Math.max(
@@ -2376,7 +2393,7 @@ export default function TasksApp({
                         position: "fixed",
                         top: filterMenuPos.top,
                         left: filterMenuPos.left,
-                        zIndex: 9999,
+                        zIndex: 10080,
                       }}
                       onClick={(e) => e.stopPropagation()}
                     >
@@ -2418,9 +2435,91 @@ export default function TasksApp({
                           <span>Overdue</span>
                         </label>
                       </div>
+                    </div>,
+                    document.body,
+                  )}
 
-                      <div className="lo-filter-group lo-filter-group--lists">
-                        <div className="lo-filter-label">List:</div>
+                <div
+                  ref={focusListFilterWrapRef}
+                  className="lo-filter-dropdown"
+                >
+                  <button
+                    type="button"
+                    className={`lo-dropdown-trigger lo-window-filter--button ${showFocusListFilter ? "is-open" : ""}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+
+                      const rect = (
+                        e.currentTarget as HTMLElement
+                      ).getBoundingClientRect();
+                      const menuWidth = 200;
+                      const viewportPadding = 10;
+                      const maxMenuHeight = Math.min(
+                        290,
+                        window.innerHeight - viewportPadding * 2,
+                      );
+                      const nextLeft = Math.min(
+                        Math.max(viewportPadding, rect.right - menuWidth),
+                        window.innerWidth - menuWidth - viewportPadding,
+                      );
+                      const nextTop = Math.max(
+                        viewportPadding,
+                        Math.min(
+                          rect.bottom + 6,
+                          window.innerHeight - maxMenuHeight - viewportPadding,
+                        ),
+                      );
+
+                      setListFilterMenuPos({
+                        top: nextTop,
+                        left: nextLeft,
+                      });
+
+                      const nextOpen = !showFocusListFilter;
+
+                      if (nextOpen) {
+                        window.dispatchEvent(
+                          new CustomEvent("lifeos:dropdown-opened", {
+                            detail: { id: TASKS_LIST_DROPDOWN_ID },
+                          }),
+                        );
+                      }
+
+                      setShowFocusListFilter(nextOpen);
+                    }}
+                    aria-label="Filter by list"
+                    aria-expanded={showFocusListFilter}
+                  >
+                    <span className="lo-window-filter__label">
+                      Lists
+                      {activeFocusListFilterCount > 0 ? (
+                        <span className="lo-window-filter__count">
+                          {activeFocusListFilterCount}
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="lo-dropdown-caret" aria-hidden="true">
+                      {"\u25BE"}
+                    </span>
+                  </button>
+                </div>
+
+                {showFocusListFilter &&
+                  listFilterMenuPos &&
+                  createPortal(
+                    <div
+                      ref={focusListFilterMenuRef}
+                      className="lo-filter-menu lo-list-filter-menu"
+                      style={{
+                        position: "fixed",
+                        top: listFilterMenuPos.top,
+                        left: listFilterMenuPos.left,
+                        zIndex: 10080,
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="lo-filter-group">
+                        <div className="lo-filter-label">Lists:</div>
                         <div className="lo-filter-list-options">
                           {focusListOptions.map((option) => (
                             <label
@@ -2447,10 +2546,15 @@ export default function TasksApp({
                                 className="lo-filter-option__selected"
                                 aria-hidden="true"
                               >
-                                {"✓"}
+                                {"\u2713"}
                               </span>
                             </label>
                           ))}
+                          {focusCustomLists.length === 0 ? (
+                            <div className="lo-filter-list-empty">
+                              No custom lists yet
+                            </div>
+                          ) : null}
                         </div>
                       </div>
                     </div>,

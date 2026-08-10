@@ -5277,18 +5277,22 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   color: inherit;
 }
 
-.lo-filter-group--lists {
-  margin-top: 6px;
-  padding-top: 6px;
-  border-top: 1px solid var(--shell-border);
-}
-
 .lo-filter-list-options {
   display: grid;
   gap: 2px;
   max-height: 240px;
   overflow-y: auto;
   overscroll-behavior: contain;
+}
+
+.lo-list-filter-menu {
+  max-height: min(290px, calc(100vh - 20px));
+}
+
+.lo-filter-list-empty {
+  padding: 7px 8px 5px;
+  color: var(--shell-muted);
+  font-size: 12px;
 }
 
 .lo-filter-option--list {
