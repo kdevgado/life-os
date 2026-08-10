@@ -7008,6 +7008,7 @@ function TaskSection({
     taskId: string;
     edge: "before" | "after";
   } | null>(null);
+  const draggingTaskIdRef = React.useRef<string | null>(null);
   const dragPreviewRef = React.useRef<HTMLDivElement | null>(null);
 
   React.useEffect(
@@ -7039,48 +7040,111 @@ function TaskSection({
 
   function resetBoardDrag() {
     removeBoardDragPreview();
+    draggingTaskIdRef.current = null;
     setDraggingTaskId(null);
     setDropTarget(null);
   }
 
   function getBoardDragTaskId(dataTransfer: DataTransfer) {
-    return draggingTaskId || dataTransfer.getData(PLAN_TASK_REORDER_MIME) || null;
+    return (
+      draggingTaskIdRef.current ||
+      dataTransfer.getData(PLAN_TASK_REORDER_MIME) ||
+      null
+    );
   }
 
-  function handleBoardDragOver(e: React.DragEvent, targetTaskId: string) {
+  function findBoardDropTarget(
+    taskList: HTMLElement,
+    clientY: number,
+    sourceTaskId: string,
+  ) {
+    const cards = Array.from(
+      taskList.querySelectorAll<HTMLElement>("[data-board-task-id]"),
+    ).filter((card) => card.dataset.boardTaskId !== sourceTaskId);
+
+    if (cards.length === 0) return null;
+
+    let previousCard: HTMLElement | null = null;
+    let previousBounds: DOMRect | null = null;
+
+    for (const card of cards) {
+      const bounds = card.getBoundingClientRect();
+      const taskId = card.dataset.boardTaskId;
+      if (!taskId) continue;
+
+      if (clientY < bounds.top) {
+        if (!previousCard || !previousBounds) {
+          return { taskId, edge: "before" as const };
+        }
+
+        const previousTaskId = previousCard.dataset.boardTaskId;
+        const gapMidpoint =
+          previousBounds.bottom + (bounds.top - previousBounds.bottom) / 2;
+
+        return clientY < gapMidpoint && previousTaskId
+          ? { taskId: previousTaskId, edge: "after" as const }
+          : { taskId, edge: "before" as const };
+      }
+
+      if (clientY <= bounds.bottom) {
+        return {
+          taskId,
+          edge:
+            clientY < bounds.top + bounds.height / 2
+              ? ("before" as const)
+              : ("after" as const),
+        };
+      }
+
+      previousCard = card;
+      previousBounds = bounds;
+    }
+
+    const lastTaskId = previousCard?.dataset.boardTaskId;
+    return lastTaskId
+      ? { taskId: lastTaskId, edge: "after" as const }
+      : null;
+  }
+
+  function handleBoardListDragOver(e: React.DragEvent<HTMLDivElement>) {
     if (!canReorder || !onReorder) return;
     if (!Array.from(e.dataTransfer.types).includes(PLAN_TASK_REORDER_MIME)) {
       return;
     }
 
     const sourceTaskId = getBoardDragTaskId(e.dataTransfer);
-    if (
-      !sourceTaskId ||
-      sourceTaskId === targetTaskId ||
-      !tasks.some((task) => task.id === sourceTaskId)
-    ) {
-      setDropTarget(null);
-      return;
-    }
+    if (!sourceTaskId || !tasks.some((task) => task.id === sourceTaskId)) return;
+
+    const nextDropTarget = findBoardDropTarget(
+      e.currentTarget,
+      e.clientY,
+      sourceTaskId,
+    );
+    if (!nextDropTarget) return;
 
     e.preventDefault();
     e.stopPropagation();
     e.dataTransfer.dropEffect = "move";
-
-    const bounds = e.currentTarget.getBoundingClientRect();
-    const edge = e.clientY < bounds.top + bounds.height / 2 ? "before" : "after";
     setDropTarget((current) =>
-      current?.taskId === targetTaskId && current.edge === edge
+      current?.taskId === nextDropTarget.taskId &&
+      current.edge === nextDropTarget.edge
         ? current
-        : { taskId: targetTaskId, edge },
+        : nextDropTarget,
     );
   }
 
-  function handleBoardDrop(e: React.DragEvent, targetTaskId: string) {
+  function handleBoardListDrop(e: React.DragEvent<HTMLDivElement>) {
     if (!canReorder || !onReorder) return;
 
     const sourceTaskId = getBoardDragTaskId(e.dataTransfer);
-    if (!sourceTaskId || sourceTaskId === targetTaskId) {
+    if (!sourceTaskId) {
+      resetBoardDrag();
+      return;
+    }
+
+    const nextDropTarget =
+      findBoardDropTarget(e.currentTarget, e.clientY, sourceTaskId) ?? dropTarget;
+    if (!nextDropTarget) {
       resetBoardDrag();
       return;
     }
@@ -7096,14 +7160,16 @@ function TaskSection({
 
     const reordered = [...tasks];
     const [movingTask] = reordered.splice(sourceIndex, 1);
-    const targetIndex = reordered.findIndex((task) => task.id === targetTaskId);
+    const targetIndex = reordered.findIndex(
+      (task) => task.id === nextDropTarget.taskId,
+    );
     if (!movingTask || targetIndex < 0) {
       resetBoardDrag();
       return;
     }
 
-    const edge = dropTarget?.taskId === targetTaskId ? dropTarget.edge : "before";
-    const insertIndex = edge === "after" ? targetIndex + 1 : targetIndex;
+    const insertIndex =
+      nextDropTarget.edge === "after" ? targetIndex + 1 : targetIndex;
     reordered.splice(insertIndex, 0, movingTask);
     onReorder(reordered.map((task) => task.id));
     resetBoardDrag();
@@ -7111,7 +7177,11 @@ function TaskSection({
 
   return (
     <section className="lo-stack">
-      <div className="lo-tasklist lo-stack">
+      <div
+        className="lo-tasklist lo-stack"
+        onDragOver={handleBoardListDragOver}
+        onDrop={handleBoardListDrop}
+      >
         {tasks.map((task) => {
           const isNew = task.id === justAddedId;
           const listLabel = labelForTaskList(task);
@@ -7131,6 +7201,7 @@ function TaskSection({
           return (
             <Card
               key={task.id}
+              data-board-task-id={task.id}
               className={`lo-task ${task.status === "done" ? "is-done" : ""} ${isNew ? "is-new" : ""} ${canReorder ? "is-board-reorderable" : ""} ${draggingTaskId === task.id ? "is-board-dragging" : ""} ${boardDropEdge ? `is-board-drop-${boardDropEdge}` : ""}`}
               draggable={task.title.trim() !== ""}
               onContextMenu={(e) => onOpenTaskMenu(e, task)}
@@ -7149,11 +7220,10 @@ function TaskSection({
                 setBoardDragPreview(e, task);
                 if (canReorder && onReorder) {
                   e.dataTransfer.setData(PLAN_TASK_REORDER_MIME, task.id);
+                  draggingTaskIdRef.current = task.id;
                   setDraggingTaskId(task.id);
                 }
               }}
-              onDragOver={(e) => handleBoardDragOver(e, task.id)}
-              onDrop={(e) => handleBoardDrop(e, task.id)}
               onDragEnd={resetBoardDrag}
             >
               <div className="lo-task-row">
