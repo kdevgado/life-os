@@ -270,7 +270,20 @@ const TASKS_LIST_DROPDOWN_ID = "tasks-list-filter";
 const TASK_REMINDER_FIRED_KEY = "lifeos_task_reminders_fired_v1";
 const CUSTOM_LISTS_KEY = "lifeos_task_custom_lists_v1";
 const CUSTOM_LIST_ICONS_KEY = "lifeos_task_custom_list_icons_v1";
+const FOCUS_VIEW_STATE_KEY = "lifeos_focus_task_filters_v1";
 const SUGGESTION_PREVIEW_LIMIT = 4;
+
+type StoredFocusViewState = {
+  focusFilter: FocusFilter;
+  focusListFilter: string;
+  hideCompleted: boolean;
+};
+
+const DEFAULT_FOCUS_VIEW_STATE: StoredFocusViewState = {
+  focusFilter: "all",
+  focusListFilter: "all",
+  hideCompleted: false,
+};
 
 function customListsStorageKey(userId?: string | null) {
   return userId ? `${CUSTOM_LISTS_KEY}:${userId}` : CUSTOM_LISTS_KEY;
@@ -278,6 +291,48 @@ function customListsStorageKey(userId?: string | null) {
 
 function customListIconsStorageKey(userId?: string | null) {
   return userId ? `${CUSTOM_LIST_ICONS_KEY}:${userId}` : CUSTOM_LIST_ICONS_KEY;
+}
+
+function focusViewStateStorageKey(userId?: string | null) {
+  return userId ? `${FOCUS_VIEW_STATE_KEY}:${userId}` : FOCUS_VIEW_STATE_KEY;
+}
+
+function loadStoredFocusViewState(
+  userId?: string | null,
+): StoredFocusViewState {
+  if (typeof window === "undefined") return DEFAULT_FOCUS_VIEW_STATE;
+
+  try {
+    const raw = window.localStorage.getItem(focusViewStateStorageKey(userId));
+    const parsed = raw ? JSON.parse(raw) : {};
+    const focusFilter: FocusFilter =
+      parsed?.focusFilter === "today" || parsed?.focusFilter === "overdue"
+        ? parsed.focusFilter
+        : "all";
+
+    return {
+      focusFilter,
+      focusListFilter:
+        typeof parsed?.focusListFilter === "string" &&
+        parsed.focusListFilter.length > 0
+          ? parsed.focusListFilter
+          : "all",
+      hideCompleted: parsed?.hideCompleted === true,
+    };
+  } catch {
+    return DEFAULT_FOCUS_VIEW_STATE;
+  }
+}
+
+function saveStoredFocusViewState(
+  state: StoredFocusViewState,
+  userId?: string | null,
+) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(
+    focusViewStateStorageKey(userId),
+    JSON.stringify(state),
+  );
 }
 
 function loadStoredCustomLists(userId?: string | null): string[] {
@@ -667,6 +722,7 @@ export default function TasksApp({
   const [authed, setAuthed] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const ignoreNextSaveRef = useRef(false);
+  const skipFocusViewStateSaveRef = useRef(true);
   const serverMetaRef = useRef<ResourceMeta>(EMPTY_RESOURCE_META);
 
   // ✅ error handling for load
@@ -1104,6 +1160,30 @@ export default function TasksApp({
     ],
     [focusCustomListIcons, focusCustomLists],
   );
+
+  useEffect(() => {
+    const storedState = loadStoredFocusViewState(currentUserId);
+    skipFocusViewStateSaveRef.current = true;
+    setFocusFilter(storedState.focusFilter);
+    setFocusListFilter(storedState.focusListFilter);
+    setHideCompleted(storedState.hideCompleted);
+  }, [currentUserId]);
+
+  useEffect(() => {
+    if (skipFocusViewStateSaveRef.current) {
+      skipFocusViewStateSaveRef.current = false;
+      return;
+    }
+
+    try {
+      saveStoredFocusViewState(
+        { focusFilter, focusListFilter, hideCompleted },
+        currentUserId,
+      );
+    } catch {
+      // Keep the current in-memory filters if local storage is unavailable.
+    }
+  }, [currentUserId, focusFilter, focusListFilter, hideCompleted]);
 
   useEffect(() => {
     if (
