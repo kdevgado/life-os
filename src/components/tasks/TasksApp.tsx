@@ -1558,6 +1558,35 @@ export default function TasksApp({
     });
   }
 
+  function reorderPlanTasks(orderedTaskIds: string[]) {
+    setTasks((prev) => {
+      const orderedIds = orderedTaskIds.filter(
+        (id, index) =>
+          orderedTaskIds.indexOf(id) === index &&
+          prev.some((task) => task.id === id),
+      );
+
+      if (orderedIds.length < 2) return prev;
+
+      const orderedIdSet = new Set(orderedIds);
+      const currentIds = prev
+        .filter((task) => orderedIdSet.has(task.id))
+        .map((task) => task.id);
+
+      if (currentIds.every((id, index) => id === orderedIds[index])) return prev;
+
+      const tasksById = new Map(prev.map((task) => [task.id, task]));
+      const reorderedTasks = orderedIds
+        .map((id) => tasksById.get(id))
+        .filter((task): task is Task => !!task);
+      let reorderedIndex = 0;
+
+      return prev.map((task) =>
+        orderedIdSet.has(task.id) ? reorderedTasks[reorderedIndex++] : task,
+      );
+    });
+  }
+
   function broadcastTaskStatus(
     taskId: string,
     status: "todo" | "doing" | "done",
@@ -2364,6 +2393,7 @@ export default function TasksApp({
           onDuplicateTaskList={onDuplicateTaskList}
           onDeleteTaskList={onDeleteTaskList}
           onRenameTaskList={onRenameTaskList}
+          onReorderTasks={reorderPlanTasks}
           currentUserId={currentUserId}
           todayISO={todayISO}
         />
@@ -3151,6 +3181,7 @@ function isAllowedCustomListIcon(icon: string) {
 }
 
 type BoardSortMode = "importance" | "due-date" | "alphabetical" | "creation-date";
+const PLAN_TASK_REORDER_MIME = "application/x-lifeos-plan-reorder";
 
 const BOARD_SORT_OPTIONS: Array<{
   mode: BoardSortMode;
@@ -3227,6 +3258,7 @@ function PlanTasksView({
   onDuplicateTaskList,
   onDeleteTaskList,
   onRenameTaskList,
+  onReorderTasks,
   currentUserId,
   todayISO,
 }: {
@@ -3267,6 +3299,7 @@ function PlanTasksView({
   onDuplicateTaskList: (sourceList: string, newList: string) => void;
   onDeleteTaskList: (list: string) => void;
   onRenameTaskList: (oldList: string, newList: string) => void;
+  onReorderTasks: (orderedTaskIds: string[]) => void;
   currentUserId: string | null;
   todayISO: string;
 }) {
@@ -5245,6 +5278,8 @@ function PlanTasksView({
                   onOpenTaskMenu={openBoardTaskMenu}
                   onOpenTaskDetails={openTaskDetails}
                   onTokenClick={openTitleToken}
+                  canReorder={boardSortMode === null}
+                  onReorder={onReorderTasks}
                 />
               </React.Fragment>
             ))}
@@ -5262,6 +5297,8 @@ function PlanTasksView({
             onOpenTaskMenu={openBoardTaskMenu}
             onOpenTaskDetails={openTaskDetails}
             onTokenClick={openTitleToken}
+            canReorder={boardSortMode === null}
+            onReorder={onReorderTasks}
           />
         )}
 
@@ -6872,6 +6909,8 @@ function PlannedTaskGroup({
   onOpenTaskMenu,
   onOpenTaskDetails,
   onTokenClick,
+  canReorder,
+  onReorder,
 }: {
   title: string;
   tasks: Task[];
@@ -6886,6 +6925,8 @@ function PlannedTaskGroup({
   onOpenTaskMenu: (e: React.MouseEvent, task: Task) => void;
   onOpenTaskDetails: (task: Task) => void;
   onTokenClick: (token: string) => void;
+  canReorder: boolean;
+  onReorder: (orderedTaskIds: string[]) => void;
 }) {
   return (
     <section className="lo-planned-group lo-stack">
@@ -6917,6 +6958,8 @@ function PlannedTaskGroup({
           onOpenTaskMenu={onOpenTaskMenu}
           onOpenTaskDetails={onOpenTaskDetails}
           onTokenClick={onTokenClick}
+          canReorder={canReorder}
+          onReorder={onReorder}
         />
       ) : null}
     </section>
@@ -6936,6 +6979,8 @@ function TaskSection({
   onOpenTaskMenu,
   onOpenTaskDetails,
   onTokenClick,
+  canReorder = false,
+  onReorder,
 }: {
   title: string;
   showTitle?: boolean;
@@ -6949,7 +6994,85 @@ function TaskSection({
   onOpenTaskMenu: (e: React.MouseEvent, task: Task) => void;
   onOpenTaskDetails: (task: Task) => void;
   onTokenClick: (token: string) => void;
+  canReorder?: boolean;
+  onReorder?: (orderedTaskIds: string[]) => void;
 }) {
+  const [draggingTaskId, setDraggingTaskId] = React.useState<string | null>(null);
+  const [dropTarget, setDropTarget] = React.useState<{
+    taskId: string;
+    edge: "before" | "after";
+  } | null>(null);
+
+  function resetBoardDrag() {
+    setDraggingTaskId(null);
+    setDropTarget(null);
+  }
+
+  function getBoardDragTaskId(dataTransfer: DataTransfer) {
+    return draggingTaskId || dataTransfer.getData(PLAN_TASK_REORDER_MIME) || null;
+  }
+
+  function handleBoardDragOver(e: React.DragEvent, targetTaskId: string) {
+    if (!canReorder || !onReorder) return;
+    if (!Array.from(e.dataTransfer.types).includes(PLAN_TASK_REORDER_MIME)) {
+      return;
+    }
+
+    const sourceTaskId = getBoardDragTaskId(e.dataTransfer);
+    if (
+      !sourceTaskId ||
+      sourceTaskId === targetTaskId ||
+      !tasks.some((task) => task.id === sourceTaskId)
+    ) {
+      setDropTarget(null);
+      return;
+    }
+
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "move";
+
+    const bounds = e.currentTarget.getBoundingClientRect();
+    const edge = e.clientY < bounds.top + bounds.height / 2 ? "before" : "after";
+    setDropTarget((current) =>
+      current?.taskId === targetTaskId && current.edge === edge
+        ? current
+        : { taskId: targetTaskId, edge },
+    );
+  }
+
+  function handleBoardDrop(e: React.DragEvent, targetTaskId: string) {
+    if (!canReorder || !onReorder) return;
+
+    const sourceTaskId = getBoardDragTaskId(e.dataTransfer);
+    if (!sourceTaskId || sourceTaskId === targetTaskId) {
+      resetBoardDrag();
+      return;
+    }
+
+    const sourceIndex = tasks.findIndex((task) => task.id === sourceTaskId);
+    if (sourceIndex < 0) {
+      resetBoardDrag();
+      return;
+    }
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const reordered = [...tasks];
+    const [movingTask] = reordered.splice(sourceIndex, 1);
+    const targetIndex = reordered.findIndex((task) => task.id === targetTaskId);
+    if (!movingTask || targetIndex < 0) {
+      resetBoardDrag();
+      return;
+    }
+
+    const edge = dropTarget?.taskId === targetTaskId ? dropTarget.edge : "before";
+    const insertIndex = edge === "after" ? targetIndex + 1 : targetIndex;
+    reordered.splice(insertIndex, 0, movingTask);
+    onReorder(reordered.map((task) => task.id));
+    resetBoardDrag();
+  }
 
   return (
     <section className="lo-stack">
@@ -6969,25 +7092,35 @@ function TaskSection({
             task.priority === 1 ? "high" : task.priority === 2 ? "med" : "low";
 
           return (
-            <Card
-              key={task.id}
-              className={`lo-task ${task.status === "done" ? "is-done" : ""} ${isNew ? "is-new" : ""}`}
-              draggable={task.title.trim() !== ""}
-              onContextMenu={(e) => onOpenTaskMenu(e, task)}
-              onClick={() => onOpenTaskDetails(task)}
-              onDragStart={(e) => {
-                if (!task.title.trim()) return;
-                e.dataTransfer.effectAllowed = "move";
-                e.dataTransfer.setData(
-                  "application/x-lifeos-task",
-                  JSON.stringify({
-                    id: task.id,
-                    title: task.title,
-                  }),
-                );
-                e.dataTransfer.setData("text/plain", task.title);
-              }}
-            >
+            <React.Fragment key={task.id}>
+              {dropTarget?.taskId === task.id && dropTarget.edge === "before" ? (
+                <div className="lo-task-drop-indicator" aria-hidden="true" />
+              ) : null}
+              <Card
+                className={`lo-task ${task.status === "done" ? "is-done" : ""} ${isNew ? "is-new" : ""} ${canReorder ? "is-board-reorderable" : ""} ${draggingTaskId === task.id ? "is-board-dragging" : ""}`}
+                draggable={task.title.trim() !== ""}
+                onContextMenu={(e) => onOpenTaskMenu(e, task)}
+                onClick={() => onOpenTaskDetails(task)}
+                onDragStart={(e) => {
+                  if (!task.title.trim()) return;
+                  e.dataTransfer.effectAllowed = "move";
+                  e.dataTransfer.setData(
+                    "application/x-lifeos-task",
+                    JSON.stringify({
+                      id: task.id,
+                      title: task.title,
+                    }),
+                  );
+                  e.dataTransfer.setData("text/plain", task.title);
+                  if (canReorder && onReorder) {
+                    e.dataTransfer.setData(PLAN_TASK_REORDER_MIME, task.id);
+                    setDraggingTaskId(task.id);
+                  }
+                }}
+                onDragOver={(e) => handleBoardDragOver(e, task.id)}
+                onDrop={(e) => handleBoardDrop(e, task.id)}
+                onDragEnd={resetBoardDrag}
+              >
               <div className="lo-task-row">
                 <button
                   type="button"
@@ -7087,7 +7220,14 @@ function TaskSection({
                   ⋯
                 </button>
               </div>
-            </Card>
+              </Card>
+              {dropTarget?.taskId === task.id && dropTarget.edge === "after" ? (
+                <div
+                  className="lo-task-drop-indicator lo-task-drop-indicator--end"
+                  aria-hidden="true"
+                />
+              ) : null}
+            </React.Fragment>
           );
         })}
       </div>

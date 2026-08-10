@@ -399,6 +399,18 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   padding: .85rem 1rem;
 }
 
+.lo-task.is-board-reorderable {
+  cursor: grab;
+}
+
+.lo-task.is-board-reorderable:active {
+  cursor: grabbing;
+}
+
+.lo-task.is-board-dragging {
+  opacity: .5;
+}
+
 .lo-task-row {
   display: flex;
   grid-template-columns: 22px 1fr auto;
