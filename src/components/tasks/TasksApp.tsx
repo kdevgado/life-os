@@ -7096,37 +7096,36 @@ function TaskSection({
             task.priority === 1 ? "High" : task.priority === 2 ? "Med" : "Low";
           const priClass =
             task.priority === 1 ? "high" : task.priority === 2 ? "med" : "low";
+          const boardDropEdge =
+            dropTarget?.taskId === task.id ? dropTarget.edge : null;
 
           return (
-            <React.Fragment key={task.id}>
-              {dropTarget?.taskId === task.id && dropTarget.edge === "before" ? (
-                <div className="lo-task-drop-indicator" aria-hidden="true" />
-              ) : null}
-              <Card
-                className={`lo-task ${task.status === "done" ? "is-done" : ""} ${isNew ? "is-new" : ""} ${canReorder ? "is-board-reorderable" : ""} ${draggingTaskId === task.id ? "is-board-dragging" : ""}`}
-                draggable={task.title.trim() !== ""}
-                onContextMenu={(e) => onOpenTaskMenu(e, task)}
-                onClick={() => onOpenTaskDetails(task)}
-                onDragStart={(e) => {
-                  if (!task.title.trim()) return;
-                  e.dataTransfer.effectAllowed = "move";
-                  e.dataTransfer.setData(
-                    "application/x-lifeos-task",
-                    JSON.stringify({
-                      id: task.id,
-                      title: task.title,
-                    }),
-                  );
-                  e.dataTransfer.setData("text/plain", task.title);
-                  if (canReorder && onReorder) {
-                    e.dataTransfer.setData(PLAN_TASK_REORDER_MIME, task.id);
-                    setDraggingTaskId(task.id);
-                  }
-                }}
-                onDragOver={(e) => handleBoardDragOver(e, task.id)}
-                onDrop={(e) => handleBoardDrop(e, task.id)}
-                onDragEnd={resetBoardDrag}
-              >
+            <Card
+              key={task.id}
+              className={`lo-task ${task.status === "done" ? "is-done" : ""} ${isNew ? "is-new" : ""} ${canReorder ? "is-board-reorderable" : ""} ${draggingTaskId === task.id ? "is-board-dragging" : ""} ${boardDropEdge ? `is-board-drop-${boardDropEdge}` : ""}`}
+              draggable={task.title.trim() !== ""}
+              onContextMenu={(e) => onOpenTaskMenu(e, task)}
+              onClick={() => onOpenTaskDetails(task)}
+              onDragStart={(e) => {
+                if (!task.title.trim()) return;
+                e.dataTransfer.effectAllowed = "move";
+                e.dataTransfer.setData(
+                  "application/x-lifeos-task",
+                  JSON.stringify({
+                    id: task.id,
+                    title: task.title,
+                  }),
+                );
+                e.dataTransfer.setData("text/plain", task.title);
+                if (canReorder && onReorder) {
+                  e.dataTransfer.setData(PLAN_TASK_REORDER_MIME, task.id);
+                  setDraggingTaskId(task.id);
+                }
+              }}
+              onDragOver={(e) => handleBoardDragOver(e, task.id)}
+              onDrop={(e) => handleBoardDrop(e, task.id)}
+              onDragEnd={resetBoardDrag}
+            >
               <div className="lo-task-row">
                 <button
                   type="button"
@@ -7226,14 +7225,7 @@ function TaskSection({
                   ⋯
                 </button>
               </div>
-              </Card>
-              {dropTarget?.taskId === task.id && dropTarget.edge === "after" ? (
-                <div
-                  className="lo-task-drop-indicator lo-task-drop-indicator--end"
-                  aria-hidden="true"
-                />
-              ) : null}
-            </React.Fragment>
+            </Card>
           );
         })}
       </div>
