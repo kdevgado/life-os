@@ -212,6 +212,23 @@ function isTaskInCustomList(task: Task, list: string) {
   return task.list === list;
 }
 
+function getFocusDropdownZIndex() {
+  if (typeof document === "undefined") return 10080;
+
+  const highestWindowZIndex = Array.from(
+    document.querySelectorAll<HTMLElement>(".lo-window"),
+  ).reduce((highest, windowElement) => {
+    const zIndex = Number.parseInt(
+      window.getComputedStyle(windowElement).zIndex,
+      10,
+    );
+
+    return Number.isFinite(zIndex) ? Math.max(highest, zIndex) : highest;
+  }, 0);
+
+  return Math.max(10080, highestWindowZIndex + 1000);
+}
+
 function getSchedulePatchDateKey(patch: Partial<Task>) {
   const raw =
     patch.dueDate ?? patch.plannedFor ?? patch.plannedStart ?? patch.plannedEnd;
@@ -727,10 +744,12 @@ export default function TasksApp({
   const [filterMenuPos, setFilterMenuPos] = useState<{
     top: number;
     left: number;
+    zIndex: number;
   } | null>(null);
   const [listFilterMenuPos, setListFilterMenuPos] = useState<{
     top: number;
     left: number;
+    zIndex: number;
   } | null>(null);
 
   const closeTaskMenu = useCallback(() => {
@@ -2352,6 +2371,7 @@ export default function TasksApp({
                       setFilterMenuPos({
                         top: nextTop,
                         left: nextLeft,
+                        zIndex: getFocusDropdownZIndex(),
                       });
 
                       const nextOpen = !showFocusFilter;
@@ -2393,7 +2413,7 @@ export default function TasksApp({
                         position: "fixed",
                         top: filterMenuPos.top,
                         left: filterMenuPos.left,
-                        zIndex: 10080,
+                        zIndex: filterMenuPos.zIndex,
                       }}
                       onClick={(e) => e.stopPropagation()}
                     >
@@ -2473,6 +2493,7 @@ export default function TasksApp({
                       setListFilterMenuPos({
                         top: nextTop,
                         left: nextLeft,
+                        zIndex: getFocusDropdownZIndex(),
                       });
 
                       const nextOpen = !showFocusListFilter;
@@ -2514,7 +2535,7 @@ export default function TasksApp({
                         position: "fixed",
                         top: listFilterMenuPos.top,
                         left: listFilterMenuPos.left,
-                        zIndex: 10080,
+                        zIndex: listFilterMenuPos.zIndex,
                       }}
                       onClick={(e) => e.stopPropagation()}
                     >
