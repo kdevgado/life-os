@@ -412,6 +412,44 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   opacity: .5;
 }
 
+.lo-task-drag-preview {
+  position: fixed;
+  top: -1000px;
+  left: -1000px;
+  box-sizing: border-box;
+  min-height: 48px;
+  padding: 13px 16px 13px 42px;
+  border: 1px solid color-mix(in srgb, var(--grad3) 72%, transparent);
+  border-radius: 14px;
+  overflow: hidden;
+  color: var(--text);
+  background: color-mix(in srgb, var(--panel) 94%, #111827 6%);
+  box-shadow: 0 16px 38px rgba(0, 0, 0, .35);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.lo-task-drag-preview::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 16px;
+  width: 14px;
+  height: 14px;
+  border: 2px solid color-mix(in srgb, var(--grad3) 78%, white 22%);
+  border-radius: 50%;
+  transform: translateY(-50%);
+}
+
+.lo-task.is-board-drop-before,
+.lo-task.is-board-drop-after {
+  z-index: 3;
+}
+
 .lo-task.is-board-drop-before::before,
 .lo-task.is-board-drop-after::after {
   content: "";
@@ -427,11 +465,11 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 }
 
 .lo-task.is-board-drop-before::before {
-  top: -.42rem;
+  top: 0;
 }
 
 .lo-task.is-board-drop-after::after {
-  bottom: -.42rem;
+  bottom: 0;
 }
 
 .lo-task-row {

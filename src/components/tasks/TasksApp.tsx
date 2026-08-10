@@ -7008,8 +7008,37 @@ function TaskSection({
     taskId: string;
     edge: "before" | "after";
   } | null>(null);
+  const dragPreviewRef = React.useRef<HTMLDivElement | null>(null);
+
+  React.useEffect(
+    () => () => {
+      dragPreviewRef.current?.remove();
+    },
+    [],
+  );
+
+  function removeBoardDragPreview() {
+    dragPreviewRef.current?.remove();
+    dragPreviewRef.current = null;
+  }
+
+  function setBoardDragPreview(e: React.DragEvent, task: Task) {
+    removeBoardDragPreview();
+
+    const preview = document.createElement("div");
+    preview.className = "lo-task-drag-preview";
+    preview.textContent = task.title;
+    preview.style.width = `${Math.min(
+      Math.max(e.currentTarget.getBoundingClientRect().width * 0.55, 260),
+      460,
+    )}px`;
+    document.body.appendChild(preview);
+    e.dataTransfer.setDragImage(preview, 28, 24);
+    dragPreviewRef.current = preview;
+  }
 
   function resetBoardDrag() {
+    removeBoardDragPreview();
     setDraggingTaskId(null);
     setDropTarget(null);
   }
@@ -7117,6 +7146,7 @@ function TaskSection({
                   }),
                 );
                 e.dataTransfer.setData("text/plain", task.title);
+                setBoardDragPreview(e, task);
                 if (canReorder && onReorder) {
                   e.dataTransfer.setData(PLAN_TASK_REORDER_MIME, task.id);
                   setDraggingTaskId(task.id);
