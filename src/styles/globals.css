@@ -1015,7 +1015,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 .lo-tasks .lo-pill.med { border-color: rgba(249,115,22,.35); }
 .lo-tasks .lo-pill.high { border-color: rgba(239,68,68,.45); }
 
-/* Plan mode only: hide row actions until hover; title tokens stay visible. */
+/* Plan mode only: hide secondary row actions until hover. */
 .lo-plan-tasks-main .lo-task .lo-task-row button:not(.lo-task-title-token):not(.lo-task-check) {
   opacity: 0;
   transform: translateX(4px);
@@ -1029,7 +1029,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 }
 
 .lo-plan-tasks-main .lo-task .lo-task-row .lo-task-check {
-  opacity: 0.58;
+  opacity: 1;
   transform: none;
 }
 
