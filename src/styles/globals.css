@@ -6263,7 +6263,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 .lo-daycal__hour {
   padding-top: 4px;
   padding-right: 8px;
-  font-size: 0.7rem;
+  font-size: 0.76rem;
   text-align: left;
   font-weight: 700;
   letter-spacing: 0.01em;
@@ -6945,8 +6945,8 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   .lo-daycal__hour {
     padding-top: 3px;
     padding-right: 5px;
-    font-size: 0.62rem;
-    font-weight: 600;
+    font-size: 0.72rem;
+    font-weight: 700;
   }
 
   .lo-daycal__event {
@@ -10410,7 +10410,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
 .lo-profile-settings .lo-account-menu__field span {
   padding-left: 3px;
-  font-size: 0.7rem;
+  font-size: 0.76rem;
   font-weight: 650;
 }
 

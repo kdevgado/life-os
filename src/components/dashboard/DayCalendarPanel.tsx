@@ -809,6 +809,12 @@ export default function DayCalendarPanel({
     });
   }
 
+  function formatHour(hour: number) {
+    const d = new Date();
+    d.setHours(hour, 0, 0, 0);
+    return d.toLocaleTimeString([], { hour: "numeric" });
+  }
+
   function toQuarterMinute(minute: number): 0 | 15 | 30 | 45 {
     return clampMinuteToQuarter(Math.round(minute / 15) * 15);
   }
@@ -1725,7 +1731,7 @@ export default function DayCalendarPanel({
             {visibleHours.map((hour) => (
               <React.Fragment key={hour}>
                 <div className="lo-daycal__week-hour">
-                  {formatTime(hour, 0)}
+                  {formatHour(hour)}
                 </div>
 
                 {weekDays.map((date) => {
@@ -1823,7 +1829,7 @@ export default function DayCalendarPanel({
           <div className="lo-daycal__hours">
             {visibleHours.map((hour) => (
               <div key={hour} className="lo-daycal__hour-row">
-                <div className="lo-daycal__hour">{formatTime(hour, 0)}</div>
+                <div className="lo-daycal__hour">{formatHour(hour)}</div>
               </div>
             ))}
           </div>
