@@ -42,7 +42,10 @@ export default function PlanWorkspace() {
   }
 
   return (
-    <section className="lo-plan" aria-label="Planning workspace">
+    <section
+      className={`lo-plan lo-plan--${tab}`}
+      aria-label="Planning workspace"
+    >
       <div className="lo-plan__mobile-nav" aria-label="Planning views">
         <button
           type="button"

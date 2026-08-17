@@ -324,6 +324,11 @@ function mobileSizeFor(key: Exclude<PanelKey, null>) {
         w: Math.min(360, maxW),
         h: 260,
       };
+    case "calendar":
+      return {
+        w: Math.min(defaultSizeFor(key).w, maxW),
+        h: Math.min(defaultSizeFor(key).h, Math.max(0, window.innerHeight - 180)),
+      };
     case "tasks":
       return {
         w: Math.min(520, maxW),
@@ -1660,6 +1665,11 @@ export default function FloatingWorkspace() {
         icon: "/icons/black/timer.png",
       },
       {
+        key: "calendar" as const,
+        label: "Calendar",
+        icon: "/icons/black/calendar.png",
+      },
+      {
         key: "notes" as const,
         label: "Notes",
         icon: "/icons/black/notes.png",
@@ -2047,6 +2057,7 @@ export default function FloatingWorkspace() {
           [
             "spaces",
             "timer",
+            "calendar",
             "tasks",
             "notes",
             "tips",

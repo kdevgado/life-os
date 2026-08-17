@@ -288,6 +288,18 @@ export default function DayCalendarPanel({
     year: compact ? undefined : "numeric",
   });
   const calendarTitle = isWeekView ? weekRangeTitle : dateTitle;
+  const mobileCalendarTitle = isWeekView
+    ? "This week"
+    : selectedDate.toLocaleDateString(undefined, {
+        month: "long",
+        year: "numeric",
+      });
+  const mobileCalendarSubtitle = isWeekView
+    ? weekRangeTitle
+    : selectedDate.toLocaleDateString(undefined, {
+        weekday: "long",
+        day: "numeric",
+      });
   const gearIcon =
     theme === "nebula"
       ? "/icons/white/setting.png"
@@ -1601,9 +1613,19 @@ export default function DayCalendarPanel({
           </button>
 
           <div className="lo-daycal__titlewrap">
-            <div className="lo-daycal__title">{calendarTitle}</div>
-            <div className="lo-daycal__subtitle">
+            <div className="lo-daycal__title lo-daycal__title--desktop">
+              {calendarTitle}
+            </div>
+            <div className="lo-daycal__title lo-daycal__title--mobile">
+              {mobileCalendarTitle}
+            </div>
+            <div className="lo-daycal__subtitle lo-daycal__subtitle--desktop">
               {isWeekView ? "Week view" : dayKey === todayKey ? "Today" : "Day view"}
+            </div>
+            <div className="lo-daycal__subtitle lo-daycal__subtitle--mobile">
+              {dayKey === todayKey && !isWeekView
+                ? "Today"
+                : mobileCalendarSubtitle}
             </div>
           </div>
 
@@ -1648,6 +1670,36 @@ export default function DayCalendarPanel({
           </div>
         ) : null}
       </div>
+
+      {!isWeekView ? (
+        <div className="lo-daycal__mobile-days" aria-label="Choose a day">
+          {weekDays.map((date) => {
+            const dateKey = getDateKey(date);
+            const isSelected = dateKey === dayKey;
+            const isToday = dateKey === todayKey;
+
+            return (
+              <button
+                key={dateKey}
+                className={`lo-daycal__mobile-day ${isSelected ? "is-selected" : ""} ${isToday ? "is-today" : ""}`.trim()}
+                type="button"
+                aria-label={date.toLocaleDateString(undefined, {
+                  weekday: "long",
+                  month: "long",
+                  day: "numeric",
+                })}
+                aria-pressed={isSelected}
+                onClick={() => setSelectedDate(normalizeDate(date))}
+              >
+                <span>
+                  {date.toLocaleDateString(undefined, { weekday: "narrow" })}
+                </span>
+                <strong>{date.getDate()}</strong>
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
 
       {isWeekView ? (
         <div className="lo-daycal__week" aria-label="Weekly calendar">
@@ -1712,6 +1764,57 @@ export default function DayCalendarPanel({
                 })}
               </React.Fragment>
             ))}
+          </div>
+
+          <div className="lo-daycal__week-agenda">
+            {weekDays.map((date) => {
+              const dateKey = getDateKey(date);
+              const dateEvents = getEventsForDate(date);
+              const isToday = dateKey === todayKey;
+
+              return (
+                <section
+                  key={dateKey}
+                  className={`lo-daycal__agenda-day ${isToday ? "is-today" : ""}`}
+                  aria-labelledby={`calendar-agenda-${dateKey}`}
+                >
+                  <header className="lo-daycal__agenda-head">
+                    <div>
+                      <span>
+                        {date.toLocaleDateString(undefined, {
+                          weekday: "short",
+                        })}
+                      </span>
+                      <strong id={`calendar-agenda-${dateKey}`}>
+                        {date.toLocaleDateString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </strong>
+                    </div>
+                    {isToday ? <small>Today</small> : null}
+                  </header>
+
+                  {dateEvents.length > 0 ? (
+                    <div className="lo-daycal__agenda-events">
+                      {dateEvents.map((event) => (
+                        <article
+                          key={event.id}
+                          className={`lo-daycal__agenda-event ${event.sourceTaskStatus === "done" ? "is-done" : ""}`}
+                        >
+                          <time>
+                            {formatTime(event.startHour, event.startMinute || 0)}
+                          </time>
+                          <strong>{event.title || "New event"}</strong>
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="lo-daycal__agenda-empty">No events</p>
+                  )}
+                </section>
+              );
+            })}
           </div>
         </div>
       ) : (
@@ -1848,6 +1951,7 @@ export default function DayCalendarPanel({
                               right: "auto",
                               width: eventWidth,
                               "--daycal-line-clamp": lineClamp,
+                              "--daycal-mobile-offset": `${columnIndex * 12}px`,
                             } as React.CSSProperties
                           }
                           onClick={(e) => {
