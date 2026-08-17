@@ -7058,6 +7058,14 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   white-space: nowrap;
 }
 
+.lo-notes__save-status.is-success{
+  color: #16a34a;
+}
+
+.lo-notes__save-status.is-error{
+  color: #dc2626;
+}
+
 .lo-notes__editor{
   flex: 1 1 auto;
   min-height: 0;

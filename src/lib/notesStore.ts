@@ -81,6 +81,25 @@ export function writeLocalNotes(payload: NotesPayload) {
   } catch {}
 }
 
+export function mergeNotesPayload(
+  remote: NotesPayload,
+  local: NotesPayload,
+): NotesPayload {
+  const localById = new Map(local.notes.map((note) => [note.id, note]));
+  const remoteIds = new Set(remote.notes.map((note) => note.id));
+  const notes = [
+    ...remote.notes.map((note) => localById.get(note.id) ?? note),
+    ...local.notes.filter((note) => !remoteIds.has(note.id)),
+  ];
+  const activeId =
+    notes.find((note) => note.id === local.activeId)?.id ??
+    notes.find((note) => note.id === remote.activeId)?.id ??
+    notes[0]?.id ??
+    "";
+
+  return { notes, activeId };
+}
+
 function isNoteTab(note: unknown): note is NoteTab {
   return (
     !!note &&

@@ -2,13 +2,30 @@ import React from "react";
 import { createPortal } from "react-dom";
 import {
   createNote,
+  mergeNotesPayload,
   readLocalNotes,
   writeLocalNotes,
   type NoteTab,
+  type NotesPayload,
 } from "../../lib/notesStore";
+import { getJwt, onAuthChange } from "../../lib/identity";
+import {
+  EMPTY_RESOURCE_META,
+  fetchAuthedResource,
+  ResourceApiError,
+  saveAuthedResource,
+  type ResourceMeta,
+} from "../../lib/resourceApi";
 
 type Command = "bold" | "italic" | "insertUnorderedList" | "insertOrderedList";
+type SaveStatus = {
+  label: string;
+  tone: "pending" | "success" | "local" | "error";
+  title?: string;
+};
+
 const NOTES_DROPDOWN_ID = "notes-menu";
+const NOTES_ENDPOINT = "/.netlify/functions/notes";
 
 function ToolbarButton({
   label,
@@ -228,12 +245,17 @@ function NotesMenu({
 export default function NotesPanel() {
   const [notes, setNotes] = React.useState<NoteTab[]>([]);
   const [activeId, setActiveId] = React.useState("");
-  const [saveStatus, setSaveStatus] = React.useState("");
+  const [saveStatus, setSaveStatus] = React.useState<SaveStatus | null>(null);
   const editorRef = React.useRef<HTMLDivElement | null>(null);
   const notesRef = React.useRef<NoteTab[]>([]);
   const activeIdRef = React.useRef("");
   const hydratedRef = React.useRef(false);
+  const skipCloudSaveFingerprintRef = React.useRef<string | null>(null);
   const saveStatusTimerRef = React.useRef<number | null>(null);
+  const cloudSaveTimerRef = React.useRef<number | null>(null);
+  const cloudSaveRunningRef = React.useRef(false);
+  const pendingCloudSaveRef = React.useRef<NotesPayload | null>(null);
+  const serverMetaRef = React.useRef<ResourceMeta>(EMPTY_RESOURCE_META);
 
   React.useEffect(() => {
     notesRef.current = notes;
@@ -248,15 +270,134 @@ export default function NotesPanel() {
       if (saveStatusTimerRef.current) {
         window.clearTimeout(saveStatusTimerRef.current);
       }
+      if (cloudSaveTimerRef.current) {
+        window.clearTimeout(cloudSaveTimerRef.current);
+      }
     };
   }, []);
 
-  React.useEffect(() => {
-    const local = readLocalNotes();
-    setNotes(local.notes);
-    setActiveId(local.activeId);
+  const showSaveStatus = React.useCallback(
+    (status: SaveStatus, clearAfterMs?: number) => {
+      if (saveStatusTimerRef.current) {
+        window.clearTimeout(saveStatusTimerRef.current);
+        saveStatusTimerRef.current = null;
+      }
+
+      setSaveStatus(status);
+
+      if (clearAfterMs) {
+        saveStatusTimerRef.current = window.setTimeout(() => {
+          setSaveStatus(null);
+          saveStatusTimerRef.current = null;
+        }, clearAfterMs);
+      }
+    },
+    [],
+  );
+
+  const applyLoadedNotes = React.useCallback((payload: NotesPayload) => {
+    const nextActiveId =
+      payload.notes.find((note) => note.id === payload.activeId)?.id ??
+      payload.notes[0]?.id ??
+      "";
+    const nextPayload = { notes: payload.notes, activeId: nextActiveId };
+
+    skipCloudSaveFingerprintRef.current = JSON.stringify(nextPayload);
+    notesRef.current = nextPayload.notes;
+    activeIdRef.current = nextPayload.activeId;
+    setNotes(nextPayload.notes);
+    setActiveId(nextPayload.activeId);
+    writeLocalNotes(nextPayload);
     hydratedRef.current = true;
   }, []);
+
+  const reloadNotes = React.useCallback(async () => {
+    const local = readLocalNotes();
+
+    if (cloudSaveTimerRef.current) {
+      window.clearTimeout(cloudSaveTimerRef.current);
+      cloudSaveTimerRef.current = null;
+    }
+    pendingCloudSaveRef.current = null;
+
+    try {
+      const jwt = await getJwt();
+
+      if (!jwt) {
+        serverMetaRef.current = EMPTY_RESOURCE_META;
+        applyLoadedNotes(local);
+        setSaveStatus(null);
+        return;
+      }
+
+      showSaveStatus({ label: "Syncing...", tone: "pending" });
+      const { data: remote, meta } = await fetchAuthedResource<NotesPayload>(
+        NOTES_ENDPOINT,
+        jwt,
+      );
+      serverMetaRef.current = meta;
+
+      if (Array.isArray(remote?.notes) && remote.notes.length > 0) {
+        applyLoadedNotes(remote);
+        showSaveStatus(
+          { label: "Cloud synced", tone: "success" },
+          1800,
+        );
+        return;
+      }
+
+      // Seed a new account from this device's existing local notes instead of
+      // waiting for another edit before the first cloud write.
+      const saved = await saveAuthedResource(
+        NOTES_ENDPOINT,
+        jwt,
+        local,
+        meta,
+      );
+      serverMetaRef.current = saved.meta;
+      applyLoadedNotes(local);
+      showSaveStatus(
+        { label: "Saved to cloud", tone: "success" },
+        1800,
+      );
+    } catch (error) {
+      console.error("Notes failed to load from account storage", error);
+      applyLoadedNotes(local);
+      showSaveStatus({
+        label: "Cloud unavailable - saved locally",
+        tone: "error",
+        title: error instanceof Error ? error.message : undefined,
+      });
+    }
+  }, [applyLoadedNotes, showSaveStatus]);
+
+  React.useEffect(() => {
+    void reloadNotes();
+  }, [reloadNotes]);
+
+  React.useEffect(() => {
+    let unsubscribe: (() => void) | null = null;
+    let disposed = false;
+
+    void onAuthChange(() => {
+      void reloadNotes();
+    })
+      .then((nextUnsubscribe) => {
+        if (disposed) {
+          nextUnsubscribe();
+        } else {
+          unsubscribe = nextUnsubscribe;
+        }
+      })
+      .catch((error) => {
+        console.error("Notes could not subscribe to auth changes", error);
+      });
+
+    return () => {
+      disposed = true;
+      unsubscribe?.();
+    };
+  }, [reloadNotes]);
 
   const activeNote = React.useMemo(
     () => notes.find((note) => note.id === activeId) ?? notes[0] ?? null,
@@ -275,6 +416,143 @@ export default function NotesPanel() {
     writeLocalNotes({ notes, activeId });
   }, [notes, activeId]);
 
+  const drainCloudSaveQueue = React.useCallback(async () => {
+    if (cloudSaveRunningRef.current) return;
+    cloudSaveRunningRef.current = true;
+    let conflictRetries = 0;
+
+    try {
+      while (pendingCloudSaveRef.current) {
+        const payload = pendingCloudSaveRef.current;
+        pendingCloudSaveRef.current = null;
+        let jwt: string | null;
+
+        try {
+          jwt = await getJwt();
+        } catch (error) {
+          console.error("Notes could not read the current session", error);
+          showSaveStatus({
+            label: "Cloud save failed - saved locally",
+            tone: "error",
+            title: error instanceof Error ? error.message : undefined,
+          });
+          continue;
+        }
+
+        if (!jwt) {
+          showSaveStatus(
+            { label: "Saved locally", tone: "local" },
+            1800,
+          );
+          continue;
+        }
+
+        showSaveStatus({ label: "Saving to cloud...", tone: "pending" });
+
+        try {
+          const { meta } = await saveAuthedResource(
+            NOTES_ENDPOINT,
+            jwt,
+            payload,
+            serverMetaRef.current,
+          );
+          serverMetaRef.current = meta;
+          conflictRetries = 0;
+          showSaveStatus(
+            { label: "Saved to cloud", tone: "success" },
+            1800,
+          );
+        } catch (error) {
+          if (error instanceof ResourceApiError && error.status === 409) {
+            if (conflictRetries >= 1) {
+              showSaveStatus({
+                label: "Cloud keeps changing - saved locally",
+                tone: "error",
+                title: error.message,
+              });
+              continue;
+            }
+
+            try {
+              conflictRetries += 1;
+              const { data: remote, meta } =
+                await fetchAuthedResource<NotesPayload>(NOTES_ENDPOINT, jwt);
+              const latestLocal = {
+                notes: notesRef.current,
+                activeId: activeIdRef.current,
+              };
+              const merged = mergeNotesPayload(remote, latestLocal);
+
+              serverMetaRef.current = meta;
+              applyLoadedNotes(merged);
+              pendingCloudSaveRef.current = merged;
+              showSaveStatus({
+                label: "Merging cloud changes...",
+                tone: "pending",
+              });
+              continue;
+            } catch (retryError) {
+              error = retryError;
+            }
+          }
+
+          conflictRetries = 0;
+          console.error("Notes failed to save to account storage", error);
+          showSaveStatus({
+            label: "Cloud save failed - saved locally",
+            tone: "error",
+            title: error instanceof Error ? error.message : undefined,
+          });
+        }
+      }
+    } finally {
+      cloudSaveRunningRef.current = false;
+
+      // A newer edit may have arrived after the loop observed an empty queue.
+      if (pendingCloudSaveRef.current) {
+        void drainCloudSaveQueue();
+      }
+    }
+  }, [applyLoadedNotes, showSaveStatus]);
+
+  const queueCloudSave = React.useCallback(
+    (payload: NotesPayload) => {
+      pendingCloudSaveRef.current = payload;
+      void drainCloudSaveQueue();
+    },
+    [drainCloudSaveQueue],
+  );
+
+  React.useEffect(() => {
+    if (!hydratedRef.current || !notes.length || !activeId) return;
+
+    const payload = { notes, activeId };
+    const fingerprint = JSON.stringify(payload);
+
+    if (skipCloudSaveFingerprintRef.current === fingerprint) {
+      skipCloudSaveFingerprintRef.current = null;
+      return;
+    }
+    skipCloudSaveFingerprintRef.current = null;
+
+    if (cloudSaveTimerRef.current) {
+      window.clearTimeout(cloudSaveTimerRef.current);
+    }
+
+    showSaveStatus({ label: "Saving...", tone: "pending" });
+    cloudSaveTimerRef.current = window.setTimeout(() => {
+      cloudSaveTimerRef.current = null;
+      queueCloudSave(payload);
+    }, 700);
+
+    return () => {
+      if (cloudSaveTimerRef.current) {
+        window.clearTimeout(cloudSaveTimerRef.current);
+        cloudSaveTimerRef.current = null;
+      }
+    };
+  }, [activeId, notes, queueCloudSave, showSaveStatus]);
+
   const saveCurrentNote = React.useCallback(() => {
     const currentActiveId = activeIdRef.current;
     if (!currentActiveId) return;
@@ -286,18 +564,16 @@ export default function NotesPanel() {
 
     notesRef.current = nextNotes;
     setNotes(nextNotes);
-    writeLocalNotes({ notes: nextNotes, activeId: currentActiveId });
-    setSaveStatus("Saved");
+    const payload = { notes: nextNotes, activeId: currentActiveId };
+    writeLocalNotes(payload);
 
-    if (saveStatusTimerRef.current) {
-      window.clearTimeout(saveStatusTimerRef.current);
+    if (cloudSaveTimerRef.current) {
+      window.clearTimeout(cloudSaveTimerRef.current);
+      cloudSaveTimerRef.current = null;
     }
-
-    saveStatusTimerRef.current = window.setTimeout(() => {
-      setSaveStatus("");
-      saveStatusTimerRef.current = null;
-    }, 1600);
-  }, []);
+    skipCloudSaveFingerprintRef.current = JSON.stringify(payload);
+    queueCloudSave(payload);
+  }, [queueCloudSave]);
 
   React.useEffect(() => {
     function handleSaveShortcut(event: KeyboardEvent) {
@@ -436,8 +712,12 @@ export default function NotesPanel() {
           aria-label="Note title"
         />
         {saveStatus ? (
-          <span className="lo-notes__save-status" role="status">
-            {saveStatus}
+          <span
+            className={`lo-notes__save-status is-${saveStatus.tone}`}
+            role="status"
+            title={saveStatus.title}
+          >
+            {saveStatus.label}
           </span>
         ) : null}
       </div>

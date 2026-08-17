@@ -1,11 +1,24 @@
 import React from "react";
-import { getCurrentUserId } from "../../lib/identity";
+import {
+  getCurrentUserId,
+  getJwt,
+  onAuthChange,
+} from "../../lib/identity";
 import {
   createQuickNote,
+  mergeNotesPayload,
   readLocalNotes,
   writeLocalNotes,
   type NoteTab,
+  type NotesPayload,
 } from "../../lib/notesStore";
+import {
+  EMPTY_RESOURCE_META,
+  fetchAuthedResource,
+  ResourceApiError,
+  saveAuthedResource,
+  type ResourceMeta,
+} from "../../lib/resourceApi";
 import {
   createTaskObject,
   loadTasks,
@@ -14,6 +27,8 @@ import {
   taskStorageKey,
 } from "../../lib/tasksStore";
 import type { Task } from "../../types/task";
+
+const NOTES_ENDPOINT = "/.netlify/functions/notes";
 
 function todayDateKey() {
   const today = new Date();
@@ -58,25 +73,101 @@ export default function QuickAccess() {
   const [notes, setNotes] = React.useState<NoteTab[]>([]);
   const [taskInput, setTaskInput] = React.useState("");
   const [noteInput, setNoteInput] = React.useState("");
+  const [noteSaveStatus, setNoteSaveStatus] = React.useState("");
   const [storageKeys, setStorageKeys] = React.useState({
     taskKey: taskStorageKey(),
     backupKey: taskBackupKey(),
   });
+  const notesRef = React.useRef<NoteTab[]>([]);
+  const activeNoteIdRef = React.useRef("");
+  const serverMetaRef = React.useRef<ResourceMeta>(EMPTY_RESOURCE_META);
 
   const today = React.useMemo(() => todayDateKey(), []);
+
+  const applyNotes = React.useCallback((payload: NotesPayload) => {
+    const activeId =
+      payload.notes.find((note) => note.id === payload.activeId)?.id ??
+      payload.notes[0]?.id ??
+      "";
+    const normalized = { notes: payload.notes, activeId };
+
+    notesRef.current = normalized.notes;
+    activeNoteIdRef.current = normalized.activeId;
+    setNotes(normalized.notes);
+    writeLocalNotes(normalized);
+  }, []);
 
   const refresh = React.useCallback(async () => {
     const userId = await getCurrentUserId();
     const taskKey = taskStorageKey(userId);
     const backupKey = taskBackupKey(userId);
+    const localNotes = readLocalNotes();
 
     setStorageKeys({ taskKey, backupKey });
     setTasks(loadTasks(taskKey, backupKey));
-    setNotes(readLocalNotes().notes);
-  }, []);
+
+    try {
+      const jwt = await getJwt();
+
+      if (!jwt) {
+        serverMetaRef.current = EMPTY_RESOURCE_META;
+        applyNotes(localNotes);
+        setNoteSaveStatus("");
+        return;
+      }
+
+      const { data: remote, meta } = await fetchAuthedResource<NotesPayload>(
+        NOTES_ENDPOINT,
+        jwt,
+      );
+      serverMetaRef.current = meta;
+
+      if (Array.isArray(remote?.notes) && remote.notes.length > 0) {
+        applyNotes(remote);
+        return;
+      }
+
+      const saved = await saveAuthedResource(
+        NOTES_ENDPOINT,
+        jwt,
+        localNotes,
+        meta,
+      );
+      serverMetaRef.current = saved.meta;
+      applyNotes(localNotes);
+    } catch (error) {
+      console.error("Quick notes failed to load from account storage", error);
+      applyNotes(localNotes);
+      setNoteSaveStatus("Cloud unavailable - using local notes");
+    }
+  }, [applyNotes]);
 
   React.useEffect(() => {
     void refresh();
+  }, [refresh]);
+
+  React.useEffect(() => {
+    let unsubscribe: (() => void) | null = null;
+    let disposed = false;
+
+    void onAuthChange(() => {
+      void refresh();
+    })
+      .then((nextUnsubscribe) => {
+        if (disposed) {
+          nextUnsubscribe();
+        } else {
+          unsubscribe = nextUnsubscribe;
+        }
+      })
+      .catch((error) => {
+        console.error("Quick Access could not subscribe to auth changes", error);
+      });
+
+    return () => {
+      disposed = true;
+      unsubscribe?.();
+    };
   }, [refresh]);
 
   const todaysTasks = React.useMemo(
@@ -124,17 +215,74 @@ export default function QuickAccess() {
     );
   }
 
-  function addNote(event: React.FormEvent<HTMLFormElement>) {
+  async function addNote(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const body = noteInput.trim();
     if (!body) return;
 
     const nextNote = createQuickNote(body);
-    const nextNotes = [...notes, nextNote];
+    const payload = {
+      notes: [...notesRef.current, nextNote],
+      activeId: nextNote.id,
+    };
 
-    setNotes(nextNotes);
-    writeLocalNotes({ notes: nextNotes, activeId: nextNote.id });
+    applyNotes(payload);
     setNoteInput("");
+    setNoteSaveStatus("Saving to cloud...");
+
+    let jwt: string | null;
+
+    try {
+      jwt = await getJwt();
+    } catch (error) {
+      console.error("Quick note could not read the current session", error);
+      setNoteSaveStatus("Cloud save failed - saved locally");
+      return;
+    }
+
+    if (!jwt) {
+      setNoteSaveStatus("Saved locally");
+      return;
+    }
+
+    try {
+      const { meta } = await saveAuthedResource(
+        NOTES_ENDPOINT,
+        jwt,
+        payload,
+        serverMetaRef.current,
+      );
+      serverMetaRef.current = meta;
+      setNoteSaveStatus("Saved to cloud");
+    } catch (error) {
+      if (error instanceof ResourceApiError && error.status === 409) {
+        try {
+          const { data: remote, meta } =
+            await fetchAuthedResource<NotesPayload>(NOTES_ENDPOINT, jwt);
+          const latestLocal = {
+            notes: notesRef.current,
+            activeId: activeNoteIdRef.current,
+          };
+          const merged = mergeNotesPayload(remote, latestLocal);
+          const saved = await saveAuthedResource(
+            NOTES_ENDPOINT,
+            jwt,
+            merged,
+            meta,
+          );
+
+          serverMetaRef.current = saved.meta;
+          applyNotes(merged);
+          setNoteSaveStatus("Saved to cloud");
+          return;
+        } catch (retryError) {
+          error = retryError;
+        }
+      }
+
+      console.error("Quick note failed to save to account storage", error);
+      setNoteSaveStatus("Cloud save failed - saved locally");
+    }
   }
 
   return (
@@ -211,6 +359,11 @@ export default function QuickAccess() {
         <button type="submit" className="lo-quick__wide-action">
           Add note
         </button>
+        {noteSaveStatus ? (
+          <p className="lo-quick__save-status" role="status">
+            {noteSaveStatus}
+          </p>
+        ) : null}
       </form>
 
       <div className="lo-quick__section">

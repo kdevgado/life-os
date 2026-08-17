@@ -134,17 +134,21 @@ export async function readResource<T>(args: {
   normalize: (raw: unknown) => T;
 }): Promise<ResourceEnvelope<T>> {
   const store = getLifeOsStore();
-  const raw = await store.get(args.key, { type: "json" }).catch(async (error) => {
+  let raw: unknown;
+
+  try {
+    raw = await store.get(args.key, { type: "json" });
+  } catch (error) {
     if (process.env.NETLIFY_SITE_ID && process.env.NETLIFY_AUTH_TOKEN) {
       console.error(
         "[LifeOS] @netlify/blobs get failed with explicit credentials, retrying implicit store:",
         error,
       );
-      return await getStore("lifeos").get(args.key, { type: "json" }).catch(() => null);
+      raw = await getStore("lifeos").get(args.key, { type: "json" });
+    } else {
+      throw error;
     }
-
-    return null;
-  });
+  }
 
   if (isEnvelope(raw)) {
     return {
