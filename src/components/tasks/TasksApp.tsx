@@ -2636,7 +2636,11 @@ export default function TasksApp({
                                 onChange={() => setFocusListFilter(option.id)}
                               />
                               <img
-                                className="lo-filter-option__icon"
+                                className={`lo-filter-option__icon ${
+                                  isAllowedCustomListIcon(option.icon)
+                                    ? "lo-icon--misc"
+                                    : ""
+                                }`.trim()}
                                 src={option.icon}
                                 alt=""
                               />
@@ -4871,10 +4875,15 @@ function PlanTasksView({
   }
 
   function renderSelectedListIcon() {
-    const iconClassName = `lo-plan-tasks-heading__icon ${isCustomSelectedList ? "lo-custom-list-icon" : ""}`;
+    const selectedListIcon = getListIcon(selectedList);
+    const iconClassName = `lo-plan-tasks-heading__icon ${
+      isCustomSelectedList ? "lo-custom-list-icon" : ""
+    } ${
+      isAllowedCustomListIcon(selectedListIcon) ? "lo-icon--misc" : ""
+    }`.trim();
 
     if (!isCustomSelectedList) {
-      return <img className={iconClassName} src={getListIcon(selectedList)} alt="" />;
+      return <img className={iconClassName} src={selectedListIcon} alt="" />;
     }
 
     return (
@@ -4885,7 +4894,7 @@ function PlanTasksView({
         title={`Change ${labelForList(selectedList)} icon`}
         aria-label={`Change ${labelForList(selectedList)} icon`}
       >
-        <img className={iconClassName} src={getListIcon(selectedList)} alt="" />
+        <img className={iconClassName} src={selectedListIcon} alt="" />
       </button>
     );
   }
@@ -5059,7 +5068,11 @@ function PlanTasksView({
                   aria-label={labelForList(list)}
                 >
                   <img
-                    className="lo-plan-tasks-sidebar__icon lo-custom-list-icon"
+                    className={`lo-plan-tasks-sidebar__icon lo-custom-list-icon ${
+                      isAllowedCustomListIcon(getListIcon(list))
+                        ? "lo-icon--misc"
+                        : ""
+                    }`.trim()}
                     src={getListIcon(list)}
                     alt=""
                   />
@@ -5949,7 +5962,7 @@ function CustomListIconPicker({
                 aria-label={label}
                 aria-pressed={selectedIcon === icon}
               >
-                <img src={icon} alt="" />
+                <img className="lo-icon--misc" src={icon} alt="" />
               </button>
             );
           })}
