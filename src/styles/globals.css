@@ -4858,11 +4858,14 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
   .lo-window {
     max-width: calc(100vw - 20px);
+    max-height: calc(100dvh - 116px);
+    min-width: 0;
+    min-height: 0;
     border-radius: 10px;
   }
 
   .lo-window__body {
-    max-height: calc(100vh - 170px);
+    max-height: calc(100dvh - 170px);
     overflow: auto;
   }
 
@@ -4971,6 +4974,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
    ========================= */
 .lo-window{
   position: fixed;
+  box-sizing: border-box;
   overflow: visible;
   border-radius: 10px;
   display: flex;
@@ -4980,8 +4984,8 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   box-shadow: var(--shell-shadow);
-  min-width: 320px;
-  min-height: 240px;
+  min-width: min(320px, calc(100vw - 24px));
+  min-height: min(240px, calc(100dvh - 116px));
   color: var(--shell-text);
 }
 
@@ -9852,7 +9856,9 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   flex: 1 1 auto;
   height: auto;
   padding: 0;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .lo-window--appearance-settings {
@@ -9890,7 +9896,9 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   flex: 1 1 auto;
   height: auto;
   padding: 0;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .lo-account-settings {
@@ -9901,11 +9909,12 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
 .lo-profile-settings {
   position: relative;
-  height: 100%;
+  height: auto;
+  min-height: 100%;
   box-sizing: border-box;
   gap: 12px;
   padding: 16px;
-  overflow: hidden;
+  overflow: visible;
   animation: loProfileSettingsIn 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
@@ -10200,7 +10209,8 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   position: relative;
   padding: 16px;
   gap: 9px;
-  overflow: hidden;
+  min-height: 100%;
+  overflow: visible;
   animation: loAppearanceIn 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 

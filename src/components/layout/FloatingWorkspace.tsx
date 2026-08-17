@@ -80,6 +80,61 @@ function clampWindowAxis(n: number, min: number, max: number) {
   return clamp(n, Math.min(min, max), Math.max(min, max));
 }
 
+type WindowGeometry = {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+};
+
+type ViewportInsets = {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+};
+
+function fitWindowToViewport(
+  geometry: WindowGeometry,
+  mobile = getIsMobileViewport(),
+  insets?: ViewportInsets,
+): WindowGeometry {
+  if (typeof window === "undefined") return geometry;
+
+  const defaultSideGap = mobile ? 12 : 24;
+  const viewportInsets = insets ?? {
+    left: defaultSideGap,
+    top: mobile ? 12 : 24,
+    right: defaultSideGap,
+    bottom: mobile ? 104 : 24,
+  };
+  const maxW = Math.max(
+    0,
+    window.innerWidth - viewportInsets.left - viewportInsets.right,
+  );
+  const maxH = Math.max(
+    0,
+    window.innerHeight - viewportInsets.top - viewportInsets.bottom,
+  );
+  const w = Math.min(geometry.w, maxW);
+  const h = Math.min(geometry.h, maxH);
+
+  return {
+    x: clampWindowAxis(
+      geometry.x,
+      viewportInsets.left,
+      window.innerWidth - viewportInsets.right - w,
+    ),
+    y: clampWindowAxis(
+      geometry.y,
+      viewportInsets.top,
+      window.innerHeight - viewportInsets.bottom - h,
+    ),
+    w,
+    h,
+  };
+}
+
 function titleFor(k: Exclude<PanelKey, null>) {
   switch (k) {
     case "spaces":
@@ -255,8 +310,8 @@ function mobileSizeFor(key: Exclude<PanelKey, null>) {
     return defaultSizeFor(key);
   }
 
-  const maxW = window.innerWidth - 24;
-  const maxH = window.innerHeight - 120;
+  const maxW = Math.max(0, window.innerWidth - 24);
+  const maxH = Math.max(0, window.innerHeight - 120);
 
   switch (key) {
     case "spaces":
@@ -285,6 +340,30 @@ function mobileSizeFor(key: Exclude<PanelKey, null>) {
         h: Math.min(defaultSizeFor(key).h, maxH),
       };
   }
+}
+
+function topDockWindowGeometry(w: number, h: number): WindowGeometry {
+  const placed = topDockWindowPos();
+  const edgeGap = isFocusModeHidden() ? 6 : 24;
+
+  return fitWindowToViewport(
+    { ...placed, w, h },
+    false,
+    {
+      left: placed.x,
+      top: placed.y,
+      right: edgeGap,
+      bottom: edgeGap,
+    },
+  );
+}
+
+function mobileWindowGeometryFor(
+  key: Exclude<PanelKey, null>,
+): WindowGeometry {
+  const size = mobileSizeFor(key);
+  const placed = mobileWindowPos(size.w, size.h);
+  return fitWindowToViewport({ ...placed, ...size }, true);
 }
 
 function WindowShell({
@@ -1424,7 +1503,30 @@ export default function FloatingWorkspace() {
   const [isMobile, setIsMobile] = useState(getIsMobileViewport);
 
   React.useEffect(() => {
-    const onResize = () => setIsMobile(getIsMobileViewport());
+    const onResize = () => {
+      const mobile = getIsMobileViewport();
+      setIsMobile(mobile);
+      setWins((prev) =>
+        prev.map((win) => {
+          if (!mobile && isTopDockPanel(win.key)) return win;
+
+          const requested = mobile ? mobileWindowGeometryFor(win.key) : win;
+          const fitted = fitWindowToViewport(requested, mobile);
+
+          if (
+            fitted.x === win.x &&
+            fitted.y === win.y &&
+            fitted.w === win.w &&
+            fitted.h === win.h
+          ) {
+            return win;
+          }
+
+          return { ...win, ...fitted };
+        }),
+      );
+    };
+
     onResize();
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
@@ -1444,9 +1546,15 @@ export default function FloatingWorkspace() {
 
     const size = defaultSizeFor("bible");
     const margin = 20;
-
-    const x = window.innerWidth - size.w - margin;
-    const y = window.innerHeight - size.h - margin;
+    const geometry = fitWindowToViewport(
+      {
+        x: window.innerWidth - size.w - margin,
+        y: window.innerHeight - size.h - margin,
+        w: size.w,
+        h: size.h,
+      },
+      getIsMobileViewport(),
+    );
 
     setWins((prev) => {
       if (prev.some((w) => w.key === "bible")) return prev;
@@ -1455,11 +1563,11 @@ export default function FloatingWorkspace() {
         ...prev,
         {
           key: "bible",
-          x,
-          y,
+          x: geometry.x,
+          y: geometry.y,
           z: 9999,
-          w: size.w,
-          h: size.h,
+          w: geometry.w,
+          h: geometry.h,
         },
       ];
     });
@@ -1686,22 +1794,42 @@ export default function FloatingWorkspace() {
   }
 
   function moveWindow(key: Win["key"], x: number, y: number) {
-    setWins((prev) => prev.map((w) => (w.key === key ? { ...w, x, y } : w)));
+    setWins((prev) =>
+      prev.map((win) =>
+        win.key === key
+          ? {
+              ...win,
+              ...fitWindowToViewport({ ...win, x, y }, isMobile),
+            }
+          : win,
+      ),
+    );
   }
 
   function resizeWindow(key: Win["key"], w: number, h: number) {
     if (isTopDockPanel(key)) return;
 
     setWins((prev) =>
-      prev.map((win) => (win.key === key ? { ...win, w, h } : win)),
+      prev.map((win) =>
+        win.key === key
+          ? {
+              ...win,
+              ...fitWindowToViewport({ ...win, w, h }, isMobile),
+            }
+          : win,
+      ),
     );
   }
 
   React.useEffect(() => {
     function openCalendarSettingsWindow() {
       setWins((prev) => {
+        const mobile = getIsMobileViewport();
         const size = defaultSizeFor("calendar-settings");
         const centered = centeredWindowPos(size.w, size.h);
+        const geometry = mobile
+          ? mobileWindowGeometryFor("calendar-settings")
+          : fitWindowToViewport({ ...centered, ...size }, false);
         const existing = prev.find((w) => w.key === "calendar-settings");
 
         if (existing) {
@@ -1709,11 +1837,8 @@ export default function FloatingWorkspace() {
             w.key === "calendar-settings"
               ? {
                   ...w,
-                  x: centered.x,
-                  y: centered.y,
+                  ...geometry,
                   z: 5000,
-                  w: size.w,
-                  h: size.h,
                 }
               : w,
           );
@@ -1723,11 +1848,8 @@ export default function FloatingWorkspace() {
           ...prev,
           {
             key: "calendar-settings",
-            x: centered.x,
-            y: centered.y,
+            ...geometry,
             z: 5000,
-            w: size.w,
-            h: size.h,
           },
         ];
       });
@@ -1800,8 +1922,6 @@ export default function FloatingWorkspace() {
     const syncTopDockWindows = () => {
       if (typeof window === "undefined") return;
 
-      const placed = topDockWindowPos();
-
       setWins((prev) =>
         prev.map((w) => {
           if (!isTopDockPanel(w.key)) return w;
@@ -1810,13 +1930,11 @@ export default function FloatingWorkspace() {
           const size = defaultSizeFor(w.key);
           const fixedH = fixedHeightFor(w.key);
           const nextH = fixedH ?? w.h ?? size.h;
+          const geometry = topDockWindowGeometry(w.w || size.w, nextH);
 
           return {
             ...w,
-            x: placed.x,
-            y: placed.y,
-            w: w.w || size.w,
-            h: nextH,
+            ...geometry,
           };
         }),
       );
@@ -1852,18 +1970,14 @@ export default function FloatingWorkspace() {
       const nextZ = zTop + 1;
       setZTop(nextZ);
 
-      if (isMobile) {
-        const size = mobileSizeFor(key);
-        const placed = mobileWindowPos(size.w, size.h);
+      if (getIsMobileViewport()) {
+        const geometry = mobileWindowGeometryFor(key);
 
         return [
           {
             key,
-            x: placed.x,
-            y: placed.y,
+            ...geometry,
             z: nextZ,
-            w: size.w,
-            h: size.h,
           },
         ];
       }
@@ -1871,17 +1985,14 @@ export default function FloatingWorkspace() {
       if (isTopDockPanel(key)) {
         const withoutTopDockPanels = prev.filter((w) => !isTopDockPanel(w.key));
         const size = defaultSizeFor(key);
-        const placed = topDockWindowPos();
+        const geometry = topDockWindowGeometry(size.w, size.h);
 
         return [
           ...withoutTopDockPanels,
           {
             key,
-            x: placed.x,
-            y: placed.y,
+            ...geometry,
             z: nextZ,
-            w: size.w,
-            h: size.h,
           },
         ];
       }
@@ -1902,16 +2013,17 @@ export default function FloatingWorkspace() {
             })),
           })
         : centeredWindowPos(finalSize.w, finalSize.h);
+      const geometry = fitWindowToViewport(
+        { ...placed, ...finalSize },
+        false,
+      );
 
       return [
         ...prev,
         {
           key,
-          x: placed.x,
-          y: placed.y,
+          ...geometry,
           z: nextZ,
-          w: finalSize.w,
-          h: finalSize.h,
         },
       ];
     });
@@ -1939,21 +2051,16 @@ export default function FloatingWorkspace() {
             "notes",
             "tips",
             "calendar-settings",
+            "account-settings",
             "appearance-settings",
           ].includes(w.key),
         )
         .map((w) => {
-          if (isModalPanel(w.key)) return w;
-
-          const size = mobileSizeFor(w.key);
-          const placed = mobileWindowPos(size.w, size.h);
+          const geometry = mobileWindowGeometryFor(w.key);
 
           return {
             ...w,
-            x: placed.x,
-            y: placed.y,
-            w: size.w,
-            h: size.h,
+            ...geometry,
           };
         }),
     );
@@ -1962,8 +2069,12 @@ export default function FloatingWorkspace() {
   React.useEffect(() => {
     function openAccountSettingsWindow() {
       setWins((prev) => {
+        const mobile = getIsMobileViewport();
         const size = defaultSizeFor("account-settings");
         const centered = centeredWindowPos(size.w, size.h);
+        const geometry = mobile
+          ? mobileWindowGeometryFor("account-settings")
+          : fitWindowToViewport({ ...centered, ...size }, false);
         const existing = prev.find((w) => w.key === "account-settings");
 
         if (existing) {
@@ -1971,11 +2082,8 @@ export default function FloatingWorkspace() {
             w.key === "account-settings"
               ? {
                   ...w,
-                  x: centered.x,
-                  y: centered.y,
+                  ...geometry,
                   z: 5001,
-                  w: size.w,
-                  h: size.h,
                 }
               : w,
           );
@@ -1985,11 +2093,8 @@ export default function FloatingWorkspace() {
           ...prev,
           {
             key: "account-settings",
-            x: centered.x,
-            y: centered.y,
+            ...geometry,
             z: 5001,
-            w: size.w,
-            h: size.h,
           },
         ];
       });
@@ -2024,8 +2129,12 @@ export default function FloatingWorkspace() {
   React.useEffect(() => {
     function openAppearanceSettingsWindow() {
       setWins((prev) => {
+        const mobile = getIsMobileViewport();
         const size = defaultSizeFor("appearance-settings");
         const centered = centeredWindowPos(size.w, size.h);
+        const geometry = mobile
+          ? mobileWindowGeometryFor("appearance-settings")
+          : fitWindowToViewport({ ...centered, ...size }, false);
         const existing = prev.find((w) => w.key === "appearance-settings");
 
         if (existing) {
@@ -2033,11 +2142,8 @@ export default function FloatingWorkspace() {
             w.key === "appearance-settings"
               ? {
                   ...w,
-                  x: centered.x,
-                  y: centered.y,
+                  ...geometry,
                   z: 5002,
-                  w: size.w,
-                  h: size.h,
                 }
               : w,
           );
@@ -2047,11 +2153,8 @@ export default function FloatingWorkspace() {
           ...prev,
           {
             key: "appearance-settings",
-            x: centered.x,
-            y: centered.y,
+            ...geometry,
             z: 5002,
-            w: size.w,
-            h: size.h,
           },
         ];
       });
@@ -2073,11 +2176,12 @@ export default function FloatingWorkspace() {
   React.useEffect(() => {
     function openTipsWindow() {
       setWins((prev) => {
+        const mobile = getIsMobileViewport();
         const size = defaultSizeFor("tips");
-        const currentSize = isMobile ? mobileSizeFor("tips") : size;
-        const placed = isMobile
-          ? mobileWindowPos(currentSize.w, currentSize.h)
-          : centeredWindowPos(currentSize.w, currentSize.h);
+        const centered = centeredWindowPos(size.w, size.h);
+        const geometry = mobile
+          ? mobileWindowGeometryFor("tips")
+          : fitWindowToViewport({ ...centered, ...size }, false);
         const existing = prev.find((w) => w.key === "tips");
 
         if (existing) {
@@ -2085,11 +2189,8 @@ export default function FloatingWorkspace() {
             w.key === "tips"
               ? {
                   ...w,
-                  x: placed.x,
-                  y: placed.y,
+                  ...geometry,
                   z: 5003,
-                  w: currentSize.w,
-                  h: currentSize.h,
                 }
               : w,
           );
@@ -2099,11 +2200,8 @@ export default function FloatingWorkspace() {
           ...prev,
           {
             key: "tips",
-            x: placed.x,
-            y: placed.y,
+            ...geometry,
             z: 5003,
-            w: currentSize.w,
-            h: currentSize.h,
           },
         ];
       });
@@ -2117,7 +2215,7 @@ export default function FloatingWorkspace() {
         openTipsWindow as EventListener,
       );
     };
-  }, [isMobile]);
+  }, []);
 
   React.useEffect(() => {
     if (!showLayoutMenu) return;
