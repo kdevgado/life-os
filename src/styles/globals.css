@@ -3991,6 +3991,41 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   color: rgba(255, 255, 255, 0.68);
 }
 
+/* The board context menu follows Duna's light surfaces and dark iconography. */
+:root[data-theme="duna"] .lo-board-task-menu {
+  background: rgba(255, 255, 255, 0.96);
+  border-color: rgba(24, 28, 40, 0.1);
+  color: rgba(17, 16, 20, 0.92);
+}
+
+:root[data-theme="duna"] .lo-board-task-menu .lo-task-menu__submenu {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(24, 28, 40, 0.1);
+  color: rgba(17, 16, 20, 0.92);
+}
+
+:root[data-theme="duna"] .lo-board-task-menu .lo-task-menu__item:hover,
+:root[data-theme="duna"] .lo-board-task-menu .lo-task-menu__submenu-trigger:hover,
+:root[data-theme="duna"]
+  .lo-board-task-menu
+  .lo-task-menu__group--submenu:focus-within
+  .lo-task-menu__submenu-trigger {
+  background: rgba(15, 23, 42, 0.08);
+}
+
+:root[data-theme="duna"] .lo-board-task-menu .lo-task-menu__icon {
+  filter: brightness(0) saturate(100%);
+}
+
+:root[data-theme="duna"] .lo-board-task-menu .lo-task-menu__divider {
+  background: rgba(24, 28, 40, 0.12);
+}
+
+:root[data-theme="duna"] .lo-board-task-menu .lo-task-menu__submenu-caret,
+:root[data-theme="duna"] .lo-board-task-menu .lo-task-menu__empty {
+  color: rgba(17, 16, 20, 0.62);
+}
+
 .lo-task-edit-input {
   flex: 1 1 auto;
   min-width: 0;
