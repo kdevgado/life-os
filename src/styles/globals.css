@@ -3938,13 +3938,36 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 }
 
 :root[data-theme="duna"] .lo-task-menu {
-  background: rgba(255, 255, 255, 0.96);
-  border-color: rgba(24, 28, 40, 0.1);
+  background: rgba(10, 14, 24, 0.96);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.94);
 }
 
 :root[data-theme="duna"] .lo-task-menu__submenu {
-  background: rgba(255, 255, 255, 0.96);
-  border-color: rgba(24, 28, 40, 0.1);
+  background: rgba(10, 14, 24, 0.98);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.94);
+}
+
+:root[data-theme="duna"] .lo-task-menu__item:hover,
+:root[data-theme="duna"] .lo-task-menu__submenu-trigger:hover,
+:root[data-theme="duna"]
+  .lo-task-menu__group--submenu:focus-within
+  .lo-task-menu__submenu-trigger {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+:root[data-theme="duna"] .lo-task-menu__icon {
+  filter: brightness(0) invert(1);
+}
+
+:root[data-theme="duna"] .lo-task-menu__divider {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+:root[data-theme="duna"] .lo-task-menu__submenu-caret,
+:root[data-theme="duna"] .lo-task-menu__empty {
+  color: rgba(255, 255, 255, 0.68);
 }
 
 .lo-task-edit-input {
@@ -4893,12 +4916,6 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
     right: var(--shell-edge-gap);
     z-index: 3001;
     display: block;
-  }
-
-  .lo-plan__shell {
-    min-height: calc(100vh - 86px);
-    border-radius: 18px;
-    padding: 14px;
   }
 
   .lo-plan__header {
@@ -7549,7 +7566,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 }
 
 .lo-plan__shell{
-  min-height: calc(100vh - 108px);
+  min-height: calc(100vh - 200px);
   border-radius: 28px;
   padding: 24px;
   background: rgba(255,255,255,.72);
@@ -7728,10 +7745,6 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   color: #0f172a;
 }
 
-.lo-plan__content{
-  min-height: 620px;
-}
-
 .lo-plan__panel,
 .lo-plan__placeholder{
   height: 100%;
@@ -7830,7 +7843,7 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 }
 
 .lo-plan__content {
-  min-height: 560px;
+  min-height: 360px;
 }
 
 .lo-plan__panel,
