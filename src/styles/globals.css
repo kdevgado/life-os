@@ -5458,6 +5458,10 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   color: rgba(245, 247, 255, 0.98);
 }
 
+:root[data-theme="nebula"] .lo-list-filter-menu .lo-filter-option__icon {
+  filter: brightness(0) saturate(100%) invert(100%);
+}
+
 :root[data-theme="nebula"] .lo-filter-option:hover {
   background: rgba(255, 255, 255, 0.08);
 }
