@@ -3732,6 +3732,35 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   overflow-wrap: anywhere;  /* modern wrap support */
 }
 
+/* Focus view: compact typography without affecting Plan mode. */
+.lo-window-filter-wrap,
+.lo-focus-composer,
+.lo-focus-scroller {
+  font-size: 13px;
+}
+
+.lo-window-filter-wrap .lo-window-filter__count,
+.lo-window-filter-wrap .lo-dropdown-caret {
+  font-size: 13px;
+}
+
+.lo-focus-scroller .lo-section-title {
+  font-size: 11px;
+}
+
+.lo-focus-scroller .lo-task-focus .lo-task-title,
+.lo-focus-scroller .lo-focus-inline-input {
+  font-size: 13px;
+}
+
+.lo-focus-scroller .lo-task-focus .lo-task-meta-left {
+  font-size: 10px;
+}
+
+.lo-focus-scroller .lo-task-menu-trigger {
+  font-size: 14px;
+}
+
 .lo-task-focus .lo-task-start-btn {
   opacity: 1;
   transform: none;
