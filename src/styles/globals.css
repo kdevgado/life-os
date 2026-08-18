@@ -3649,6 +3649,12 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   opacity: 0.65;
 }
 
+.lo-focus-section-divider {
+  height: 1px;
+  margin: 2px 0;
+  background: var(--shell-border-strong);
+}
+
 /* Focus add row blends into the window */
 .lo-focus-composer {
   padding: 2px 10px 6px;
@@ -4076,6 +4082,23 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 
 :root[data-theme="nebula"] .lo-task-start-btn img {
   filter: brightness(0) saturate(100%) invert(80%);
+}
+
+.lo-task-start-btn.is-active {
+  background: var(--dock-active-accent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--dock-active-accent) 72%, white),
+    0 0 14px color-mix(in srgb, var(--dock-active-accent) 38%, transparent);
+}
+
+.lo-task-start-btn.is-active:hover {
+  background: color-mix(in srgb, var(--dock-active-accent) 86%, white);
+}
+
+:root[data-theme="duna"] .lo-task-start-btn.is-active img,
+:root[data-theme="nebula"] .lo-task-start-btn.is-active img {
+  filter: brightness(0) saturate(100%) invert(100%);
+  opacity: 1;
 }
 
 .lo-task-subrow {

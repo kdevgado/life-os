@@ -2883,7 +2883,9 @@ function FocusTasksView({
       </div>
 
       <div className="lo-focus-scroller">
-        <section
+        {doing.length > 0 ? (
+          <>
+          <section
         className="lo-stack"
         onDragOver={(e) => {
           if (!isFocusReorderDrag(e)) return;
@@ -2901,9 +2903,6 @@ function FocusTasksView({
         }}
       >
         <h3 className="lo-section-title">In Progress</h3>
-        {doing.length === 0 && (
-          <div className="muted">No active task right now.</div>
-        )}
         {doing.map((task) => (
           <Card
             key={task.id}
@@ -3030,11 +3029,23 @@ function FocusTasksView({
               </button>
             </div>
 
-            <div
-              className={`lo-task-meta-left ${isTaskOverdue(task) ? "is-overdue" : ""}`}
-            >
-              <img src="/icons/white/calendar.png" alt="Created" />
-              <span>{formatDateTime(task.createdAt)}</span>
+            <div className="lo-task-subrow">
+              <div
+                className={`lo-task-meta-left ${isTaskOverdue(task) ? "is-overdue" : ""}`}
+              >
+                <img src="/icons/white/calendar.png" alt="Created" />
+                <span>{formatDateTime(task.createdAt)}</span>
+              </div>
+              <button
+                type="button"
+                className="lo-task-action-btn lo-task-start-btn is-active"
+                onClick={() => onSetStatus(task, "todo")}
+                aria-label="Pause task"
+                aria-pressed="true"
+                title="Pause task"
+              >
+                <img src="/icons/start.svg" alt="" />
+              </button>
             </div>
           </Card>
         ))}
@@ -3042,6 +3053,9 @@ function FocusTasksView({
           <div className="lo-task-drop-indicator lo-task-drop-indicator--end" />
         )}
       </section>
+          <div className="lo-focus-section-divider" aria-hidden="true" />
+          </>
+        ) : null}
 
       <section
         className="lo-stack"
@@ -3060,7 +3074,6 @@ function FocusTasksView({
           setDropTargetId(null);
         }}
       >
-        <h3 className="lo-section-title">Up Next</h3>
         {next.length === 0 && <div className="muted">Nothing queued.</div>}
         {next.map((task) => (
           <Card
@@ -3195,10 +3208,14 @@ function FocusTasksView({
                 <span>{formatDateTime(task.createdAt)}</span>
               </div>
               <button
+                type="button"
                 className="lo-task-action-btn lo-task-start-btn"
                 onClick={() => onSetStatus(task, "doing")}
+                aria-label="Start task"
+                aria-pressed="false"
+                title="Start task"
               >
-                <img src="/icons/start.svg" alt="Start task" />
+                <img src="/icons/start.svg" alt="" />
               </button>
             </div>
           </Card>
