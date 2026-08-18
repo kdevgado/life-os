@@ -1185,14 +1185,32 @@ export default function TasksApp({
     }
   }, [currentUserId, focusFilter, focusListFilter, hideCompleted]);
 
+  const selectFocusListFilter = useCallback(
+    (nextFilter: string) => {
+      setFocusListFilter(nextFilter);
+
+      try {
+        saveStoredFocusViewState(
+          { focusFilter, focusListFilter: nextFilter, hideCompleted },
+          currentUserId,
+        );
+      } catch {
+        // Keep the selected list in memory if local storage is unavailable.
+      }
+    },
+    [currentUserId, focusFilter, hideCompleted],
+  );
+
   useEffect(() => {
+    if (loading) return;
+
     if (
       focusListFilter !== "all" &&
       !focusCustomLists.includes(focusListFilter)
     ) {
       setFocusListFilter("all");
     }
-  }, [focusCustomLists, focusListFilter]);
+  }, [focusCustomLists, focusListFilter, loading]);
 
   const filtered = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -2633,7 +2651,7 @@ export default function TasksApp({
                                 name={focusListFilterName}
                                 value={option.id}
                                 checked={focusListFilter === option.id}
-                                onChange={() => setFocusListFilter(option.id)}
+                                onChange={() => selectFocusListFilter(option.id)}
                               />
                               <img
                                 className={`lo-filter-option__icon ${
