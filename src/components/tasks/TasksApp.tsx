@@ -5380,6 +5380,7 @@ function PlanTasksView({
                                 ref={composerDateInputRef}
                                 className="lo-task-details-due-menu__date"
                                 type="date"
+                                lang="en-GB"
                                 value={dueDate}
                                 onChange={(event) =>
                                   updateComposerDueDateFromPicker(event.target.value)
@@ -5594,6 +5595,7 @@ function PlanTasksView({
               <label>Due</label>
               <input
                 type="date"
+                lang="en-GB"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
                 aria-label="Due date"
@@ -6174,35 +6176,10 @@ function formatDueDateDisplay(
   options: { overdue?: boolean } = {},
 ) {
   if (!dateKey) return "";
-  const date = new Date(`${dateKey}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return "";
+  const dateLabel = formatDateForEditor(dateKey);
+  if (!dateLabel) return "";
 
-  const today = startOfToday();
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-
-  if (options.overdue) {
-    const overdueLabel = isSameDate(date, yesterday)
-      ? "Yesterday"
-      : date.toLocaleDateString(undefined, {
-          weekday: "short",
-          month: "short",
-          day: "numeric",
-        });
-
-    return `Overdue, ${overdueLabel}`;
-  }
-
-  if (isSameDate(date, today)) return "Today";
-  if (isSameDate(date, tomorrow)) return "Tomorrow";
-
-  return date.toLocaleDateString(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
+  return options.overdue ? `Overdue, ${dateLabel}` : dateLabel;
 }
 
 function dateInputValue(date: Date) {
@@ -6728,6 +6705,7 @@ function TaskDetailsPanel({
                       ref={dueDateInputRef}
                       className="lo-task-details-due-menu__date"
                       type="date"
+                      lang="en-GB"
                       value={dueDate}
                       onChange={(event) => updateDueDateFromPicker(event.target.value)}
                       aria-label="Pick a due date"
