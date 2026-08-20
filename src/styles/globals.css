@@ -1467,6 +1467,11 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
 }
 
 @media (min-width: 721px) {
+  .lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-new-list,
+  .lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-new-list-button {
+    display: none;
+  }
+
   .lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-sidebar__custom-list,
   .lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-sidebar__custom-row {
     width: 40px;
