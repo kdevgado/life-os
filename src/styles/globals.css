@@ -1455,21 +1455,33 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   width: 40px;
 }
 
+.lo-plan-tasks-layout.is-sidebar-collapsed:not(.is-mobile-menu-open) .lo-plan-tasks-sidebar__custom-list {
+  gap: 6px;
+  align-content: start;
+}
+
 .lo-plan-tasks-layout.is-sidebar-collapsed:not(.is-mobile-menu-open) .lo-plan-tasks-sidebar__custom-row {
   grid-template-columns: 40px;
+  min-height: 40px;
 }
 
 .lo-plan-tasks-layout.is-sidebar-collapsed:not(.is-mobile-menu-open) .lo-plan-tasks-sidebar__list-button {
   display: none;
 }
 
-.lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-sidebar__divider,
 .lo-plan-tasks-layout.is-sidebar-collapsed .lo-plan-tasks-sidebar__label {
   height: 0;
   margin: 0;
   padding-block: 0;
   opacity: 0;
   overflow: hidden;
+}
+
+.lo-plan-tasks-layout.is-sidebar-collapsed:not(.is-mobile-menu-open) .lo-plan-tasks-sidebar__divider {
+  width: 40px;
+  height: 1px;
+  margin: 2px 0;
+  opacity: 1;
 }
 
 .lo-plan-tasks-sidebar__divider {
