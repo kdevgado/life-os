@@ -467,9 +467,41 @@ function detectDueDateFromTaskText(value: string) {
   return isoDate(targetDate);
 }
 
-function reminderAtForDateKey(dateKey: string) {
-  const date = new Date(`${dateKey}T09:00:00`);
-  return Number.isNaN(date.getTime()) ? "" : date.toISOString();
+function detectReminderFromTaskText(
+  value: string,
+  detectedDueDate: string,
+  now = new Date(),
+) {
+  const twelveHourMatch = value.match(
+    /\b(0?[1-9]|1[0-2])(?::([0-5]\d))?\s*(am|pm)\b/i,
+  );
+  const twentyFourHourMatch = twelveHourMatch
+    ? null
+    : value.match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/);
+
+  if (!twelveHourMatch && !twentyFourHourMatch) return "";
+
+  let hours: number;
+  let minutes: number;
+  if (twelveHourMatch) {
+    hours = Number(twelveHourMatch[1]) % 12;
+    if (twelveHourMatch[3].toLowerCase() === "pm") hours += 12;
+    minutes = Number(twelveHourMatch[2] ?? 0);
+  } else {
+    hours = Number(twentyFourHourMatch![1]);
+    minutes = Number(twentyFourHourMatch![2]);
+  }
+
+  const reminderDate = new Date(
+    `${detectedDueDate || isoDate(now)}T00:00:00`,
+  );
+  reminderDate.setHours(hours, minutes, 0, 0);
+
+  if (!detectedDueDate && reminderDate.getTime() <= now.getTime()) {
+    reminderDate.setDate(reminderDate.getDate() + 1);
+  }
+
+  return Number.isNaN(reminderDate.getTime()) ? "" : reminderDate.toISOString();
 }
 
 function TaskTitleText({
@@ -3710,6 +3742,8 @@ function PlanTasksView({
   const [composerRepeatRule, setComposerRepeatRule] =
     React.useState<TaskRepeatRule | "">("");
   const [composerAutoDueDate, setComposerAutoDueDate] = React.useState("");
+  const [composerAutoReminderAt, setComposerAutoReminderAt] =
+    React.useState("");
   const [activeTaskToken, setActiveTaskToken] =
     React.useState<TaskTokenQuery | null>(null);
   const [taskTokenSuggestionIndex, setTaskTokenSuggestionIndex] =
@@ -4242,6 +4276,7 @@ function PlanTasksView({
     setComposerReminderAt("");
     setComposerRepeatRule("");
     setComposerAutoDueDate("");
+    setComposerAutoReminderAt("");
     setComposerMenu(null);
     setComposerDatePickerOpen(false);
   }
@@ -4736,27 +4771,7 @@ function PlanTasksView({
     setTitle(value);
     setActiveTaskToken(findTaskTokenQuery(value, caretOffset));
     openMyDayComposer();
-
-    const previousAutoReminder = composerAutoDueDate
-      ? reminderAtForDateKey(composerAutoDueDate)
-      : "";
-    const detectedDueDate = detectDueDateFromTaskText(value);
-    if (detectedDueDate) {
-      setDueDate(detectedDueDate);
-      setComposerAutoDueDate(detectedDueDate);
-      if (!composerReminderAt || composerReminderAt === previousAutoReminder) {
-        setComposerReminderAt(reminderAtForDateKey(detectedDueDate));
-      }
-      return;
-    }
-
-    if (composerAutoDueDate && dueDate === composerAutoDueDate) {
-      setDueDate("");
-      setComposerAutoDueDate("");
-      if (composerReminderAt === previousAutoReminder) {
-        setComposerReminderAt("");
-      }
-    }
+    updateComposerTimingFromTitle(value);
   }
 
   function chooseTaskTokenSuggestion(suggestion: string) {
@@ -4782,25 +4797,39 @@ function PlanTasksView({
   function updateAddbarTitle(value: string) {
     setTitle(value);
 
-    const previousAutoReminder = composerAutoDueDate
-      ? reminderAtForDateKey(composerAutoDueDate)
-      : "";
+    updateComposerTimingFromTitle(value);
+  }
+
+  function updateComposerTimingFromTitle(value: string) {
     const detectedDueDate = detectDueDateFromTaskText(value);
     if (detectedDueDate) {
       setDueDate(detectedDueDate);
       setComposerAutoDueDate(detectedDueDate);
-      if (!composerReminderAt || composerReminderAt === previousAutoReminder) {
-        setComposerReminderAt(reminderAtForDateKey(detectedDueDate));
-      }
-      return;
-    }
-
-    if (composerAutoDueDate && dueDate === composerAutoDueDate) {
+    } else if (composerAutoDueDate && dueDate === composerAutoDueDate) {
       setDueDate("");
       setComposerAutoDueDate("");
-      if (composerReminderAt === previousAutoReminder) {
+    }
+
+    const detectedReminderAt = detectReminderFromTaskText(
+      value,
+      detectedDueDate,
+    );
+    if (detectedReminderAt) {
+      if (
+        !composerReminderAt ||
+        composerReminderAt === composerAutoReminderAt
+      ) {
+        setComposerReminderAt(detectedReminderAt);
+        setComposerAutoReminderAt(detectedReminderAt);
+      }
+    } else {
+      if (
+        composerAutoReminderAt &&
+        composerReminderAt === composerAutoReminderAt
+      ) {
         setComposerReminderAt("");
       }
+      setComposerAutoReminderAt("");
     }
   }
 
@@ -4825,11 +4854,13 @@ function PlanTasksView({
 
   function chooseComposerReminder(date: Date) {
     setComposerReminderAt(date.toISOString());
+    setComposerAutoReminderAt("");
     setComposerMenu(null);
   }
 
   function removeComposerReminder() {
     setComposerReminderAt("");
+    setComposerAutoReminderAt("");
     setComposerMenu(null);
   }
 
