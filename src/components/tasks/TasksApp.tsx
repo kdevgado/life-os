@@ -511,6 +511,29 @@ function TaskTitleText({
   );
 }
 
+function TaskTokenHighlightText({ title }: { title: string }) {
+  const parts = title.split(/([@#][\p{L}\p{N}_.-]*)/gu);
+
+  return (
+    <>
+      {parts.map((part, index) => {
+        const isToken = /^[@#][\p{L}\p{N}_.-]*$/u.test(part);
+        if (!isToken) return <React.Fragment key={index}>{part}</React.Fragment>;
+
+        const kind = part.startsWith("@") ? "mention" : "tag";
+        return (
+          <span
+            key={`${part}-${index}`}
+            className={`lo-task-token-highlight lo-task-token-highlight--${kind}`}
+          >
+            {part}
+          </span>
+        );
+      })}
+    </>
+  );
+}
+
 function findTaskTokenQuery(value: string, caretOffset = value.length) {
   const textBeforeCaret = value.slice(0, caretOffset);
   const match = textBeforeCaret.match(/([@#])([\p{L}\p{N}_.-]*)$/u);
@@ -5235,75 +5258,83 @@ function PlanTasksView({
                 >
                   <img src={PLUS_ICON} alt="" />
                 </button>
-                <div
-                  ref={myDayTitleRef}
-                  className="lo-my-day-composer__input"
-                  contentEditable
-                  suppressContentEditableWarning
-                  role="textbox"
-                  tabIndex={0}
-                  aria-label="Add a task"
-                  data-placeholder="Add a task"
-                  aria-autocomplete="list"
-                  aria-expanded={taskTokenSuggestions.length > 0}
-                  aria-controls={
-                    taskTokenSuggestions.length > 0
-                      ? taskTokenSuggestionsId
-                      : undefined
-                  }
-                  aria-activedescendant={
-                    taskTokenSuggestions.length > 0
-                      ? `${taskTokenSuggestionsId}-${visibleTaskTokenSuggestionIndex}`
-                      : undefined
-                  }
-                  onFocus={openMyDayComposer}
-                  onInput={(e) => {
-                    updateComposerTitle(
-                      e.currentTarget.textContent ?? "",
-                      getContentEditableCaretOffset(e.currentTarget),
-                    );
-                  }}
-                  onBlur={() => {
-                    resetMyDayComposerPlaceholder();
-                    setActiveTaskToken(null);
-                  }}
-                  onKeyDown={(e) => {
-                    if (activeTaskToken && taskTokenSuggestions.length > 0) {
-                      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-                        e.preventDefault();
-                        const direction = e.key === "ArrowDown" ? 1 : -1;
-                        setTaskTokenSuggestionIndex((current) =>
-                          (current + direction + taskTokenSuggestions.length) %
-                          taskTokenSuggestions.length,
-                        );
-                        return;
-                      }
-
-                      if (e.key === "Enter" || e.key === "Tab") {
-                        e.preventDefault();
-                        chooseTaskTokenSuggestion(
-                          taskTokenSuggestions[visibleTaskTokenSuggestionIndex],
-                        );
-                        return;
-                      }
+                <div className="lo-my-day-composer__editor">
+                  <div
+                    className="lo-my-day-composer__highlight"
+                    aria-hidden="true"
+                  >
+                    <TaskTokenHighlightText title={title} />
+                  </div>
+                  <div
+                    ref={myDayTitleRef}
+                    className="lo-my-day-composer__input"
+                    contentEditable
+                    suppressContentEditableWarning
+                    role="textbox"
+                    tabIndex={0}
+                    aria-label="Add a task"
+                    data-placeholder="Add a task"
+                    aria-autocomplete="list"
+                    aria-expanded={taskTokenSuggestions.length > 0}
+                    aria-controls={
+                      taskTokenSuggestions.length > 0
+                        ? taskTokenSuggestionsId
+                        : undefined
                     }
-
-                    if (e.key === "Escape" && activeTaskToken) {
-                      e.preventDefault();
+                    aria-activedescendant={
+                      taskTokenSuggestions.length > 0
+                        ? `${taskTokenSuggestionsId}-${visibleTaskTokenSuggestionIndex}`
+                        : undefined
+                    }
+                    onFocus={openMyDayComposer}
+                    onInput={(e) => {
+                      updateComposerTitle(
+                        e.currentTarget.textContent ?? "",
+                        getContentEditableCaretOffset(e.currentTarget),
+                      );
+                    }}
+                    onBlur={() => {
+                      resetMyDayComposerPlaceholder();
                       setActiveTaskToken(null);
-                      return;
-                    }
+                    }}
+                    onKeyDown={(e) => {
+                      if (activeTaskToken && taskTokenSuggestions.length > 0) {
+                        if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+                          e.preventDefault();
+                          const direction = e.key === "ArrowDown" ? 1 : -1;
+                          setTaskTokenSuggestionIndex((current) =>
+                            (current + direction + taskTokenSuggestions.length) %
+                            taskTokenSuggestions.length,
+                          );
+                          return;
+                        }
 
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      submitMyDayTask();
-                    }
-                    if (e.key === "Escape") {
-                      e.currentTarget.blur();
-                      closeMyDayComposer();
-                    }
-                  }}
-                />
+                        if (e.key === "Enter" || e.key === "Tab") {
+                          e.preventDefault();
+                          chooseTaskTokenSuggestion(
+                            taskTokenSuggestions[visibleTaskTokenSuggestionIndex],
+                          );
+                          return;
+                        }
+                      }
+
+                      if (e.key === "Escape" && activeTaskToken) {
+                        e.preventDefault();
+                        setActiveTaskToken(null);
+                        return;
+                      }
+
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        submitMyDayTask();
+                      }
+                      if (e.key === "Escape") {
+                        e.currentTarget.blur();
+                        closeMyDayComposer();
+                      }
+                    }}
+                  />
+                </div>
               </div>
 
               {activeTaskToken && taskTokenSuggestions.length > 0 ? (
