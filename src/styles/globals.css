@@ -1056,6 +1056,11 @@ label{display:block;margin:.75rem 0;color:var(--muted);font-size:.9rem}
   position: relative;
 }
 
+.lo-plan-tasks-main .lo-task .lo-task-row button.lo-task-important.is-active {
+  opacity: 1;
+  transform: none;
+}
+
 .lo-plan-tasks-main .lo-task .lo-task-row .lo-task-important:hover,
 .lo-plan-tasks-main .lo-task .lo-task-row .lo-task-important.is-active {
   background: color-mix(in srgb, currentColor 14%, transparent);
