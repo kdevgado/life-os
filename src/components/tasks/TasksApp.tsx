@@ -6238,7 +6238,18 @@ function formatDueDateDisplay(
   options: { overdue?: boolean } = {},
 ) {
   if (!dateKey) return "";
-  const dateLabel = formatDateForEditor(dateKey);
+  const normalizedDateKey = String(dateKey).slice(0, 10);
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  const dateLabel =
+    normalizedDateKey === isoDate(tomorrow)
+      ? "Tomorrow"
+      : normalizedDateKey === isoDate(yesterday)
+        ? "Yesterday"
+        : formatDateForEditor(normalizedDateKey);
   if (!dateLabel) return "";
 
   return options.overdue ? `Overdue, ${dateLabel}` : dateLabel;
